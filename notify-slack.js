@@ -5,60 +5,94 @@ const axios = require("axios");
 
 const WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 const RESULTS_FILE = "test-results/results.json";
+const REPORT_URL = "https://jurrego1771.github.io/api_test_flow/";
 
-(async () => {
-  try {
-    if (!WEBHOOK_URL) {
-      console.error("❌ Falta SLACK_WEBHOOK_URL en el archivo .env");
-      process.exit(1);
-    }
+if (!WEBHOOK_URL) {
+  console.error("❌ No se encontró SLACK_WEBHOOK_URL en el archivo .env");
+  process.exit(1);
+}
 
-    if (!fs.existsSync(RESULTS_FILE)) {
-      console.error(
-        `❌ No se encontró el archivo de resultados: ${RESULTS_FILE}`
-      );
-      process.exit(1);
-    }
+if (!fs.existsSync(RESULTS_FILE)) {
+  console.error("❌ No se encontró el archivo de resultados:", RESULTS_FILE);
+  process.exit(1);
+}
 
-    const results = JSON.parse(fs.readFileSync(RESULTS_FILE, "utf-8"));
+const results = JSON.parse(fs.readFileSync(RESULTS_FILE, "utf8"));
+const { stats } = results;
 
-    // Extrae resumen general
-    const total = results.stats?.total || 0;
-    const passed = results.stats?.expected || 0;
-    const failed = results.stats?.unexpected || 0;
-    const skipped = results.stats?.skipped || 0;
-    const duration = results.stats?.duration
-      ? (results.stats.duration / 1000).toFixed(1)
-      : "N/A";
+const total = stats.expected;
+const passed = total - (stats.unexpected + stats.flaky);
+const failed = stats.unexpected;
+const duration = (stats.duration / 1000).toFixed(2);
 
-    // Determina estado general
-    const statusEmoji = failed > 0 ? "❌" : "✅";
-    const statusText = failed > 0 ? "Con fallos" : "Todo correcto";
+const color = failed > 0 ? "#E01E5A" : "#2EB67D";
+const emoji = failed > 0 ? "❌" : "✅";
+const statusText =
+  failed > 0 ? "Algunas pruebas fallaron" : "Todas las pruebas pasaron";
 
-    const message = {
-      text: `${statusEmoji} *Resultados de pruebas Playwright*`,
-      attachments: [
+const message = {
+  blocks: [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*:shield: Resultados de Pruebas*`,
+      },
+    },
+    {
+      type: "divider",
+    },
+    {
+      type: "section",
+      fields: [
         {
-          color: failed > 0 ? "#FF4D4F" : "#36A64F",
-          fields: [
-            { title: "Estado general", value: statusText, short: true },
-            { title: "Total de tests", value: `${total}`, short: true },
-            { title: "✔️ Pasados", value: `${passed}`, short: true },
-            { title: "❌ Fallados", value: `${failed}`, short: true },
-            { title: "⏭️ Omitidos", value: `${skipped}`, short: true },
-            { title: "🕐 Duración", value: `${duration}s`, short: true },
-          ],
-          footer: "Playwright QA Bot",
-          ts: Math.floor(Date.now() / 1000),
+          type: "mrkdwn",
+          text: `*Estado:*\n${statusText} ${emoji}`,
+        },
+        {
+          type: "mrkdwn",
+          text: `*Duración:*\n${duration}s`,
+        },
+        {
+          type: "mrkdwn",
+          text: `*Total:*\n${total}`,
+        },
+        {
+          type: "mrkdwn",
+          text: `*Exitosas:*\n${passed}`,
+        },
+        {
+          type: "mrkdwn",
+          text: `*Fallidas:*\n${failed}`,
         },
       ],
-    };
+    },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            emoji: true,
+            text: "🔗 Ver Reporte Completo",
+          },
+          style: failed > 0 ? "danger" : "primary",
+          url: REPORT_URL,
+        },
+      ],
+    },
+  ],
+  attachments: [
+    {
+      color: color,
+    },
+  ],
+};
 
-    await axios.post(WEBHOOK_URL, message);
-
-    console.log("✅ Resultados enviados a Slack correctamente");
-  } catch (error) {
-    console.error("⚠️ Error al enviar resultados a Slack:", error.message);
-    process.exit(1);
-  }
-})();
+axios
+  .post(WEBHOOK_URL, message)
+  .then(() => console.log("✅ Notificación enviada a Slack"))
+  .catch((err) =>
+    console.error("❌ Error al enviar notificación a Slack:", err)
+  );
