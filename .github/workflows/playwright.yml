@@ -43,7 +43,7 @@ jobs:
   deploy-report:
     needs: test
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && needs.test.result == 'success'
     
     permissions:
       contents: read
@@ -65,4 +65,3 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./playwright-report
         destination_dir: .
-      if: always()
