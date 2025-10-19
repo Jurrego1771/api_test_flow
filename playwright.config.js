@@ -10,7 +10,11 @@ module.exports = defineConfig({
   },
 
   // Configuración para reportes HTML
-  reporter: [["html", { outputFolder: "playwright-report" }], ["list"]],
+  reporter: [
+    ["list"], // salida en consola
+    ["json", { outputFile: "test-results/results.json" }], // 🧾 para Slack
+    ["html", { outputFolder: "playwright-report" }], // 🌐 para GitHub Pages
+  ],
 
   // Configuración de retry
   retries: process.env.CI ? 2 : 0,

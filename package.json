@@ -10,7 +10,8 @@
     "test:report": "playwright show-report",
     "test:media": "playwright test tests/media/",
     "test:debug": "playwright test --debug",
-    "install:browsers": "playwright install"
+    "install:browsers": "playwright install",
+    "notify:slack": "node notify-slack.js"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +22,7 @@
     "@types/node": "^24.8.1"
   },
   "dependencies": {
+    "axios": "^1.12.2",
     "dotenv": "^17.2.3"
   }
 }

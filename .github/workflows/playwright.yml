@@ -36,6 +36,12 @@ jobs:
       env:
         BASE_URL: ${{ secrets.BASE_URL }}
         API_TOKEN: ${{ secrets.API_TOKEN }}
+
+    - name: 📢 Send Slack notification
+      if: always() # se ejecuta aunque los tests fallen
+      run: node notify-slack.js
+      env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     
     - name: 🚀 Deploy to GitHub Pages
       if: always()
