@@ -1,4 +1,5 @@
-const { test, expect } = require('../../fixtures');
+const { test, expect } = require("../../fixtures");
+const logger = require("../utils/logger");
 
 test.describe("Media all", () => {
   test("GET /api/media all false", async ({ authRequest }) => {
@@ -11,6 +12,9 @@ test.describe("Media all", () => {
     );
     expect(allPublished).toBe(true);
 
+    logger.info(
+      `📡 GET /api/media all=false - Status: ${res.status()}, Published: ${allPublished}`
+    );
   });
 
   test("GET /api/media all true", async ({ authRequest }) => {
@@ -18,20 +22,19 @@ test.describe("Media all", () => {
     expect(res.ok()).toBeTruthy();
 
     const body = await res.json();
-     const hasUnpublished = body.data.some(
-       (media) => media.is_published === false
-     );
-     expect(hasUnpublished).toBe(true);
+    const hasUnpublished = body.data.some(
+      (media) => media.is_published === false
+    );
+    expect(hasUnpublished).toBe(true);
+
+    logger.info(
+      `📡 GET /api/media all=true - Status: ${res.status()}, Has Unpublished: ${hasUnpublished}`
+    );
   });
-
-
-
 });
 
-test.describe("Media without_category", () => {
-  test("GET /api/media?without_category=true - sin categorías", async ({
-    authRequest,
-  }) => {
+test.describe("Filtro Media without_category", () => {
+  test("without_category=true - sin categorías", async ({ authRequest }) => {
     const res = await authRequest.get("/api/media?without_category=true");
     expect(res.ok()).toBeTruthy();
 
@@ -49,7 +52,7 @@ test.describe("Media without_category", () => {
     expect(allWithoutCategory).toBe(true);
   });
 
-  test("GET /api/media?without_category=false - algunas medias con categorías", async ({
+  test("without_category=false - algunas medias con categorías", async ({
     authRequest,
   }) => {
     const res = await authRequest.get("/api/media?without_category=false");
@@ -60,19 +63,17 @@ test.describe("Media without_category", () => {
     expect(Array.isArray(body.data)).toBe(true);
     expect(body.data.length).toBeGreaterThan(0);
 
-    // ✅ Al menos una media tiene categorías (array con elementos)
+    //  Al menos una media tiene categorías (array con elementos)
     const hasCategories = body.data.some(
       (media) => Array.isArray(media.categories) && media.categories.length > 0
     );
 
     expect(hasCategories).toBe(true);
   });
-    
-
 });
 
-test.describe("Media filtro logico sin categoria", () => {
-  test("GET /api/media?without_category=true should return empty data for media with category", async ({
+test.describe("Get media con filtro logico sin categoria", () => {
+  test("debe retornar vacio por que el id tiene categoria y pasamos without_category=true", async ({
     authRequest,
   }) => {
     // 1️⃣ Primero obtenemos todas las medias (sin filtros)
@@ -118,5 +119,3 @@ test.describe("Media filtro logico sin categoria", () => {
     }
   });
 });
-
-

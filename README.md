@@ -122,14 +122,7 @@ Los reportes incluyen:
 
 Este proyecto está bajo la Licencia ISC.
 
-## 📞 Soporte
 
-Si tienes preguntas o problemas, por favor:
-1. Revisa la documentación
-2. Busca en los issues existentes
-3. Crea un nuevo issue con detalles del problema
 
 ---
 
-**Última actualización**: $(date)
-**Estado de las pruebas**: ![Tests](https://github.com/tu-usuario/api_test_flow/workflows/Playwright%20Tests/badge.svg)
