@@ -16,6 +16,5 @@ module.exports = defineConfig({
     ["html", { outputFolder: "playwright-report" }], // 🌐 para GitHub Pages
   ],
 
-  // Configuración de retry
-  retries: process.env.CI ? 2 : 0,
+  reporter: [["html", { outputFolder: "playwright-report" }]],
 });

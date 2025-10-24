@@ -28,10 +28,9 @@ test.describe("Media - Eliminación (DELETE /api/media/{id})", () => {
     // Verificar que ya no existe
     const getRes = await authRequest.get(`/api/media/${created._id}`);
     const getBody = await getRes.json();
-    expect(getRes.ok()).toBeTruthy();
-    expect(["ERROR", null]).toContain(
-      getBody.status === "ERROR" ? "ERROR" : null
-    );
+    expect(getRes.status()).toBe(404);
+    expect(getBody.status).toBe("ERROR");
+    expect(getBody.data).toBe("NOT_FOUND");
   });
 
   test("Negativo: eliminar media inexistente", async ({ authRequest }) => {

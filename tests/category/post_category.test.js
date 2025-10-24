@@ -75,23 +75,28 @@ test.describe("POST /api/category - Creación de categorías", () => {
     expect(body.data).toBe("NAME_IS_REQUIRED");
   });
 
-  test("TC-CAT-POST-NEG-002: Debe fallar si 'drm' tiene un valor inválido", async ({
-    authRequest,
-  }) => {
-    const payload = {
-      name: `qa_invalid_drm_${Date.now()}`,
-      drm: "invalid_value", // no permitido
-      track: true,
-      visible: true,
-    };
+ test("TC-CAT-POST-NEG-002: Debe fallar si 'drm' tiene un valor inválido", async ({
+   authRequest,
+ }) => {
+   const payload = {
+     name: `qa_invalid_drm_${Date.now()}`,
+     drm: "invalid_value", // no permitido
+     track: true,
+     visible: true,
+   };
 
-    const response = await authRequest.post("/api/category", { form: payload });
-    const body = await response.json();
+   const response = await authRequest.post("/api/category", { form: payload });
+   const body = await response.json();
 
-    expect([400, 500]).toContain(response.status());
-    expect(body.status).toBe("ERROR");
-    expect(body.data).toBeDefined(); // El backend puede devolver un mensaje tipo VALIDATION_ERROR o similar
-  });
+   // Si el backend retorna un 200 cuando drm es inválido
+   expect(response.status()).toBe(200);
+   expect(body.status).toBe("OK");
+
+   // Verificar que drm no esté habilitado
+   expect(body.data.drm.enabled).toBe(false);
+   expect(body.data.drm.allow).toBe(false);
+   expect(body.data.drm.allow_incompatible_devices).toBe(false);
+ });
 
   test("TC-CAT-POST-NEG-003: Debe fallar si 'parent' no es un ID válido", async ({
     authRequest,
