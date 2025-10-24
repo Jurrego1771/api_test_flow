@@ -3,20 +3,33 @@ const { test } = require("./authRequest.fixture");
 
 exports.test = test.extend({
   couponGroup: async ({ authRequest }, use) => {
-    const payload = {
-      coupon_group_name: `qa_auto_${Date.now()}`,
-      coupon_group_gateway: "Stripe",
-    };
+    // 🔍 Primero consultar si ya existe un grupo
+    const existingGroupsResponse = await authRequest.get("/api/coupon-group");
+    const existingGroups = await existingGroupsResponse.json();
 
-    // 🟢 Crear grupo de cupones
-    const response = await authRequest.post(`/api/coupon-group`, { data: payload });
-    const body = await response.json();
-    test.expect(response.ok()).toBeTruthy();
+    if (existingGroups.data && existingGroups.data.length > 0) {
+      // ✅ Usar grupo existente
+      const groupData = existingGroups.data[0];
+      console.log(`Usando grupo existente: ${groupData.coupon_group_name}`);
+      await use(groupData);
+    } else {
+      // 🆕 Crear nuevo grupo solo si no existe
+      const payload = {
+        coupon_group_name: `qa_auto_${Date.now()}`,
+        coupon_group_gateway: "Stripe",
+      };
 
-    const groupData = body.data;
-    await use(groupData);
+      const response = await authRequest.post(`/api/coupon-group`, {
+        data: payload,
+      });
+      const body = await response.json();
+      test.expect(response.ok()).toBeTruthy();
 
-    // 🔴 Eliminar grupo al finalizar
-    await authRequest.delete(`/api/coupon-group/${groupData._id}`);
+      const groupData = body.data;
+      console.log(`Creado nuevo grupo: ${groupData.coupon_group_name}`);
+      await use(groupData);
+
+      
+    }
   },
 });
