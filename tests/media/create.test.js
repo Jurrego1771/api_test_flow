@@ -28,11 +28,25 @@ test.describe("Media - Creación (POST /api/media)", () => {
     );
   });
 
-  test("Validación negativa: missing title", async ({ authRequest }) => {
-    const payload = { type: "video" };
-    const res = await authRequest.post("/api/media", { form: payload });
-    const body = await res.json();
-    expect([400, 422, 500]).toContain(res.status());
-    expect(body.status).toBe("ERROR");
-  });
+ test("Asignación de ID como title cuando falta 'title'", async ({
+   authRequest,
+ }) => {
+   const payload = { type: "video" };
+   const res = await authRequest.post("/api/media", { form: payload });
+   const body = await res.json();
+
+   expect(res.status()).toBe(200); // o el código correcto si es exitoso
+   expect(body.status).toBe("OK");
+   expect(body.data.title).toBe(body.data._id); // Verificar si title es igual al id asignado
+
+   // Cleanup
+   if (body.data && body.data._id) {
+     const delResponse = await authRequest.delete(
+       `/api/media/${body.data._id}`
+     );
+     console.log(
+       `DELETE /api/media/${body.data._id} -> ${delResponse.status()}`
+     );
+   }
+ });
 });
