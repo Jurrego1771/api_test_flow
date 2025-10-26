@@ -1,5 +1,5 @@
 const { test, expect } = require("../../fixtures");
-const { logApiResult } = require("../utils/logger");
+const logger = require("../utils/logger");
 
 test.describe("🎬 Media - Eliminación )", () => {
   test("Crear media temporal y eliminarla", async ({ authRequest }) => {
@@ -10,30 +10,24 @@ test.describe("🎬 Media - Eliminación )", () => {
       visible: "false",
       is_published: "false",
     };
-    const createEndpoint = "/api/media";
-    const t0 = Date.now();
-    const createRes = await authRequest.post(createEndpoint, { form: payload });
+    const createRes = await authRequest.post("/api/media", { form: payload });
     const createBody = await createRes.json();
-    logApiResult("POST", createEndpoint, createRes.status(), Date.now() - t0, createBody);
     expect(createRes.ok()).toBeTruthy();
     const created = Array.isArray(createBody.data)
       ? createBody.data[0]
       : createBody.data;
 
     // Eliminar
-    const delEndpoint = `/api/media/${created._id}`;
-    const t1 = Date.now();
-    const delRes = await authRequest.delete(delEndpoint);
+    const delRes = await authRequest.delete(`/api/media/${created._id}`);
     const delText = await delRes.text();
-    logApiResult("DELETE", delEndpoint, delRes.status(), Date.now() - t1, delText);
+    logger.info(
+      `DELETE /api/media/${created._id} -> ${delRes.status()} ${delText}`
+    );
     expect(delRes.ok()).toBeTruthy();
 
     // Verificar que ya no existe
-    const getEndpoint = `/api/media/${created._id}`;
-    const t2 = Date.now();
-    const getRes = await authRequest.get(getEndpoint);
+    const getRes = await authRequest.get(`/api/media/${created._id}`);
     const getBody = await getRes.json();
-    logApiResult("GET", getEndpoint, getRes.status(), Date.now() - t2, getBody);
     expect(getRes.status()).toBe(404);
     expect(getBody.status).toBe("ERROR");
     expect(getBody.data).toBe("NOT_FOUND");
@@ -41,11 +35,8 @@ test.describe("🎬 Media - Eliminación )", () => {
 
   test("Negativo: eliminar media inexistente", async ({ authRequest }) => {
     const fakeId = "000000000000000000000000";
-    const endpoint = `/api/media/${fakeId}`;
-    const t0 = Date.now();
-    const delRes = await authRequest.delete(endpoint);
+    const delRes = await authRequest.delete(`/api/media/${fakeId}`);
     const delBody = await delRes.json().catch(() => ({}));
-    logApiResult("DELETE", endpoint, delRes.status(), Date.now() - t0, delBody);
     expect([200, 400, 404, 500]).toContain(delRes.status());
     expect(["OK", "ERROR", undefined]).toContain(delBody.status);
   });

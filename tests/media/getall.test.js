@@ -1,11 +1,9 @@
 const { test, expect } = require("../../fixtures");
-const { logApiResult } = require("../utils/logger");
+const logger = require("../utils/logger");
 
 test.describe("🎬 Media all", () => {
   test("GET /api/media all false", async ({ authRequest }) => {
-    const endpoint = "/api/media?all=false&limit=1";
-    const t0 = Date.now();
-    const res = await authRequest.get(endpoint);
+    const res = await authRequest.get("/api/media?all=false&limit=1");
     expect(res.ok()).toBeTruthy();
 
     const body = await res.json();
@@ -13,13 +11,14 @@ test.describe("🎬 Media all", () => {
       (media) => media.is_published === true
     );
     expect(allPublished).toBe(true);
-    logApiResult("GET", endpoint, res.status(), Date.now() - t0, { status: body.status, data: `[${body.data.length}]` });
+
+    logger.info(
+      `📡 GET /api/media all=false - Status: ${res.status()}, Published: ${allPublished}`
+    );
   });
 
   test("GET /api/media all true", async ({ authRequest }) => {
-    const endpoint = "/api/media?all=true&limit=1";
-    const t0 = Date.now();
-    const res = await authRequest.get(endpoint);
+    const res = await authRequest.get("/api/media?all=true&limit=1");
     expect(res.ok()).toBeTruthy();
 
     const body = await res.json();
@@ -27,7 +26,10 @@ test.describe("🎬 Media all", () => {
       (media) => media.is_published === false
     );
     expect(hasUnpublished).toBe(true);
-    logApiResult("GET", endpoint, res.status(), Date.now() - t0, { status: body.status, data: `[${body.data.length}]` });
+
+    logger.info(
+      `📡 GET /api/media all=true - Status: ${res.status()}, Has Unpublished: ${hasUnpublished}`
+    );
   });
 });
 

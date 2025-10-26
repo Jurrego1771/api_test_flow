@@ -1,6 +1,5 @@
 const { test } = require("../../fixtures/category.fixture");
 const { expect } = require("@playwright/test");
-const { logApiResult } = require("../utils/logger");
 
 test.describe("POST /api/category - Creación de categorías", () => {
   test("TC-CAT-POST-001: Crear categoría mínima (solo name)", async ({
@@ -9,11 +8,8 @@ test.describe("POST /api/category - Creación de categorías", () => {
     const name = `qa_min_${Date.now()}`;
     const payload = { name };
 
-    const endpoint = "/api/category";
-    const t0 = Date.now();
-    const response = await authRequest.post(endpoint, { form: payload });
+    const response = await authRequest.post("/api/category", { form: payload });
     const body = await response.json();
-    logApiResult("POST", endpoint, response.status(), Date.now() - t0, body);
 
     expect(response.status()).toBe(200);
     expect(body.status).toBe("OK");
@@ -42,11 +38,8 @@ test.describe("POST /api/category - Creación de categorías", () => {
       visible: false,
     };
 
-    const endpoint = "/api/category";
-    const t0 = Date.now();
-    const response = await authRequest.post(endpoint, { form: payload });
+    const response = await authRequest.post("/api/category", { form: payload });
     const body = await response.json();
-    logApiResult("POST", endpoint, response.status(), Date.now() - t0, body);
 
     expect(response.status()).toBe(200);
     expect(body.status).toBe("OK");
@@ -74,11 +67,8 @@ test.describe("POST /api/category - Creación de categorías", () => {
       visible: true,
     };
 
-    const endpoint = "/api/category";
-    const t0 = Date.now();
-    const response = await authRequest.post(endpoint, { form: payload });
+    const response = await authRequest.post("/api/category", { form: payload });
     const body = await response.json();
-    logApiResult("POST", endpoint, response.status(), Date.now() - t0, body);
 
     expect(response.status()).toBe(400);
     expect(body.status).toBe("ERROR");
@@ -95,11 +85,8 @@ test.describe("POST /api/category - Creación de categorías", () => {
      visible: true,
    };
 
-  const endpoint = "/api/category";
-  const t0 = Date.now();
-  const response = await authRequest.post(endpoint, { form: payload });
-  const body = await response.json();
-  logApiResult("POST", endpoint, response.status(), Date.now() - t0, body);
+   const response = await authRequest.post("/api/category", { form: payload });
+   const body = await response.json();
 
    // Si el backend retorna un 200 cuando drm es inválido
    expect(response.status()).toBe(200);
@@ -121,11 +108,8 @@ test.describe("POST /api/category - Creación de categorías", () => {
       visible: true,
     };
 
-    const endpoint = "/api/category";
-    const t0 = Date.now();
-    const response = await authRequest.post(endpoint, { form: payload });
+    const response = await authRequest.post("/api/category", { form: payload });
     const body = await response.json();
-    logApiResult("POST", endpoint, response.status(), Date.now() - t0, body);
 
     expect([400, 500]).toContain(response.status());
     expect(body.status).toBe("ERROR");
