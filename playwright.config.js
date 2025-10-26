@@ -6,15 +6,17 @@ module.exports = defineConfig({
   timeout: 30_000,
 
   use: {
-    baseURL: process.env.BASE_URL,
+    baseURL: process.env.BASE_URL, // solo API; sin fallback local a server
+    headless: true,
+    viewport: { width: 1280, height: 720 },
   },
 
-  // Configuración para reportes HTML
+  // Sin servidor web local; solo pruebas de API/endpoint
+
+  // 🔹 Configuración de reportes
   reporter: [
     ["list"], // salida en consola
-    ["json", { outputFile: "test-results/results.json" }], // 🧾 para Slack
-    ["html", { outputFolder: "playwright-report" }], // 🌐 para GitHub Pages
+    ["json", { outputFile: "test-results/results.json" }], // 🧾 útil para Slack o CI
+    ["html", { outputFolder: "playwright-report", open: "never" }], // 🌐 reporte para Pages
   ],
-
-  reporter: [["html", { outputFolder: "playwright-report" }]],
 });

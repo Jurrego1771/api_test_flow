@@ -1,7 +1,7 @@
 const { test, expect } = require("../../fixtures");
 const logger = require("../utils/logger");
 
-test.describe("Media - Eliminación (DELETE /api/media/{id})", () => {
+test.describe("🎬 Media - Eliminación )", () => {
   test("Crear media temporal y eliminarla", async ({ authRequest }) => {
     // Crear
     const payload = {

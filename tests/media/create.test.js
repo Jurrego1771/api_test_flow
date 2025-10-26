@@ -1,7 +1,7 @@
 const { test, expect } = require("../../fixtures");
 const logger = require("../utils/logger");
 
-test.describe("Media - Creación (POST /api/media)", () => {
+test.describe(" 🎬 Media - Creación )", () => {
   test("Crear media mínima (title, type)", async ({ authRequest }) => {
     const payload = {
       title: `qa_media_${Date.now()}`,
@@ -28,25 +28,25 @@ test.describe("Media - Creación (POST /api/media)", () => {
     );
   });
 
- test("Asignación de ID como title cuando falta 'title'", async ({
-   authRequest,
- }) => {
-   const payload = { type: "video" };
-   const res = await authRequest.post("/api/media", { form: payload });
-   const body = await res.json();
+  test("Asignación de ID como title cuando falta 'title'", async ({
+    authRequest,
+  }) => {
+    const payload = { type: "video" };
+    const res = await authRequest.post("/api/media", { form: payload });
+    const body = await res.json();
 
-   expect(res.status()).toBe(200); // o el código correcto si es exitoso
-   expect(body.status).toBe("OK");
-   expect(body.data.title).toBe(body.data._id); // Verificar si title es igual al id asignado
+    expect(res.status()).toBe(200); // o el código correcto si es exitoso
+    expect(body.status).toBe("OK");
+    expect(body.data.title).toBe(body.data._id); // Verificar si title es igual al id asignado
 
-   // Cleanup
-   if (body.data && body.data._id) {
-     const delResponse = await authRequest.delete(
-       `/api/media/${body.data._id}`
-     );
-     console.log(
-       `DELETE /api/media/${body.data._id} -> ${delResponse.status()}`
-     );
-   }
- });
+    // Cleanup
+    if (body.data && body.data._id) {
+      const delResponse = await authRequest.delete(
+        `/api/media/${body.data._id}`
+      );
+      console.log(
+        `DELETE /api/media/${body.data._id} -> ${delResponse.status()}`
+      );
+    }
+  });
 });
