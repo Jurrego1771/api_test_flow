@@ -1,7 +1,7 @@
 const { test, expect } = require("../../fixtures");
 const logger = require("../utils/logger");
 
-test.describe("Media all", () => {
+test.describe("🎬 Media all", () => {
   test("GET /api/media all false", async ({ authRequest }) => {
     const res = await authRequest.get("/api/media?all=false&limit=1");
     expect(res.ok()).toBeTruthy();
@@ -33,7 +33,7 @@ test.describe("Media all", () => {
   });
 });
 
-test.describe("Filtro Media without_category", () => {
+test.describe("🎬 Filtro Media without_category", () => {
   test("without_category=true - sin categorías", async ({ authRequest }) => {
     const res = await authRequest.get("/api/media?without_category=true");
     expect(res.ok()).toBeTruthy();
@@ -72,7 +72,7 @@ test.describe("Filtro Media without_category", () => {
   });
 });
 
-test.describe("Get media con filtro logico sin categoria", () => {
+test.describe("🎬 Get  filtro logico sin categoria", () => {
   test("debe retornar vacio por que el id tiene categoria y pasamos without_category=true", async ({
     authRequest,
   }) => {

@@ -8,7 +8,7 @@ let generatedCouponCodes = [];
 let generatedCouponIds = [];
 let allCoupons = [];
 
-test.describe("🎫 Cupones API Tests - /api/coupon", () => {
+test.describe("🎫 Cupones ", () => {
   test.beforeAll(async ({ authRequest }) => {
     logger.info("🎫 Iniciando tests completos de API Cupones");
 
@@ -58,7 +58,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
 
   // ================== TESTS GET ==================
 
-  test("TC-001: GET /api/coupon - Verificar respuesta básica", async ({
+  test("TC-001:  Verificar respuesta básica", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Verificar respuesta básica de cupones");
@@ -79,7 +79,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     logger.info("✅ Respuesta básica verificada");
   });
 
-  test("TC-002: GET /api/coupon - Verificar filtro por custom_code", async ({
+  test("TC-002: Verificar filtro por custom_code", async ({
     authRequest,
     coupon,
   }) => {
@@ -114,7 +114,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     logger.info(`✅ Cupón encontrado por código: ${coupon.custom_code}`);
   });
 
-  test("TC-003: GET /api/coupon - Validar estructura de datos", async ({
+  test("TC-003:  Validar estructura de datos", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Validar estructura de datos de cupones");
@@ -141,7 +141,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     }
   });
 
-  test("TC-004: GET /api/coupon - Test de paginación", async ({
+  test("TC-004:  Test de paginación", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Validar paginación de cupones");
@@ -160,7 +160,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     logger.info("✅ Paginación validada");
   });
 
-  test("TC-005: GET /api/coupon - Test performance básico", async ({
+  test("TC-005:  Test performance básico", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Performance básico");
@@ -180,7 +180,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
 
   // ================== TESTS POST ==================
 
-  test("TC-006: POST /api/coupon - Crear cupón no reutilizable (is_reusable: false)", async ({
+  test("TC-006: Crear cupón no reutilizable (is_reusable: false)", async ({
     authRequest,
     coupon,
   }) => {
@@ -246,7 +246,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     }
   });
 
-  test("TC-007: POST /api/coupon - Crear cupón reutilizable con código personalizado", async ({
+  test("TC-007: Crear cupón reutilizable con código personalizado", async ({
     authRequest,
     coupon,
   }) => {
@@ -307,7 +307,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     }
   });
 
-  test("TC-008: POST /api/coupon - Error al crear cupón con código duplicado", async ({
+  test("TC-008:  Error al crear cupón con código duplicado", async ({
     authRequest,
     coupon,
   }) => {
@@ -373,7 +373,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     logger.info(`✅ Error esperado al intentar duplicar código: ${body.data}`);
   });
 
-  test("TC-009: POST /api/coupon - Error con datos inválidos", async ({
+  test("TC-009:  Error con datos inválidos", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Error con datos inválidos");
@@ -416,7 +416,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
 
   // ================== TESTS INDIVIDUALES ==================
 
-  test("TC-010: GET /api/coupon/{coupon_id} - Obtener cupón por ID", async ({
+  test("TC-010:  Obtener cupón por ID", async ({
     authRequest,
     coupon,
   }) => {
@@ -442,7 +442,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     logger.info(`✅ Cupón obtenido: ${retrievedCoupon.code}`);
   });
 
-  test("TC-011: GET /api/coupon/{coupon_code}/search - Buscar cupón por código", async ({
+  test("TC-011: G Buscar cupón por código", async ({
     authRequest,
     coupon,
   }) => {
@@ -461,7 +461,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     logger.info(`✅ Cupón encontrado por código: ${couponCode}`);
   });
 
-  test("TC-012: DELETE /api/coupon/{coupon_id} - Crear y eliminar cupón temporal", async ({
+  test("TC-012:  Crear y eliminar cupón temporal", async ({
     authRequest,
     coupon,
   }) => {
@@ -529,7 +529,7 @@ test.describe("🎫 Cupones API Tests - /api/coupon", () => {
     );
   });
 
-  test("TC-013: GET /api/coupon/{coupon_id} - Error para cupón inexistente", async ({
+  test("TC-013:  Error para cupón inexistente", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Error para cupón inexistente");
