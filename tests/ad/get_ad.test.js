@@ -1,4 +1,5 @@
 const { test, expect } = require("../../fixtures/ad.fixture");
+const { logApiResult } = require("../utils/logger");
 
 test.describe("💵 Ad - GET )", () => {
   test("Obtener Ad por ID (200)", async ({ createAd, authRequest }) => {
@@ -7,11 +8,12 @@ test.describe("💵 Ad - GET )", () => {
       type: "vast",
       is_enabled: "false",
     });
-    
 
-    const res = await authRequest.get(`/api/ad/${ad._id}`);
+    const endpoint = `/api/ad/${ad._id}`;
+    const t0 = Date.now();
+    const res = await authRequest.get(endpoint);
     const body = await res.json();
-    
+    logApiResult("GET", endpoint, res.status(), Date.now() - t0, body);
 
     expect(res.status()).toBe(200);
     expect(body.status).toBe("OK");
@@ -21,9 +23,11 @@ test.describe("💵 Ad - GET )", () => {
 
   test("ID inexistente devuelve 404", async ({ authRequest }) => {
     const nonExistingId = "5ee2704ea666e81cf291a085";
-    const res = await authRequest.get(`/api/ad/${nonExistingId}`);
+    const endpoint = `/api/ad/${nonExistingId}`;
+    const t0 = Date.now();
+    const res = await authRequest.get(endpoint);
     const body = await res.json();
-    
+    logApiResult("GET", endpoint, res.status(), Date.now() - t0, body);
 
     expect(res.status()).toBe(404);
     expect(body.status).toBe("ERROR");

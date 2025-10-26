@@ -1,12 +1,16 @@
 const { test } = require("../../fixtures/category.fixture");
 const { expect } = require("@playwright/test");
+const { logApiResult } = require("../utils/logger");
 
 test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
   test("Debe devolver OK y un array de categorías (sin filtros)", async ({
     authRequest,
   }) => {
-    const response = await authRequest.get("/api/category");
+    const t0 = Date.now();
+    const endpoint = "/api/category";
+    const response = await authRequest.get(endpoint);
     const body = await response.json();
+    logApiResult("GET", endpoint, response.status(), Date.now() - t0, body);
 
     expect(response.ok()).toBeTruthy();
     expect(body.status).toBe("OK");
@@ -17,10 +21,13 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
     authRequest,
     parentCategory,
   }) => {
-    const response = await authRequest.get(
-      `/api/category?category_name=${encodeURIComponent(parentCategory.name)}`
-    );
+    const endpoint = `/api/category?category_name=${encodeURIComponent(
+      parentCategory.name
+    )}`;
+    const t0 = Date.now();
+    const response = await authRequest.get(endpoint);
     const body = await response.json();
+    logApiResult("GET", endpoint, response.status(), Date.now() - t0, body);
 
     expect(response.ok()).toBeTruthy();
     expect(body.status).toBe("OK");
@@ -33,8 +40,11 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
   test("Debe soportar flag full (ruta completa en nombre)", async ({
     authRequest,
   }) => {
-    const response = await authRequest.get("/api/category?full=true");
+    const endpoint = "/api/category?full=true";
+    const t0 = Date.now();
+    const response = await authRequest.get(endpoint);
     const body = await response.json();
+    logApiResult("GET", endpoint, response.status(), Date.now() - t0, body);
 
     expect(response.ok()).toBeTruthy();
     expect(body.status).toBe("OK");
@@ -44,8 +54,11 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
   test("Debe soportar with_count (conteo de hijos)", async ({
     authRequest,
   }) => {
-    const response = await authRequest.get("/api/category?with_count=true");
+    const endpoint = "/api/category?with_count=true";
+    const t0 = Date.now();
+    const response = await authRequest.get(endpoint);
     const body = await response.json();
+    logApiResult("GET", endpoint, response.status(), Date.now() - t0, body);
 
     expect(response.ok()).toBeTruthy();
     expect(body.status).toBe("OK");
@@ -56,10 +69,13 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
     authRequest,
     childCategory,
   }) => {
-    const response = await authRequest.get(
-      `/api/category?category_name=${encodeURIComponent(childCategory.name)}`
-    );
+    const endpoint = `/api/category?category_name=${encodeURIComponent(
+      childCategory.name
+    )}`;
+    const t0 = Date.now();
+    const response = await authRequest.get(endpoint);
     const body = await response.json();
+    logApiResult("GET", endpoint, response.status(), Date.now() - t0, body);
 
     expect(response.ok()).toBeTruthy();
     expect(body.status).toBe("OK");

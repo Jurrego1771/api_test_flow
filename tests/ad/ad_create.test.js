@@ -1,4 +1,5 @@
 const { test, expect } = require("../../fixtures/ad.fixture");
+const { logApiResult } = require("../utils/logger");
 
 test.describe("💵 Ad - Creación )", () => {
   test("Crear Ad mínimo (name, type, flags)", async ({ tempAd }) => {
