@@ -6,9 +6,14 @@ test.describe("💵 Ad - Creación )", () => {
     expect(tempAd).toHaveProperty("_id");
     expect(tempAd).toHaveProperty("name");
     expect(tempAd).toHaveProperty("type");
-    expect(["vast", "vmap", "googleima", "local", "ad-insertion", "adswizz"]).toContain(
-      tempAd.type
-    );
+    expect([
+      "vast",
+      "vmap",
+      "googleima",
+      "local",
+      "ad-insertion",
+      "adswizz",
+    ]).toContain(tempAd.type);
     expect(tempAd).toHaveProperty("is_enabled");
     expect(tempAd).toHaveProperty("preroll_skip_at");
     expect(tempAd).toHaveProperty("min_media_time_length");

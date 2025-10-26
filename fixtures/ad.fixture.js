@@ -1,56 +1,56 @@
 // fixtures/ad.fixture.js
 const { test } = require("./authRequest.fixture");
 
-// Provee un Ad temporal creado para pruebas y lo elimina al finalizar
+// Provee utilidades para crear Ads y un Ad temporal por defecto
 exports.test = test.extend({
-  tempAd: async ({ authRequest }, use) => {
-    const payload = {
-      // application/x-www-form-urlencoded esperado por la API
-      name: `qa_ad_${Date.now()}`,
-      type: "vast", // vast | vmap | googleima | local | ad-insertion | adswizz
-      is_enabled: "false",
-      preroll_skip_at: 0,
-      min_media_time_length: 0,
-      // Campos complejos opcionales pueden omitirse o enviarse vacíos
-      // insertion, schedule, adswizz como objetos; categories/tags/referers como arrays
-    };
+  createAd: async ({ authRequest }, use) => {
+    const createdIds = [];
 
-    let created = null;
-    try {
-      const res = await authRequest.post("/api/ad/new", { form: payload });
+    async function createAd(overrides = {}) {
+      const basePayload = {
+        name: `qa_ad_${Date.now()}`,
+        type: "vast",
+        is_enabled: "false",
+        preroll_skip_at: 0,
+        min_media_time_length: 0,
+      };
+
+      const form = { ...basePayload, ...overrides };
+      const res = await authRequest.post("/api/ad/new", { form });
       const body = await res.json();
-
-      if (res.ok() && body?.status === "OK") {
-        const raw = body.data;
-        created = Array.isArray(raw) ? raw[0] : raw;
-        if (created && !created.name) created.name = payload.name;
-      } else {
-        console.log(
-          `[ad.fixture] No se pudo crear Ad temporal. status=${res.status()} body=${JSON.stringify(body)}`
-        );
+      if (!(res.ok() && body?.status === "OK")) {
+        throw new Error(`createAd fallo: status=${res.status()} body=${JSON.stringify(body)}`);
       }
-    } catch (e) {
-      console.log(`[ad.fixture] Error creando Ad temporal:`, e);
+      const raw = body.data;
+      const ad = Array.isArray(raw) ? raw[0] : raw;
+      if (ad && ad._id) createdIds.push(ad._id);
+      return { ad, res, body };
     }
 
-    await use(created);
+    await use(createAd);
 
-    // Cleanup si se creó (si hay endpoint DELETE disponible)
-    if (created && created._id) {
+    for (const id of createdIds) {
       try {
-        const delRes = await authRequest.delete(`/api/ad/${created._id}`);
+        const delRes = await authRequest.delete(`/api/ad/${id}`);
         const delText = await delRes.text();
-        console.log(
-          `[ad.fixture] DELETE temp ad ${created._id} -> ${delRes.status()} ${delText}`
-        );
+        console.log(`[ad.fixture] DELETE ${id} -> ${delRes.status()} ${delText}`);
       } catch (e) {
-        console.log(
-          `[ad.fixture] Error eliminando Ad temporal ${created._id}:`,
-          e
-        );
+        console.log(`[ad.fixture] Error eliminando Ad ${id}:`, e);
       }
     }
   },
+
+  tempAd: async ({ createAd }, use) => {
+    let ad = null;
+    try {
+      const result = await createAd();
+      ad = result.ad;
+    } catch (e) {
+      console.log(`[ad.fixture] Error creando tempAd:`, e);
+    }
+    await use(ad);
+  },
 });
+
 
 
