@@ -1,26 +1,29 @@
 const { test, expect } = require("../../fixtures/ad.fixture");
 
-test.describe("💵 Ad - VMAP )", () => {
-  test("Crear Ad VMAP con payload de ejemplo", async ({ createAd }) => {
-    const vmapTag =
-      "https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/external/vmap_ad_samples&sz=640x480&cust_params=sample_ar%3Dpremidpostpod&ciu_szs=300x250&gdfp_req=1&ad_rule=1&output=vmap&unviewed_position_start=1&env=vp&cmsid=496&vid=short_onecue&correlator=";
-
+test.describe("💵 Ad - GET )", () => {
+  test("Obtener Ad por ID (200)", async ({ createAd, authRequest }) => {
     const { ad } = await createAd({
-      name: "prueba vmap",
-      type: "vmap",
+      name: `qa_ad_get_${Date.now()}`,
+      type: "vast",
       is_enabled: "false",
-      "vmap[tag]": vmapTag,
-      "vmap[tag_mobile]": vmapTag,
-      // opcionales
-      "adswizz[zone]": "",
-      categories: "",
-      tags: "",
-      referers: "",
     });
 
-    expect(ad).toBeDefined();
-    expect(ad).toHaveProperty("_id");
-    expect(ad.type).toBe("vmap");
-    expect(ad.name).toContain("prueba");
+    const res = await authRequest.get(`/api/ad/${ad._id}`);
+    const body = await res.json();
+
+    expect(res.status()).toBe(200);
+    expect(body.status).toBe("OK");
+    expect(body.data).toBeDefined();
+    expect(body.data._id).toBe(ad._id);
+  });
+
+  test("ID inexistente devuelve 404", async ({ authRequest }) => {
+    const nonExistingId = "5ee2704ea666e81cf291a085";
+    const res = await authRequest.get(`/api/ad/${nonExistingId}`);
+    const body = await res.json();
+
+    expect(res.status()).toBe(404);
+    expect(body.status).toBe("ERROR");
+    expect(body.data).toBe("NOT_FOUND");
   });
 });
