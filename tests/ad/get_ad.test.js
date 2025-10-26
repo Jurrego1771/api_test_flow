@@ -7,9 +7,11 @@ test.describe("💵 Ad - GET )", () => {
       type: "vast",
       is_enabled: "false",
     });
+    
 
     const res = await authRequest.get(`/api/ad/${ad._id}`);
     const body = await res.json();
+    
 
     expect(res.status()).toBe(200);
     expect(body.status).toBe("OK");
@@ -21,6 +23,7 @@ test.describe("💵 Ad - GET )", () => {
     const nonExistingId = "5ee2704ea666e81cf291a085";
     const res = await authRequest.get(`/api/ad/${nonExistingId}`);
     const body = await res.json();
+    
 
     expect(res.status()).toBe(404);
     expect(body.status).toBe("ERROR");
