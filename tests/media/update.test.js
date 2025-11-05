@@ -59,3 +59,70 @@ test.describe("Media - Actualización (POST /api/media/{id})", () => {
     expect(["OK", "ERROR"]).toContain(updBody.status);
   });
 });
+
+// Bloque de pruebas para metas: GET / DELETE / TRANSCODE
+test.describe("Media - Metas (GET/DELETE/TRANSCODE)", () => {
+  test("GET-META-OK-01 - Obtener metas correctamente", async ({
+    authRequest,
+  }) => {
+    // Buscar una media que ya tenga metas en el sistema
+    const resAll = await authRequest.get("/api/media?all=true&limit=50");
+    expect(resAll.ok()).toBeTruthy();
+    const allBody = await resAll.json();
+
+    const mediaWithMeta = allBody.data.find(
+      (m) => Array.isArray(m.meta) && m.meta.length > 0
+    );
+    expect(
+      mediaWithMeta,
+      "No se encontró media con metas para probar"
+    ).toBeTruthy();
+
+    const media_id = mediaWithMeta._id;
+    const res = await authRequest.get(`/api/media/${media_id}/meta`);
+    expect(res.status()).toBe(200);
+
+    const body = await res.json();
+    expect(body.status).toBe("OK");
+    // La API puede devolver { data: { meta: [...] } } o { data: [...] }
+    const metas = body.data?.meta ?? body.data;
+    expect(Array.isArray(metas)).toBe(true);
+    expect(metas.length).toBeGreaterThan(0);
+  });
+
+  test("GET-META-ERR-01 - Media no existente", async ({ authRequest }) => {
+    const res = await authRequest.get(
+      "/api/media/666666666666666666666666/meta"
+    );
+    const body = await res.json();
+    expect(res.status()).toBe(200);
+    expect(body.status).toBe("ERROR");
+    expect(body.data).toBe("NOT_FOUND");
+  });
+
+  test("DEL-META-OK-01 - Eliminar meta NO original", async ({
+    authRequest,
+  }) => {
+    // Buscar una media que tenga al menos una meta no original
+    const resAll = await authRequest.get("/api/media?all=true&limit=50");
+    expect(resAll.ok()).toBeTruthy();
+    const allBody = await resAll.json();
+
+    const target = allBody.data.find(
+      (m) => Array.isArray(m.meta) && m.meta.some((mm) => !mm.is_original)
+    );
+    expect(
+      target,
+      "No se encontró media con meta no original para eliminar"
+    ).toBeTruthy();
+
+    const media_id = target._id;
+    const metaObj = target.meta.find((mm) => !mm.is_original);
+    const meta_no_original_id = metaObj._id ?? metaObj.id ?? metaObj;
+
+    const delRes = await authRequest.delete(
+      `/api/media/${media_id}/meta/${meta_no_original_id}`
+    );
+    expect(delRes.status()).toBe(200);
+  });
+});
