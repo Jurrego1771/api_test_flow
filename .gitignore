@@ -32,3 +32,7 @@ logs
 
 # Coverage
 coverage/
+docs/
+
+# Project under test (SM2 / StreamManager)
+sm2/
