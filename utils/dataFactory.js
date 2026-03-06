@@ -11,7 +11,7 @@ class DataFactory {
 
   generateTitle(suffix = "Item") {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    return `${this.prefix} ${suffix} ${timestamp} - ${faker.string.alphanumeric(6)}`;
+    return `${this.prefix} ${suffix} ${timestamp} - ${faker.random.alphaNumeric(6)}`;
   }
 
   // --- Medias ---
@@ -34,7 +34,11 @@ class DataFactory {
       type: "manual",
       featured: false,
       no_ad: false,
-      medias: mediaIds, // Array de IDs
+      rules: {
+        manual: {
+          medias: mediaIds,
+        },
+      },
       ...overrides,
     };
   }
@@ -45,10 +49,56 @@ class DataFactory {
       description: faker.lorem.sentence(),
       type: "smart",
       featured: false,
-      // Reglas smart por defecto (traer todo) o personalizadas
-      limit: 10,
-      sort_by: "date_created",
-      sort_asc: false,
+      rules: {
+        smart: {
+          sort_by: "date_created",
+          sort_asc: false,
+          limit: 10,
+          ...overrides.rules?.smart,
+        },
+      },
+      ...overrides,
+    };
+  }
+
+  generateSeriesPlaylistPayload(overrides = {}) {
+    return {
+      name: this.generateTitle("PL-Series"),
+      description: faker.lorem.sentence(),
+      type: "series",
+      featured: false,
+      rules: {
+        series: {
+          seasons: [
+            {
+              number: 1,
+              description: "Season 1",
+              episodes: [],
+            },
+          ],
+          ...overrides.rules?.series,
+        },
+      },
+      ...overrides,
+    };
+  }
+
+  generatePlayoutPlaylistPayload(overrides = {}) {
+    return {
+      name: this.generateTitle("PL-Playout"),
+      description: faker.lorem.sentence(),
+      type: "playout",
+      featured: false,
+      rules: {
+        playout: [
+          {
+            sort_by: "date_created",
+            sort_asc: false,
+            limit: 10,
+          },
+        ],
+        ...overrides.rules?.playout,
+      },
       ...overrides,
     };
   }
@@ -164,6 +214,53 @@ class DataFactory {
       rating: 7,
       ...overrides,
     };
+  }
+
+  // --- Access Restrictions ---
+  generateAccessRestrictionPayload(overrides = {}) {
+    return {
+      name: this.generateTitle("AR"),
+      media_closed_access_restriction: "disable",
+      media_aes_restriction: "disable",
+      media_drm_restriction: "disable",
+      categories: [],
+      apply_to_sub_categories: true,
+      access_rules: [],
+      ...overrides,
+    };
+  }
+
+  generateAccessRestrictionWithGeoRule(countries = ["US", "CA"], overrides = {}) {
+    return this.generateAccessRestrictionPayload({
+      access_rules: [
+        {
+          context: "geo",
+          access: true,
+          allow_unknown: true,
+          exclusive: false,
+          rules: countries,
+          type: "country",
+          client_validation: false,
+        },
+      ],
+      ...overrides,
+    });
+  }
+
+  generateAccessRestrictionWithIPRule(ips = ["192.168.1.0/24"], overrides = {}) {
+    return this.generateAccessRestrictionPayload({
+      access_rules: [
+        {
+          context: "ip",
+          access: true,
+          allow_unknown: true,
+          exclusive: false,
+          rules: ips,
+          client_validation: false,
+        },
+      ],
+      ...overrides,
+    });
   }
 }
 

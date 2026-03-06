@@ -17,6 +17,18 @@ module.exports = defineConfig({
   reporter: [
     ["list"], // salida en consola
     ["json", { outputFile: "test-results/results.json" }], // 🧾 útil para Slack o CI
-    ["html", { outputFolder: "playwright-report", open: "never" }], // 🌐 reporte para Pages
+    ["html", { outputFolder: "playwright-report", open: "never" }], // 🌐 reporte Playwright (fallback)
+    [
+      "allure-playwright",
+      {
+        detail: true,              // incluye steps internos de Playwright
+        outputFolder: "allure-results", // datos crudos; el HTML se genera en CI
+        suiteTitle: true,          // usa el nombre del describe como Suite
+        environmentInfo: {         // metadata visible en el panel Environment
+          node_version: process.version,
+          base_url: process.env.BASE_URL || "N/A",
+        },
+      },
+    ],
   ],
 });

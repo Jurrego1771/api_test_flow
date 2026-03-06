@@ -11,18 +11,25 @@
     "test:media": "playwright test tests/media/",
     "test:live": "playwright test tests/live/",
     "test:show": "playwright test tests/show/",
+    "test:playlist": "playwright test tests/playlist/",
     "test:debug": "playwright test --debug",
     "install:browsers": "playwright install",
-    "notify:slack": "node notify-slack.js"
+    "notify:slack": "node notify-slack.js",
+    "allure:generate": "allure generate allure-results --clean -o allure-report",
+    "allure:open": "allure open allure-report",
+    "allure:serve": "allure serve allure-results",
+    "allure:clean": "rimraf allure-results allure-report"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@faker-js/faker": "^10.3.0",
+    "@faker-js/faker": "^7.6.0",
     "@playwright/test": "^1.56.1",
     "@types/node": "^24.8.1",
+    "allure-commandline": "^2.37.0",
+    "allure-playwright": "^3.5.0",
     "zod": "^4.3.6"
   },
   "dependencies": {
