@@ -1,0 +1,18 @@
+Usando grupo existente: qa_auto_1761259566997 (ID: 68fab02e88f606b4d677afe3)
+{
+  "coupon_total": 42,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 42,
+  "_id": "68fab02e88f606b4d677afe3",
+  "name": "qa_auto_1761259566997",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2025-10-23T22:46:06.174Z",
+  "_name": "qa_auto_1761259566997",
+  "__v": 0
+}
+[03:27:17] info: 🧪 Test: Error al crear cupón con código duplicado
+[03:27:18] info: 🎯 Intentando crear cupón con código duplicado: test1772767637409
+[03:27:18] info: 📡 Respuesta - Status: 400, Data Status: ERROR
+[03:27:18] info: ✅ Error esperado al intentar duplicar código: COUPON_CODE_ALREADY_EXISTS
+[Fixture] Intentando eliminar cupón: 69aa4995feaa1115d00d54e7
+[Fixture] DELETE /api/coupon/69aa4995feaa1115d00d54e7 -> status=200 body={"status":"OK"}

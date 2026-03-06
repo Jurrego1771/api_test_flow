@@ -1,0 +1,20 @@
+Usando grupo existente: qa_auto_1761259566997 (ID: 68fab02e88f606b4d677afe3)
+{
+  "coupon_total": 41,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 41,
+  "_id": "68fab02e88f606b4d677afe3",
+  "name": "qa_auto_1761259566997",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2025-10-23T22:46:06.174Z",
+  "_name": "qa_auto_1761259566997",
+  "__v": 0
+}
+[03:27:16] info: 🧪 Test: Crear cupón no reutilizable
+[03:27:16] info: 🎯 Creando cupón con Group ID: 68fab02e88f606b4d677afe3
+[03:27:16] info: 📡 Respuesta - Status: 200, Data Status: OK
+[03:27:16] info: ✅ Cupón no reutilizable creado: N-KUCM7-TF-Y (ID: 69aa4994efcead16159434a2)
+[03:27:16] info: 🗑️ Eliminando cupón creado en TC-006: 69aa4994efcead16159434a2
+[03:27:16] info: DELETE TC-006 -> status=200 body={"status":"OK"}
+[Fixture] Intentando eliminar cupón: 69aa4994efcead1615943490
+[Fixture] DELETE /api/coupon/69aa4994efcead1615943490 -> status=200 body={"status":"OK"}
