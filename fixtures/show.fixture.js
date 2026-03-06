@@ -9,7 +9,7 @@ const { faker } = require("@faker-js/faker");
 
 const createShow = async (authRequest, attrs = {}) => {
   const payload = {
-    title: `[QA-AUTO] Show ${faker.string.alphanumeric(6)} ${Date.now()}`,
+    title: `[QA-AUTO] Show ${faker.random.alphaNumeric(6)} ${Date.now()}`,
     type: "tvshow",
     account: process.env.ACCOUNT_ID || "test-account",
     ...attrs,

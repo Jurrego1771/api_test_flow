@@ -28,7 +28,7 @@ function buildFilterQuery(filters) {
 
 async function createMedia(authRequest, attrs = {}) {
   const payload = {
-    title: `qa_${faker.string.alphanumeric(8)}_${Date.now()}`,
+    title: `qa_${faker.random.alphaNumeric(8)}_${Date.now()}`,
     type: "video",
     visible: "true",
     is_published: "false",
@@ -279,7 +279,7 @@ test.describe("3. Read Media (GET /api/media & /api/media/:id)", () => {
 test.describe("4. Partial Update (POST /api/media/:id)", () => {
   test("TC_MED_010_UPDATE_ChangeTitleOnly", async ({ authRequest }) => {
     const media = await createMedia(authRequest, { description: "original_desc" });
-    const newTitle = `updated_${faker.string.alphanumeric(6)}`;
+    const newTitle = `updated_${faker.random.alphaNumeric(6)}`;
 
     try {
       const updRes = await authRequest.post(`/api/media/${media._id}`, {
@@ -533,8 +533,8 @@ test.describe("10. Subrecursos (Metas)", () => {
 // --- 7. Suite: Search (GET /api/media/search) - con seed ---
 
 test.describe("7. Search (GET /api/media/search)", () => {
-  const uniqueTag = `search_${faker.string.uuid()}`;
-  const titlePrefix = `SearchTC_${faker.string.alphanumeric(6)}`;
+  const uniqueTag = `search_${faker.datatype.uuid()}`;
+  const titlePrefix = `SearchTC_${faker.random.alphaNumeric(6)}`;
   let createdIds = [];
 
   test.beforeAll(async ({ authRequest }) => {

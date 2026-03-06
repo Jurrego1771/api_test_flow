@@ -155,7 +155,7 @@ test.describe("Live Stream API", () => {
   test("TC_LIV_004_POST_UpdateNameOnly", async ({ authRequest }) => {
     if (!(await ensureLiveApiAvailable(authRequest))) return;
     const stream = await createLiveStream(authRequest);
-    const newName = `updated_${faker.string.alphanumeric(6)}`;
+    const newName = `updated_${faker.random.alphaNumeric(6)}`;
     try {
       const updRes = await authRequest.post(`${API_BASE}/${stream._id}`, {
         form: { name: newName },
@@ -207,7 +207,7 @@ test.describe("Live Stream API", () => {
 test.describe("2. Búsqueda y Filtros", () => {
   test("TC_LIV_006_GET_SearchByName", async ({ authRequest }) => {
     if (!(await ensureLiveApiAvailable(authRequest))) return;
-    const unique = `qa_search_${Date.now()}_${faker.string.alphanumeric(4)}`;
+    const unique = `qa_search_${Date.now()}_${faker.random.alphaNumeric(4)}`;
     const stream = await createLiveStream(authRequest, { name: unique });
     try {
       const searchRes = await authRequest.get(
