@@ -1,7 +1,0 @@
-[03:27:18] info: 🧪 Test: Error para cupón inexistente
-[03:27:18] info: 🎯 Buscando cupón inexistente con ID: 000000000000000000000000
-[03:27:19] info: ✅ Error esperado para cupón inexistente
-[03:27:19] info: 🎫 Tests completos de API Cupones completados
-[03:27:19] info: 📊 Grupos disponibles: 32
-[03:27:19] info: 📊 Cupones generados en tests: 2
-[03:27:19] info: 🎯 Códigos creados: N-KUCM7-TF-Y, QA-REUSE-637177

@@ -1,4 +1,0 @@
-[03:27:18] info: 🧪 Test: Error con datos inválidos
-[03:27:18] info: 🎯 Enviando datos inválidos para validar manejo de errores
-[03:27:18] info: 📡 Respuesta - Status: 500, Data Status: ERROR
-[03:27:18] info: ✅ Error esperado con datos inválidos (500): COULD_NOT_GET_COUPON_GROUP

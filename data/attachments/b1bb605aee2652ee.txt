@@ -1,2 +1,0 @@
-✅ Creada categoría padre: qa_parent_1772767635415 69aa4993efcead161594341e
-🧹 DELETE parentCategory -> status=200 body={"status":"OK","data":null}

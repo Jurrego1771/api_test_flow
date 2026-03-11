@@ -1,3 +1,0 @@
-[03:27:16] info: 🧪 Test: Performance básico
-[03:27:16] info: ⏱️ Tiempo de respuesta: 96ms
-[03:27:16] info: ✅ Performance básico validado

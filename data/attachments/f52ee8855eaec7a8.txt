@@ -1,0 +1,1 @@
+⚠️ VMS_TOKEN not set in env. Skipping VMS validation. Set VMS_TOKEN in .env to enable this check.

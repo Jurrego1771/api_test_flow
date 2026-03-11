@@ -1,4 +1,0 @@
-[PL] Manual playlist creada en 42ms
-Cleaning up 2 resources...
-Deleted Playlist: 69aa49aaefcead16159438ee
-Deleted Media: 69aa49aaefcead16159438b9
