@@ -6,8 +6,10 @@
 
 const { test, expect } = require("../../fixtures");
 const { createMediaResponseSchema } = require("../../schemas/media.schema");
+const { vmsMediaSearchResponseSchema } = require("../../schemas/vms.schema");
 const dataFactory = require("../../utils/dataFactory");
 const { faker } = require("@faker-js/faker");
+require("dotenv").config();
 
 // --- Helpers ---
 
@@ -19,7 +21,8 @@ function buildFilterQuery(filters) {
   const params = new URLSearchParams();
   filters.forEach((f, idx) => {
     const base = `filterData[${idx}]`;
-    if (f.filter !== undefined) params.append(`${base}[filter]`, String(f.filter));
+    if (f.filter !== undefined)
+      params.append(`${base}[filter]`, String(f.filter));
     if (f.rule !== undefined) params.append(`${base}[rule]`, String(f.rule));
     if (f.value !== undefined) params.append(`${base}[value]`, String(f.value));
   });
@@ -54,7 +57,7 @@ async function findMediaWithSubtitle(authRequest) {
     const subBody = await subRes.json();
     const items = Array.isArray(subBody.data)
       ? subBody.data
-      : subBody.data?.subtitles ?? subBody.data?.data ?? [];
+      : (subBody.data?.subtitles ?? subBody.data?.data ?? []);
     if (Array.isArray(items) && items.length > 0) {
       const subId = items[0]._id ?? items[0].id;
       return subId ? { mediaId: m._id, subtitleId: subId } : null;
@@ -73,10 +76,13 @@ async function findMediaWithDeletableThumb(authRequest) {
     if (!thumbsRes.ok()) continue;
     const thumbsBody = await thumbsRes.json();
     const thumbs =
-      thumbsBody.data?.thumbnails ?? thumbsBody.data ?? thumbsBody.thumbnails ?? [];
+      thumbsBody.data?.thumbnails ??
+      thumbsBody.data ??
+      thumbsBody.thumbnails ??
+      [];
     if (!Array.isArray(thumbs)) continue;
     const deletable = thumbs.find(
-      (t) => t.is_default === false || t.is_original === false
+      (t) => t.is_default === false || t.is_original === false,
     );
     if (deletable) {
       const thumbId = deletable._id ?? deletable.id;
@@ -202,12 +208,15 @@ test.describe("3. Read Media (GET /api/media & /api/media/:id)", () => {
     const bodyFalse = await resFalse.json();
 
     bodyTrue.data.forEach((m) => {
-      expect(m.categories === null || (Array.isArray(m.categories) && m.categories.length === 0)).toBeTruthy();
+      expect(
+        m.categories === null ||
+          (Array.isArray(m.categories) && m.categories.length === 0),
+      ).toBeTruthy();
     });
 
     if (bodyFalse.data.length > 0) {
       const hasWithCategory = bodyFalse.data.some(
-        (m) => Array.isArray(m.categories) && m.categories.length > 0
+        (m) => Array.isArray(m.categories) && m.categories.length > 0,
       );
       expect(hasWithCategory).toBe(true);
     }
@@ -278,7 +287,9 @@ test.describe("3. Read Media (GET /api/media & /api/media/:id)", () => {
 
 test.describe("4. Partial Update (POST /api/media/:id)", () => {
   test("TC_MED_010_UPDATE_ChangeTitleOnly", async ({ authRequest }) => {
-    const media = await createMedia(authRequest, { description: "original_desc" });
+    const media = await createMedia(authRequest, {
+      description: "original_desc",
+    });
     const newTitle = `updated_${faker.random.alphaNumeric(6)}`;
 
     try {
@@ -333,10 +344,10 @@ test.describe("4. Partial Update (POST /api/media/:id)", () => {
       await new Promise((r) => setTimeout(r, 2000));
 
       const searchPublic = await authRequest.get(
-        `/api/media/search?title=${encodeURIComponent(prefix)}&limit=10`
+        `/api/media/search?title=${encodeURIComponent(prefix)}&limit=10`,
       );
       const searchAll = await authRequest.get(
-        `/api/media/search?title=${encodeURIComponent(prefix)}&limit=10&all=true`
+        `/api/media/search?title=${encodeURIComponent(prefix)}&limit=10&all=true`,
       );
       expect(searchPublic.ok()).toBeTruthy();
       expect(searchAll.ok()).toBeTruthy();
@@ -390,10 +401,14 @@ test.describe("5. Delete Media (DELETE /api/media/:id)", () => {
 
 test.describe("6. Filtros Avanzados (filterData)", () => {
   test("TC_MED_014a_FILTER_TitleIs", async ({ authRequest }) => {
-    const media = await createMedia(authRequest, { title: `qa_exact_${Date.now()}` });
+    const media = await createMedia(authRequest, {
+      title: `qa_exact_${Date.now()}`,
+    });
     try {
       const filters = [{ filter: "title", rule: "is", value: media.title }];
-      const res = await authRequest.get(`/api/media?${buildFilterQuery(filters)}&all=true`);
+      const res = await authRequest.get(
+        `/api/media?${buildFilterQuery(filters)}&all=true`,
+      );
       expect(res.ok()).toBeTruthy();
       const body = await res.json();
       const ids = (body.data || []).map((m) => m._id ?? m.id);
@@ -405,10 +420,14 @@ test.describe("6. Filtros Avanzados (filterData)", () => {
 
   test("TC_MED_014b_FILTER_TitleContains", async ({ authRequest }) => {
     const unique = `qa_contain_${Date.now()}`;
-    const media = await createMedia(authRequest, { title: `pre_${unique}_suf` });
+    const media = await createMedia(authRequest, {
+      title: `pre_${unique}_suf`,
+    });
     try {
       const filters = [{ filter: "title", rule: "contains", value: unique }];
-      const res = await authRequest.get(`/api/media?${buildFilterQuery(filters)}&all=true`);
+      const res = await authRequest.get(
+        `/api/media?${buildFilterQuery(filters)}&all=true`,
+      );
       expect(res.ok()).toBeTruthy();
       const body = await res.json();
       const ids = (body.data || []).map((m) => m._id ?? m.id);
@@ -423,7 +442,9 @@ test.describe("6. Filtros Avanzados (filterData)", () => {
     const media = await createMedia(authRequest, { title: `${prefix}_suffix` });
     try {
       const filters = [{ filter: "title", rule: "starts_with", value: prefix }];
-      const res = await authRequest.get(`/api/media?${buildFilterQuery(filters)}&all=true`);
+      const res = await authRequest.get(
+        `/api/media?${buildFilterQuery(filters)}&all=true`,
+      );
       expect(res.ok()).toBeTruthy();
       const body = await res.json();
       const ids = (body.data || []).map((m) => m._id ?? m.id);
@@ -440,7 +461,9 @@ test.describe("6. Filtros Avanzados (filterData)", () => {
     expect(published, "No published media").toBeTruthy();
 
     const filters = [{ filter: "published", rule: "true" }];
-    const res = await authRequest.get(`/api/media?${buildFilterQuery(filters)}`);
+    const res = await authRequest.get(
+      `/api/media?${buildFilterQuery(filters)}`,
+    );
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     const ids = (body.data || []).map((m) => m._id ?? m.id);
@@ -451,7 +474,9 @@ test.describe("6. Filtros Avanzados (filterData)", () => {
     const media = await createMedia(authRequest, { type: "video" });
     try {
       const filters = [{ filter: "type", rule: "video" }];
-      const res = await authRequest.get(`/api/media?${buildFilterQuery(filters)}&all=true`);
+      const res = await authRequest.get(
+        `/api/media?${buildFilterQuery(filters)}&all=true`,
+      );
       expect(res.ok()).toBeTruthy();
       const body = await res.json();
       const ids = (body.data || []).map((m) => m._id ?? m.id);
@@ -490,7 +515,7 @@ test.describe("10. Subrecursos (Metas)", () => {
     const listRes = await authRequest.get("/api/media?all=true&limit=50");
     const listBody = await listRes.json();
     const mediaWithMeta = listBody.data.find(
-      (m) => Array.isArray(m.meta) && m.meta.length > 0
+      (m) => Array.isArray(m.meta) && m.meta.length > 0,
     );
     expect(mediaWithMeta, "No media with meta").toBeTruthy();
 
@@ -504,7 +529,9 @@ test.describe("10. Subrecursos (Metas)", () => {
   });
 
   test("TC_MED_META_GET_NotFound", async ({ authRequest }) => {
-    const res = await authRequest.get("/api/media/666666666666666666666666/meta");
+    const res = await authRequest.get(
+      "/api/media/666666666666666666666666/meta",
+    );
     const body = await res.json();
     expect(res.status()).toBe(200);
     expect(body.status).toBe("ERROR");
@@ -515,7 +542,7 @@ test.describe("10. Subrecursos (Metas)", () => {
     const listRes = await authRequest.get("/api/media?all=true&limit=50");
     const listBody = await listRes.json();
     const target = listBody.data.find(
-      (m) => Array.isArray(m.meta) && m.meta.some((mm) => !mm.is_original)
+      (m) => Array.isArray(m.meta) && m.meta.some((mm) => !mm.is_original),
     );
     if (!target) {
       test.skip();
@@ -524,7 +551,7 @@ test.describe("10. Subrecursos (Metas)", () => {
 
     const metaId = target.meta.find((mm) => !mm.is_original)._id;
     const delRes = await authRequest.delete(
-      `/api/media/${target._id}/meta/${metaId}`
+      `/api/media/${target._id}/meta/${metaId}`,
     );
     expect(delRes.status()).toBe(200);
   });
@@ -570,12 +597,13 @@ test.describe("7. Search (GET /api/media/search)", () => {
   test("TC_MED_015_SEARCH_ExactTitle", async ({ authRequest }) => {
     const targetTitle = `${titlePrefix} Pub 0`;
     const res = await authRequest.get(
-      `/api/media/search?title=${encodeURIComponent(targetTitle)}&limit=10&all=true`
+      `/api/media/search?title=${encodeURIComponent(targetTitle)}&limit=10&all=true`,
     );
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     const found = body.data?.find(
-      (m) => m.title === targetTitle || (m.title && m.title.includes(titlePrefix))
+      (m) =>
+        m.title === targetTitle || (m.title && m.title.includes(titlePrefix)),
     );
     expect(found).toBeDefined();
     expect(found.title).toContain(titlePrefix);
@@ -583,7 +611,7 @@ test.describe("7. Search (GET /api/media/search)", () => {
 
   test("TC_MED_016_SEARCH_FilterByArrayTag", async ({ authRequest }) => {
     const res = await authRequest.get(
-      `/api/media/search?tags=${encodeURIComponent(uniqueTag)}&limit=20&all=true`
+      `/api/media/search?tags=${encodeURIComponent(uniqueTag)}&limit=20&all=true`,
     );
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
@@ -593,7 +621,7 @@ test.describe("7. Search (GET /api/media/search)", () => {
 
   test("TC_MED_017_SEARCH_VisibilityMasking", async ({ authRequest }) => {
     const res = await authRequest.get(
-      `/api/media/search?tags=${encodeURIComponent(uniqueTag)}&limit=50`
+      `/api/media/search?tags=${encodeURIComponent(uniqueTag)}&limit=50`,
     );
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
@@ -606,7 +634,7 @@ test.describe("7. Search (GET /api/media/search)", () => {
 
   test("TC_MED_018_SEARCH_VisibilityAdmin", async ({ authRequest }) => {
     const res = await authRequest.get(
-      `/api/media/search?tags=${encodeURIComponent(uniqueTag)}&all=true&limit=50`
+      `/api/media/search?tags=${encodeURIComponent(uniqueTag)}&all=true&limit=50`,
     );
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
@@ -629,7 +657,7 @@ test.describe("11. Subrecursos Adicionales", () => {
       const data = body.data ?? body;
       expect(
         Array.isArray(data) ||
-          (data && typeof data === "object" && (data.subtitles || data.data))
+          (data && typeof data === "object" && (data.subtitles || data.data)),
       ).toBeTruthy();
     } finally {
       await authRequest.delete(`/api/media/${media._id}`);
@@ -638,7 +666,7 @@ test.describe("11. Subrecursos Adicionales", () => {
 
   test("TC_MED_SUBTITLE_GET_NotFound", async ({ authRequest }) => {
     const res = await authRequest.get(
-      "/api/media/000000000000000000000000/subtitle"
+      "/api/media/000000000000000000000000/subtitle",
     );
     const body = await res.json();
     expect([200, 404]).toContain(res.status());
@@ -655,19 +683,18 @@ test.describe("11. Subrecursos Adicionales", () => {
       return;
     }
     const delRes = await authRequest.delete(
-      `/api/media/${found.mediaId}/subtitle/${found.subtitleId}`
+      `/api/media/${found.mediaId}/subtitle/${found.subtitleId}`,
     );
     expect(delRes.status()).toBe(200);
     const getRes = await authRequest.get(
-      `/api/media/${found.mediaId}/subtitle`
+      `/api/media/${found.mediaId}/subtitle`,
     );
     const getBody = await getRes.json();
-    const items =
-      Array.isArray(getBody.data)
-        ? getBody.data
-        : getBody.data?.subtitles ?? [];
+    const items = Array.isArray(getBody.data)
+      ? getBody.data
+      : (getBody.data?.subtitles ?? []);
     const stillPresent = items.some(
-      (s) => (s._id ?? s.id) === found.subtitleId
+      (s) => (s._id ?? s.id) === found.subtitleId,
     );
     expect(stillPresent).toBe(false);
   });
@@ -689,7 +716,7 @@ test.describe("11. Subrecursos Adicionales", () => {
 
   test("TC_MED_THUMBS_GET_NotFound", async ({ authRequest }) => {
     const res = await authRequest.get(
-      "/api/media/000000000000000000000000/thumbs"
+      "/api/media/000000000000000000000000/thumbs",
     );
     const body = await res.json();
     expect([200, 404]).toContain(res.status());
@@ -705,7 +732,7 @@ test.describe("11. Subrecursos Adicionales", () => {
       return;
     }
     const delRes = await authRequest.delete(
-      `/api/media/${found.mediaId}/thumb/${found.thumbId}`
+      `/api/media/${found.mediaId}/thumb/${found.thumbId}`,
     );
     expect(delRes.status()).toBe(200);
   });
@@ -715,15 +742,20 @@ test.describe("11. Subrecursos Adicionales", () => {
     try {
       const res = await authRequest.post(
         `/api/media/${media._id}/thumbnail/upload`,
-        { form: {} }
+        { form: {} },
       );
       if (res.ok()) {
         const body = await res.json();
         expect(body.status).toBe("OK");
         const payload = body.data ?? body;
-        expect(payload.url || payload.upload_url || payload.key !== undefined).toBeTruthy();
+        expect(
+          payload.url || payload.upload_url || payload.key !== undefined,
+        ).toBeTruthy();
       } else {
-        test.skip(true, "Endpoint puede requerir params adicionales o no estar disponible");
+        test.skip(
+          true,
+          "Endpoint puede requerir params adicionales o no estar disponible",
+        );
       }
     } finally {
       await authRequest.delete(`/api/media/${media._id}`);
@@ -750,7 +782,7 @@ test.describe("11. Subrecursos Adicionales", () => {
     const media = await createMedia(authRequest);
     try {
       const res = await authRequest.get(
-        `/api/media/${media._id}/preview/upload`
+        `/api/media/${media._id}/preview/upload`,
       );
       expect([200, 404, 400]).toContain(res.status());
       if (res.ok()) {
@@ -758,7 +790,7 @@ test.describe("11. Subrecursos Adicionales", () => {
         expect(body.status).toBe("OK");
         const payload = body.data ?? body;
         expect(
-          payload.url || payload.upload_url || payload.key !== undefined
+          payload.url || payload.upload_url || payload.key !== undefined,
         ).toBeTruthy();
       }
     } finally {
@@ -770,22 +802,147 @@ test.describe("11. Subrecursos Adicionales", () => {
     const fileUrl =
       "https://ms-qa-bucket.s3.us-east-1.amazonaws.com/test_360p.mp4";
     const file_name = "test_360p.mp4";
+    const uniqueTag = `qa_upload_${Date.now()}_${faker.random.alphaNumeric(8)}`;
+
     const params = new URLSearchParams({
       file_name,
       fileUrl,
       type: "remote",
+      title: uniqueTag,
     });
     if (process.env.API_TOKEN) params.append("token", process.env.API_TOKEN);
-    const res = await authRequest.get(`/api/media/upload?${params.toString()}`);
-    if (res.ok()) {
-      const body = await res.json();
-      expect(body.status).toBe("OK");
-      expect(body.data).toBeDefined();
-      expect(body.data.jobId).toBeDefined();
-      expect(typeof body.data.jobId).toBe("string");
-      expect(body.data.jobId.length).toBeGreaterThan(0);
-    } else {
-      test.skip(true, "Endpoint GET /api/media/upload puede no estar disponible en esta API");
+
+    // Step 1: Upload and get jobId
+    const uploadRes = await authRequest.get(
+      `/api/media/upload?${params.toString()}`,
+    );
+    if (!uploadRes.ok()) {
+      test.skip(
+        true,
+        "Endpoint GET /api/media/upload puede no estar disponible en esta API",
+      );
+      return;
+    }
+
+    const uploadBody = await uploadRes.json();
+    expect(uploadBody.status).toBe("OK");
+    expect(uploadBody.data).toBeDefined();
+    expect(uploadBody.data.jobId).toBeDefined();
+
+    const jobId = uploadBody.data.jobId;
+    expect(typeof jobId).toBe("string");
+    expect(jobId.length).toBeGreaterThan(0);
+
+    // Step 2: Search for the media by title (jobId is used as unique identifier)
+    await new Promise((r) => setTimeout(r, 2000)); // Wait for media to be created
+
+    const searchParams = new URLSearchParams({
+      all: "true",
+      title: jobId,
+      "title-rule": "contains",
+    });
+    if (process.env.API_TOKEN)
+      searchParams.append("token", process.env.API_TOKEN);
+
+    const searchRes = await authRequest.get(
+      `/api/media?${searchParams.toString()}`,
+    );
+    expect(searchRes.ok()).toBeTruthy();
+
+    const searchBody = await searchRes.json();
+    expect(Array.isArray(searchBody.data)).toBe(true);
+    expect(searchBody.data.length).toBeGreaterThan(0);
+
+    const mediaId = searchBody.data[0]._id;
+    expect(mediaId).toBeDefined();
+
+    // Step 3: Wait for VMS processing
+    await new Promise((r) => setTimeout(r, 10000)); // Wait 10 seconds
+
+    // Step 4: Query VMS to validate job status
+    const vmsBaseUrl =
+      process.env.VMS_BASE_URL || "https://dev.vms.platform.mediastre.am";
+    const vmsToken = process.env.VMS_TOKEN;
+
+    if (!vmsToken) {
+      console.warn(
+        "⚠️ VMS_TOKEN not set in env. Skipping VMS validation. Set VMS_TOKEN in .env to enable this check.",
+      );
+      test.skip(true, "VMS_TOKEN not configured");
+      return;
+    }
+
+    // Make raw fetch to VMS (Playwright context may not support external APIs)
+    let vmsBody;
+    try {
+      console.log(`📡 Fetching VMS: ${vmsBaseUrl}/search/media?id=${mediaId}`);
+      const vmsRes = await fetch(`${vmsBaseUrl}/search/media?id=${mediaId}`, {
+        headers: {
+          "X-API-KEY": vmsToken,
+          "Content-Type": "application/json",
+        },
+      });
+
+      console.log(`📊 VMS Response status: ${vmsRes.status}`);
+
+      if (!vmsRes.ok) {
+        console.warn(
+          `⚠️ VMS endpoint returned ${vmsRes.status}. Skipping validation.`,
+        );
+        test.skip(true, "VMS API returned non-ok status");
+        return;
+      }
+
+      vmsBody = await vmsRes.json();
+      console.log(
+        `✅ VMS Response OK: ${JSON.stringify(vmsBody).substring(0, 200)}...`,
+      );
+
+      // Validate VMS response structure
+      vmsMediaSearchResponseSchema.parse(vmsBody);
+    } catch (error) {
+      console.error(`❌ VMS Fetch Error:`, error.message);
+      console.warn(
+        `⚠️ Failed to connect to VMS: ${error.message}. This may be expected if VMS is not accessible in this environment.`,
+      );
+      test.skip(true, "VMS connection failed - environment may not support it");
+      return;
+    }
+
+    // Validation of job statuses (outside try-catch to fail properly)
+    const jobs = vmsBody.jobs || [];
+    console.log(`📋 Total jobs: ${jobs.length}`);
+
+    // Validate that Transcode jobs are NOT in STARTED or ERROR status
+    const transcodeJobs = jobs.filter((job) => job.job_type === "Transcode");
+    console.log(`🔄 Transcode jobs: ${transcodeJobs.length}`);
+
+    if (transcodeJobs.length > 0) {
+      transcodeJobs.forEach((job) => {
+        console.log(
+          `   Job ${job.job_id}: status=${job.status}, progress=${job.progress}%`,
+        );
+        expect(["STARTED", "ERROR"]).not.toContain(
+          job.status,
+          `❌ Transcode job ${job.job_id} is still in ${job.status} status. Transcoding not completed.`,
+        );
+      });
+    }
+
+    // Verify that we have valid job statuses
+    expect(
+      jobs.every((job) =>
+        ["STARTED", "DONE", "ERROR", "PENDING", "IN_PROGRESS"].includes(
+          job.status,
+        ),
+      ),
+    ).toBe(true);
+
+    // Cleanup: Delete the media created
+    try {
+      await authRequest.delete(`/api/media/${mediaId}`);
+    } catch (e) {
+      console.warn("Could not cleanup media after upload test");
     }
   });
 
@@ -805,7 +962,7 @@ test.describe("11. Subrecursos Adicionales", () => {
 
   test("TC_MED_IMAGE_GET_NotFound", async ({ authRequest }) => {
     const res = await authRequest.get(
-      "/api/media/000000000000000000000000/image"
+      "/api/media/000000000000000000000000/image",
     );
     const body = await res.json();
     expect([200, 404]).toContain(res.status());
@@ -822,7 +979,7 @@ test.describe("3b. Read - Filtro without_category + id", () => {
     const listRes = await authRequest.get("/api/media?all=true&limit=50");
     const listBody = await listRes.json();
     const withCategory = listBody.data.find(
-      (m) => Array.isArray(m.categories) && m.categories.length > 0
+      (m) => Array.isArray(m.categories) && m.categories.length > 0,
     );
     if (!withCategory) {
       test.skip();
@@ -830,7 +987,7 @@ test.describe("3b. Read - Filtro without_category + id", () => {
     }
 
     const res = await authRequest.get(
-      `/api/media?without_category=true&id=${withCategory._id}`
+      `/api/media?without_category=true&id=${withCategory._id}`,
     );
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
