@@ -1,0 +1,10 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e6]:
+    - heading "This site can’t be reached" [level=1] [ref=e7]
+    - paragraph [ref=e8]: Check if there is a typo in dev.mdstrm.com.
+    - generic [ref=e9]: DNS_PROBE_FINISHED_NXDOMAIN
+  - button "Reload" [ref=e12] [cursor=pointer]
+```

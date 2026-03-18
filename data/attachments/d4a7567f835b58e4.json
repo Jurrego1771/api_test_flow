@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "url": "https://dev.platform.mediastre.am/api/playlist",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "name": "[QA-AUTO] PL-NoType 2026-03-18T00-44-50-809Z - u9axih"
+  },
+  "responseStatus": 500,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "DB_ERROR"
+  }
+}

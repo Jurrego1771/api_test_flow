@@ -1,0 +1,19 @@
+Usando grupo existente: qa_auto_1761259566997 (ID: 68fab02e88f606b4d677afe3)
+{
+  "coupon_total": 43,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 43,
+  "_id": "68fab02e88f606b4d677afe3",
+  "name": "qa_auto_1761259566997",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2025-10-23T22:46:06.174Z",
+  "_name": "qa_auto_1761259566997",
+  "__v": 0
+}
+[00:43:03] info: 🧪 Test: Crear cupón reutilizable con código personalizado
+[00:43:03] info: 🎯 Creando cupón reutilizable: QA-REUSE-583016
+[00:43:03] info: ✅ Cupón reutilizable creado: QA-REUSE-583016 (ID: 69b9f517b9e9b46e17aa15f2)
+[00:43:03] info: 🗑️ Eliminando cupón creado en TC-007: 69b9f517b9e9b46e17aa15f2
+[00:43:03] info: DELETE TC-007 -> status=200 body={"status":"OK"}
+[Fixture] Intentando eliminar cupón: 69b9f516b9e9b46e17aa15de
+[Fixture] DELETE /api/coupon/69b9f516b9e9b46e17aa15de -> status=200 body={"status":"OK"}

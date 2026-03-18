@@ -1,0 +1,20 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/6971288e64b2477e2b935259/logo?token=70992a5e909d74be1673ea2267f5e2ab",
+  "requestHeaders": {},
+  "requestBody": {
+    "attach": {
+      "name": "empty.png",
+      "mimeType": "image/png",
+      "buffer": {
+        "type": "Buffer",
+        "data": []
+      }
+    }
+  },
+  "responseStatus": 500,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "Error uploading image."
+  }
+}

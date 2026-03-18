@@ -1,0 +1,13 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/69b9f544475fa6710e715a04",
+  "requestHeaders": {},
+  "requestBody": {
+    "name": "updated_w4um4r"
+  },
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

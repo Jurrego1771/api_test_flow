@@ -1,0 +1,23 @@
+{
+  "method": "POST",
+  "url": "/api/coupon",
+  "requestHeaders": {},
+  "requestBody": {
+    "group": "",
+    "name": "",
+    "is_reusable": "maybe",
+    "custom_code": "INVALID CODE!",
+    "discount_type": "invalid_type",
+    "max_use": "-1",
+    "customer_max_use": "0",
+    "detail": "",
+    "quantity": "0",
+    "percent": "not_a_number",
+    "payment_required": "not_boolean"
+  },
+  "responseStatus": 500,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "COULD_NOT_GET_COUPON_GROUP"
+  }
+}

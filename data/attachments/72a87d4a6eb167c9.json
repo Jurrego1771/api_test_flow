@@ -1,0 +1,11 @@
+{
+  "method": "DELETE",
+  "url": "/api/category/69b9f513c78d0f6e5d3da17d",
+  "requestHeaders": {},
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

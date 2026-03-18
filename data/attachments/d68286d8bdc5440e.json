@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/68dd426831f7bd5b6561e59e/schedule-job",
+  "requestHeaders": {},
+  "requestBody": {
+    "on_date": "2026-03-18T01:43:53.888Z",
+    "off_date": "2026-03-18T02:43:53.888Z",
+    "recurring": "true"
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "INVALID_DATE_ERROR"
+  }
+}

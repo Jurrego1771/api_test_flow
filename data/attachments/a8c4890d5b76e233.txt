@@ -1,0 +1,42 @@
+Usando grupo existente: qa_auto_1761259566997 (ID: 68fab02e88f606b4d677afe3)
+{
+  "coupon_total": 43,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 43,
+  "_id": "68fab02e88f606b4d677afe3",
+  "name": "qa_auto_1761259566997",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2025-10-23T22:46:06.174Z",
+  "_name": "qa_auto_1761259566997",
+  "__v": 0
+}
+[00:42:59] info: 🧪 Test: Filtrar cupón por código personalizado
+[00:42:59] info: DEBUG filtro custom_code: sampleItem={
+  "is_reusable": true,
+  "is_used": false,
+  "is_valid": true,
+  "payment_required": false,
+  "_id": "69b8622f4f890d94e73bfb59",
+  "date_created": "2026-03-16T20:03:59.540Z",
+  "group": {
+    "_id": "68fab02e88f606b4d677afe3",
+    "name": "qa_auto_1761259566997"
+  },
+  "subgroup": "69b8622f4f890d94e73bfb55",
+  "account": "6013fd44ab74b068d929c17d",
+  "code": "test1773691439208",
+  "max_use": 10,
+  "max_use_per_customer": 2,
+  "percent": 4,
+  "detail": "Cupón de prueba automática",
+  "_code": "test1773691439208",
+  "_detail": "cupón de prueba automática",
+  "__v": 0,
+  "is_active": true,
+  "id": "69b8622f4f890d94e73bfb59"
+}
+[Fixture] Intentando eliminar cupón: 69b9f512b9e9b46e17aa15af
+[Fixture] DELETE /api/coupon/69b9f512b9e9b46e17aa15af -> status=200 body={"status":"OK"}
+[00:43:00] info: 🎫 Tests completos de API Cupones completados
+[00:43:00] info: 📊 Grupos disponibles: 32
+[00:43:00] info: 📊 Cupones generados en tests: 0

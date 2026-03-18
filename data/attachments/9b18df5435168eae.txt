@@ -1,2 +1,0 @@
-[18:31:15] info: 🧪 Test: Validar estructura de datos de cupones
-[18:31:15] info: ✅ Estructura de datos validada

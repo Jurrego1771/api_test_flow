@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "url": "/api/category",
+  "requestHeaders": {},
+  "requestBody": {
+    "name": "qa_invalid_parent_1773794576638",
+    "parent": "not_a_valid_id",
+    "track": true,
+    "visible": true
+  },
+  "responseStatus": 500,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "DB_ERROR"
+  }
+}

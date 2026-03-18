@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "url": "/api/live-stream/69b9f549475fa6710e715a48",
+  "requestHeaders": {},
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

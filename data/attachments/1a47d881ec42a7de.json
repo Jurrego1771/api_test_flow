@@ -1,0 +1,13 @@
+{
+  "method": "GET",
+  "url": "https://dev.platform.mediastre.am/api/media/69b9f58ac78d0f6e5d3daa72/preview/upload",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab"
+  },
+  "requestBody": "N/A",
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "INVALID_FILE_PARAMS"
+  }
+}

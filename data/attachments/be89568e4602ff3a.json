@@ -1,0 +1,13 @@
+{
+  "method": "POST",
+  "url": "/api/ad/5ee2704ea666e81cf291a085",
+  "requestHeaders": {},
+  "requestBody": {
+    "name": "should_not_exist"
+  },
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

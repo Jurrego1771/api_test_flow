@@ -1,0 +1,12 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/69b9f552475fa6710e715b8a/start-record",
+  "requestHeaders": {},
+  "requestBody": "N/A",
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NO_AVAILABLE_PROFILES",
+    "message": "You must publish at least one encoding profile"
+  }
+}

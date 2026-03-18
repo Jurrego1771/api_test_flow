@@ -1,0 +1,23 @@
+{
+  "method": "POST",
+  "url": "/api/coupon",
+  "requestHeaders": {},
+  "requestBody": {
+    "group": "68fab02e88f606b4d677afe3",
+    "name": "unico",
+    "is_reusable": "true",
+    "custom_code": "test1773794583453",
+    "discount_type": "percent",
+    "max_use": "5",
+    "customer_max_use": "2",
+    "detail": "QA Test - Duplicate Code Attempt",
+    "quantity": "1",
+    "percent": "5",
+    "payment_required": "false"
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "COUPON_CODE_ALREADY_EXISTS"
+  }
+}
