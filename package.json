@@ -12,6 +12,7 @@
     "test:live": "playwright test tests/live/",
     "test:show": "playwright test tests/show/",
     "test:playlist": "playwright test tests/playlist/",
+    "test:article": "playwright test tests/article/",
     "test:debug": "playwright test --debug",
     "install:browsers": "playwright install",
     "notify:slack": "node notify-slack.js",

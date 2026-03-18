@@ -300,6 +300,20 @@ class DataFactory {
       ...overrides,
     });
   }
+
+  // --- Articles ---
+  generateArticlePayload(overrides = {}) {
+    const title = this.generateTitle("Article");
+    return {
+      title,
+      synopsis: faker.lorem.sentence(),
+      content: `<div>${faker.lorem.paragraphs(2)}</div>`,
+      is_published: false,
+      tags: [faker.word.adjective(), faker.word.noun()],
+      keywords: [faker.word.noun()],
+      ...overrides,
+    };
+  }
 }
 
 module.exports = new DataFactory();

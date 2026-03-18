@@ -29,10 +29,15 @@ allure-report/
 # OS
 .DS_Store
 Thumbs.db
+status.txt
+out/
+tmp/
 
 # Logs
 logs
 *.log
+tests/**/*.txt
+media/**/*.txt
 
 # Coverage
 coverage/

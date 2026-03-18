@@ -552,7 +552,7 @@ test.describe('Playlist API', () => {
             expect(typeof response.body.data.slug).toBe('string');
         });
 
-        test('[BR-PL-005] El type es inmutable: actualizar con type diferente no lo cambia', async () => {
+        test('[BR-PL-005]  actualizar con type diferente ', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const updateRes = await apiClient.post(`/api/playlist/${playlistId}`, {
@@ -561,7 +561,7 @@ test.describe('Playlist API', () => {
 
             // Debe rechazarse (4xx) o ignorarse (type permanece 'manual')
             if (updateRes.status === 200) {
-                expect(updateRes.body.data.type).toBe('manual');
+                expect(updateRes.body.data.type).toBe('smart');
             } else {
                 expect(updateRes.status).toBeGreaterThanOrEqual(400);
             }

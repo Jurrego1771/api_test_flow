@@ -37,6 +37,10 @@ class ResourceCleaner {
                     await this.apiClient.delete(`/api/show/${resource.id}`);
                     console.log(`Deleted Show: ${resource.id}`);
                 }
+                else if (resource.type === 'article') {
+                    await this.apiClient.delete(`/api/article/${resource.id}`);
+                    console.log(`Deleted Article: ${resource.id}`);
+                }
             } catch (error) {
                 console.error(`Failed to cleanup ${resource.type} ${resource.id}`, error);
             }

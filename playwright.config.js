@@ -9,6 +9,7 @@ module.exports = defineConfig({
     baseURL: process.env.BASE_URL,
     headless: true,
     viewport: { width: 1280, height: 720 },
+    channel: "chrome", // 🌐 Usar Google Chrome oficial (incluye todos los códecs)
     // 🔍 Evidencias en fallo
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
