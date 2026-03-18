@@ -1,7 +1,21 @@
 const { test } = require("../../fixtures/category.fixture");
 const { expect } = require("@playwright/test");
+const { ApiClient } = require("../../lib/apiClient");
+const { ResourceCleaner } = require("../../utils/resourceCleaner");
 
 test.describe("POST /api/category - Creación de categorías", () => {
+  let apiClient;
+  let cleaner;
+
+  test.beforeEach(async ({ authRequest, baseURL }) => {
+    apiClient = new ApiClient(authRequest, baseURL);
+    cleaner = new ResourceCleaner(apiClient);
+  });
+
+  test.afterEach(async () => {
+    await cleaner.clean();
+  });
+
   test("TC-CAT-POST-001: Crear categoría mínima (solo name)", async ({
     authRequest,
   }) => {

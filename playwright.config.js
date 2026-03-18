@@ -6,9 +6,13 @@ module.exports = defineConfig({
   timeout: 30_000,
 
   use: {
-    baseURL: process.env.BASE_URL, // solo API; sin fallback local a server
+    baseURL: process.env.BASE_URL,
     headless: true,
     viewport: { width: 1280, height: 720 },
+    // 🔍 Evidencias en fallo
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
 
   // Sin servidor web local; solo pruebas de API/endpoint

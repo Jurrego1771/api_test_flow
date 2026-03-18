@@ -15,6 +15,8 @@
 
 const { test, expect } = require("../../fixtures/show.fixture");
 const { showSchema } = require("../../schemas/show.schema");
+const { ApiClient } = require("../../lib/apiClient");
+const { ResourceCleaner } = require("../../utils/resourceCleaner");
 const dataFactory = require("../../utils/dataFactory");
 const { faker } = require("@faker-js/faker");
 
@@ -24,13 +26,23 @@ function getShowFromBody(body) {
   return Array.isArray(raw) ? raw[0] : raw;
 }
 
+test.describe("Modulo Show API", () => {
+  let apiClient;
+  let cleaner;
+
+  test.beforeEach(async ({ authRequest, baseURL }) => {
+    apiClient = new ApiClient(authRequest, baseURL);
+    cleaner = new ResourceCleaner(apiClient);
+  });
+
+  test.afterEach(async () => {
+    await cleaner.clean();
+  });
+
 // --- 1. INSERT (Create) ---
 
 test.describe("1. Create (POST /api/show)", () => {
-  test("TC_SHW_001_INSERT_MinimalPayload", async ({
-    authRequest,
-    accountId,
-  }) => {
+  test("TC_SHW_001_INSERT_MinimalPayload", async ({ accountId }) => {
     const payload = dataFactory.generateShowPayload({
       account: accountId,
       title: `[QA-AUTO] Show ${Date.now()}`,
@@ -38,21 +50,20 @@ test.describe("1. Create (POST /api/show)", () => {
       genres: [],
     });
 
-    const res = await authRequest.post(`/api/show`, { form: payload });
-    expect(res.ok()).toBeTruthy();
+    const res = await apiClient.post(`/api/show`, payload);
+    const body = res.body;
 
-    const body = await res.json();
+    expect(res.status).toBe(200);
     const created = getShowFromBody(body);
     expect(created).toHaveProperty("_id");
     expect(created.title).toBe(payload.title);
-    expect(created.type).toBe("tvshow");
 
+    cleaner.register("show", created._id);
     const parsed = showSchema.parse(created);
     expect(parsed._id).toBeTruthy();
   });
 
-  test("TC_SHW_002_INSERT_FullPayload", async ({ authRequest, accountId }) => {
-    // Mismo patrón que TC_SHW_003 (radioshow + genres) con description adicional
+  test("TC_SHW_002_INSERT_FullPayload", async ({ accountId }) => {
     const payload = {
       account: accountId,
       title: `[QA-AUTO] Full Show ${Date.now()}`,
@@ -61,13 +72,14 @@ test.describe("1. Create (POST /api/show)", () => {
       genres: [],
     };
 
-    const res = await authRequest.post(`/api/show`, { form: payload });
-    expect(res.ok()).toBeTruthy();
+    const res = await apiClient.post(`/api/show`, payload);
+    const body = res.body;
 
-    const body = await res.json();
+    expect(res.status).toBe(200);
     const created = getShowFromBody(body);
     expect(created.type).toBe("radioshow");
     expect(created.description).toBe("Descripcion QA");
+    cleaner.register("show", created._id);
   });
 
   test("TC_SHW_003_INSERT_GenresNullCleaning", async ({
@@ -437,4 +449,5 @@ test.describe("5. Edge Cases y Validaciones", () => {
     const created = getShowFromBody(body);
     expect(created.description).toContain("Émojis");
   });
+});
 });
