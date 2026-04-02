@@ -54,12 +54,20 @@ api_test_flow/
 
 ### Nomenclatura de Tests
 ```
-TC_<MOD>_<NUM>_<ENDPOINT>_<descripcion>
+TC_<MOD>_<METHOD>_<resource>_<scenario>
 ```
+- `<MOD>` — prefijo del módulo (MED, LIVE, AD…)
+- `<METHOD>` — método HTTP (GET, POST, PUT, DELETE)
+- `<resource>` — slug del recurso/path en snake_case (bulk_upload, list, by_id)
+- `<scenario>` — escenario concreto (valid, no_token, invalid_payload, not_found, empty_body…)
+
+La combinación es naturalmente única — no se usan números secuenciales.
+
 Ejemplos:
-- `TC_MED_001_POST_create_media_valid`
-- `TC_LIVE_003_GET_list_unauthorized`
-- `TC_AD_002_DELETE_ad_not_found`
+- `TC_MED_POST_bulk_upload_valid`
+- `TC_MED_POST_bulk_upload_no_token`
+- `TC_LIVE_GET_list_with_dvr`
+- `TC_AD_DELETE_ad_not_found`
 
 ### Módulos y prefijos
 | Módulo | Prefijo | Ruta base |

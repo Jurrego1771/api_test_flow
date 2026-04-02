@@ -1,0 +1,34 @@
+{
+  "agent": "validator",
+  "version": "1.0",
+  "last_updated": "2026-04-02",
+  "learnings": [
+    {
+      "id": "L_V_20260402_1",
+      "category": "env_quirk",
+      "description": "El módulo article devuelve 404 en todos sus endpoints con el token actual. Verificar si requiere permisos adicionales o está deshabilitado en este entorno antes de correr tests de article.",
+      "scope": "module:article",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
+    {
+      "id": "L_V_20260402_2",
+      "category": "api_quirk",
+      "description": "POST /api/show requiere form-encoded, no JSON. apiClient.post envía JSON y recibe 404. Usar authRequest.post con { form: } para crear y actualizar en este módulo.",
+      "scope": "module:show",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
+    {
+      "id": "L_V_20260402_3",
+      "category": "api_quirk",
+      "description": "GET /api/category/:id no devuelve el campo 'visible' en la respuesta aunque POST create lo acepta. No asertar campos de escritura que no aparecen confirmados en GET.",
+      "scope": "module:category",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "pipeline_version": "1.0",
+  "run_date": "2026-04-02",
+  "source": "audit_request.json",
+  "audit_focus": ["persistence"],
+  "coverage_report": {
+    "modules_analyzed": ["media", "live-stream", "playlist", "article", "ad", "category", "show", "access_restriction"],
+    "by_module": {
+      "media":               { "persistence": "covered" },
+      "live-stream":         { "persistence": "covered" },
+      "playlist":            { "persistence": "covered" },
+      "article":             { "persistence": "partial", "gap": "POST update → only checks UPDATE response, no GET verification" },
+      "ad":                  { "persistence": "missing", "gap": "POST update → only checks UPDATE response, no GET verification" },
+      "category":            { "persistence": "missing", "gap": "POST create → only checks CREATE response, no GET verification" },
+      "show":                { "persistence": "partial", "gap": "POST update → only checks UPDATE response, no GET verification" },
+      "access_restriction":  { "persistence": "n/a" }
+    },
+    "total_gaps": 4
+  },
+  "test_cases": [
+    {
+      "id": "TC_AD_GET_update_persist_fields",
+      "module": "ad",
+      "file_target": "tests/ad/update_ad.test.js",
+      "type": "persistence",
+      "method": "POST",
+      "path": "/api/ad/:id",
+      "payload_notes": "Crear ad → POST update con name, is_enabled, preroll_skip_at → GET /api/ad/:id → verificar que los tres campos persisten con los valores enviados",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "El test existente TC_AD_004 solo verifica el body del UPDATE. Este test agrega el GET posterior."
+    },
+    {
+      "id": "TC_CAT_GET_create_persist_fields",
+      "module": "category",
+      "file_target": "tests/category/post_category.test.js",
+      "type": "persistence",
+      "method": "POST",
+      "path": "/api/category",
+      "payload_notes": "POST create con name, description, drm='deny', visible=false → GET /api/category/:id → verificar que name, description, drm y visible persisten",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "Ningún test existente de categoría hace GET por ID después de crear. Verificar que la API tiene GET /api/category/:id disponible."
+    },
+    {
+      "id": "TC_ART_GET_update_persist_title_synopsis",
+      "module": "article",
+      "file_target": "tests/article/article.test.js",
+      "type": "persistence",
+      "method": "POST",
+      "path": "/api/article/:id",
+      "payload_notes": "Crear artículo → POST update con title y synopsis nuevos → GET /api/article/:id → verificar que title y synopsis coinciden con los valores enviados en el update",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "TC_ART_004 ya existe pero solo verifica la respuesta del POST update. Agregar GET posterior al mismo test o crear uno nuevo."
+    },
+    {
+      "id": "TC_SHW_GET_update_persist_title_description",
+      "module": "show",
+      "file_target": "tests/show/show.test.js",
+      "type": "persistence",
+      "method": "POST",
+      "path": "/api/show/:id",
+      "payload_notes": "Usar tempShow fixture → POST update con title y description → GET /api/show/:id → verificar que title y description coinciden con los valores enviados",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": false,
+      "notes": "TC_SHW_040 y TC_SHW_041 ya verifican el body del UPDATE. Este test agrega el GET posterior. Usar helper getShowFromBody() que ya existe en el archivo."
+    }
+  ]
+}

@@ -86,6 +86,25 @@ test.describe("Article API - CRUD & Search Operations", () => {
             expect(updRes.body.data.title).toBe(updatePayload.title);
             expect(updRes.body.data.synopsis).toBe(updatePayload.synopsis);
         });
+
+        test("TC_ART_GET_update_persist_title_synopsis", async () => {
+            const createRes = await apiClient.post("/api/article", dataFactory.generateArticlePayload());
+            const article = createRes.body.data;
+            cleaner.register("article", article._id);
+
+            const updatePayload = {
+                title: `qa_persist_title_${Date.now()}`,
+                synopsis: "qa_persist_synopsis",
+            };
+
+            await apiClient.post(`/api/article/${article._id}`, updatePayload);
+
+            const getRes = await apiClient.get(`/api/article/${article._id}`);
+            expect(getRes.status).toBe(200);
+            expect(getRes.body.status).toBe("OK");
+            expect(getRes.body.data.title).toBe(updatePayload.title);
+            expect(getRes.body.data.synopsis).toBe(updatePayload.synopsis);
+        });
     });
 
     // --- 4. LIST & FILTERS (GET /api/article) ---

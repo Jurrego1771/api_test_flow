@@ -1,0 +1,36 @@
+{
+  "pipeline_version": "1.0",
+  "run_date": "2026-04-02",
+  "source": "03_manifest.json",
+  "summary": {
+    "total": 4,
+    "pass": 3,
+    "fail": 1
+  },
+  "failures": [
+    {
+      "test_id": "TC_ART_GET_update_persist_title_synopsis",
+      "file": "tests/article/article.test.js",
+      "failure_type": "ENV_ISSUE",
+      "expected": "200",
+      "received": "404",
+      "error_message": "Todos los tests del módulo article devuelven 404. El módulo no está disponible en el entorno configurado.",
+      "recommendation": "check_env",
+      "fix": "Verificar si el módulo article está habilitado para el token en .env. Tests de article están excluidos hasta resolverlo."
+    }
+  ],
+  "pre_existing_failures": [
+    {
+      "test_id": "TC_AD_004_POST_UpdateAd_Success",
+      "failure_type": "TEST_ISSUE",
+      "note": "getAdResponseSchema espera 'insertion' como objeto pero la API devuelve null. Pre-existente."
+    },
+    {
+      "test_id": "TC_SHW_001 / TC_SHW_002",
+      "failure_type": "TEST_ISSUE",
+      "note": "apiClient.post envía JSON pero POST /api/show requiere form-encoded. Pre-existente."
+    }
+  ],
+  "pipeline_status": "BUG_FOUND",
+  "next_action": "check_env"
+}

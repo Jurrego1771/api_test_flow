@@ -152,4 +152,31 @@ test.describe("POST /api/category - Creación de categorías", () => {
     expect(body.status).toBe("ERROR");
     // Si el backend normaliza como NAME_IS_REQUIRED también vale
   });
+
+  test("TC_CAT_GET_create_persist_fields", async ({ authRequest }) => {
+    const name = `qa_persist_${Date.now()}`;
+    const payload = {
+      name,
+      description: "qa_persist_description",
+      drm: "deny",
+      visible: false,
+    };
+
+    const createRes = await authRequest.post("/api/category", { form: payload });
+    const createBody = await createRes.json();
+
+    expect(createRes.status()).toBe(200);
+    expect(createBody.status).toBe("OK");
+
+    const id = createBody.data._id;
+    cleaner.register("category", id);
+
+    const getRes = await authRequest.get(`/api/category/${id}`);
+    const getBody = await getRes.json();
+
+    expect(getRes.status()).toBe(200);
+    expect(getBody.status).toBe("OK");
+    expect(getBody.data.name).toBe(name);
+    expect(getBody.data.description).toBe(payload.description);
+  });
 });

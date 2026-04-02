@@ -1,0 +1,34 @@
+{
+  "agent": "validator",
+  "status": "BUG_FOUND",
+  "summary": "3/4 tests passing. 1 ENV_ISSUE pendiente (article). 2 TEST_ISSUE pre-existentes identificados.",
+  "failures_by_type": {
+    "BUG_REAL": 0,
+    "TEST_ISSUE": 0,
+    "ENV_ISSUE": 1
+  },
+  "new_learnings": [
+    {
+      "id": "L_V_20260402_1",
+      "category": "env_quirk",
+      "description": "El módulo article devuelve 404 en todos sus endpoints con el token actual. Verificar si requiere permisos adicionales o está deshabilitado en este entorno.",
+      "scope": "module:article",
+      "apply": "pending"
+    },
+    {
+      "id": "L_V_20260402_2",
+      "category": "api_quirk",
+      "description": "POST /api/show requiere form-encoded, no JSON. apiClient.post envía JSON y recibe 404. Usar authRequest.post con { form: } para este módulo.",
+      "scope": "module:show",
+      "apply": "pending"
+    },
+    {
+      "id": "L_V_20260402_3",
+      "category": "api_quirk",
+      "description": "GET /api/category/:id no devuelve el campo 'visible' aunque POST create lo acepta. No asertar campos que no aparecen en GET.",
+      "scope": "module:category",
+      "apply": "pending"
+    }
+  ],
+  "next_action": "check_env"
+}

@@ -1,0 +1,37 @@
+{
+  "agent": "auditor",
+  "status": "READY",
+  "summary": "4 gaps de persistencia en 4 módulos. Media, Live Stream y Playlist ya tienen cobertura completa.",
+  "coverage_report": {
+    "ad":       { "persistence": "missing" },
+    "category": { "persistence": "missing" },
+    "article":  { "persistence": "partial — falta GET después de update" },
+    "show":     { "persistence": "partial — falta GET después de update" }
+  },
+  "decisions": [
+    "TC_ART_GET_update_persist: se propone como test nuevo en lugar de modificar TC_ART_004 existente — menos riesgo de romper cobertura actual",
+    "TC_SHW_GET_update_persist: reutiliza el fixture tempShow y el helper getShowFromBody() ya existentes en show.test.js",
+    "TC_CAT_GET_create_persist: se agrega a post_category.test.js — verificar que GET /api/category/:id existe antes de implementar"
+  ],
+  "questions": [
+    "¿Existe GET /api/category/:id? Los tests actuales solo usan GET /api/category?category_name=... — confirmar antes de que Agent 3 implemente"
+  ],
+  "new_learnings": [
+    {
+      "id": "L_P_20260402_1",
+      "category": "pattern",
+      "description": "Los módulos con helpers reutilizables (createMedia, createLiveStream) tienen mejor cobertura de persistencia que los que usan fixtures de Playwright. El patrón helper facilita el flujo POST→update→GET en un solo test.",
+      "scope": "global",
+      "apply": "pending"
+    },
+    {
+      "id": "L_P_20260402_2",
+      "category": "anti_pattern",
+      "description": "Verificar solo el body del UPDATE response no es suficiente como test de persistencia — el backend podría retornar los valores de la request sin haberlos guardado. Siempre hacer GET posterior.",
+      "scope": "global",
+      "apply": "pending"
+    }
+  ],
+  "test_count": 4,
+  "next_command": "/agent3-write"
+}

@@ -1,0 +1,6 @@
+{
+  "mode": "audit",
+  "focus": ["persistence"],
+  "scope": "all",
+  "depth": "full"
+}

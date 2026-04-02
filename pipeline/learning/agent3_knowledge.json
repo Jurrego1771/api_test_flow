@@ -1,0 +1,16 @@
+{
+  "agent": "writer",
+  "version": "1.0",
+  "last_updated": "2026-04-02",
+  "learnings": [
+    {
+      "id": "L_W3_20260402_1",
+      "category": "convention",
+      "description": "post_category.test.js mezcla dos patrones de cleanup: cleaner.register() en beforeEach/afterEach y delete manual con try/catch dentro del test. Usar siempre cleaner.register() al agregar tests nuevos a este archivo.",
+      "scope": "module:category",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    }
+  ]
+}

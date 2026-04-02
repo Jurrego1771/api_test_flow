@@ -67,4 +67,32 @@ test.describe("Ad API — Update", () => {
     expect(body.status).toBe("ERROR");
     expect(body.data).toBe("NOT_FOUND");
   });
+
+  test("TC_AD_GET_update_persist_fields", async ({ createAd, authRequest }) => {
+    const { ad } = await createAd({
+      name: `qa_ad_persist_${Date.now()}`,
+      type: "vast",
+      is_enabled: "false",
+      preroll_skip_at: 0,
+      min_media_time_length: 0,
+    });
+
+    const updatePayload = {
+      name: `qa_ad_persist_updated_${Date.now()}`,
+      is_enabled: "true",
+      preroll_skip_at: 10,
+    };
+
+    const updRes = await authRequest.post(`/api/ad/${ad._id}`, { form: updatePayload });
+    expect(updRes.status()).toBe(200);
+
+    const getRes = await authRequest.get(`/api/ad/${ad._id}`);
+    const body = await getRes.json();
+
+    expect(getRes.status()).toBe(200);
+    expect(body.status).toBe("OK");
+    expect(body.data.name).toBe(updatePayload.name);
+    expect(body.data.is_enabled).toBeTruthy();
+    expect(body.data.preroll_skip_at).toBe(updatePayload.preroll_skip_at);
+  });
 });
