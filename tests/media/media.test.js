@@ -51,15 +51,14 @@ async function createMedia(apiClient, cleaner, attrs = {}) {
   return created;
 }
 
-async function findMediaWithSubtitle(authRequest) {
+async function findMediaWithSubtitle(apiClient) {
   const listRes = await apiClient.get("/api/media?all=true&limit=50");
-  if (!list(res.status === 200)) return null;
-  const listBody = await listRes.json();
-  const medias = listBody.data || [];
+  if (listRes.status !== 200) return null;
+  const medias = listRes.body?.data || [];
   for (const m of medias) {
     const subRes = await apiClient.get(`/api/media/${m._id}/subtitle`);
-    if (!sub(res.status === 200)) continue;
-    const subBody = await subRes.json();
+    if (subRes.status !== 200) continue;
+    const subBody = subRes.body || {};
     const items = Array.isArray(subBody.data)
       ? subBody.data
       : (subBody.data?.subtitles ?? subBody.data?.data ?? []);
@@ -71,15 +70,14 @@ async function findMediaWithSubtitle(authRequest) {
   return null;
 }
 
-async function findMediaWithDeletableThumb(authRequest) {
+async function findMediaWithDeletableThumb(apiClient) {
   const listRes = await apiClient.get("/api/media?all=true&limit=50");
-  if (!list(res.status === 200)) return null;
-  const listBody = await listRes.json();
-  const medias = listBody.data || [];
+  if (listRes.status !== 200) return null;
+  const medias = listRes.body?.data || [];
   for (const m of medias) {
     const thumbsRes = await apiClient.get(`/api/media/${m._id}/thumbs`);
-    if (!thumbs(res.status === 200)) continue;
-    const thumbsBody = await thumbsRes.json();
+    if (thumbsRes.status !== 200) continue;
+    const thumbsBody = thumbsRes.body || {};
     const thumbs =
       thumbsBody.data?.thumbnails ??
       thumbsBody.data ??
@@ -219,11 +217,11 @@ test.describe("Modulo Media API", () => {
       const resTrue = await apiClient.get("/api/media?without_category=true");
       const resFalse = await apiClient.get("/api/media?without_category=false");
 
-      expect(resTrue.ok()).toBeTruthy();
-      expect(resFalse.ok()).toBeTruthy();
+      expect(resTrue.ok).toBeTruthy();
+      expect(resFalse.ok).toBeTruthy();
 
-      const bodyTrue = await resTrue.json();
-      const bodyFalse = await resFalse.json();
+      const bodyTrue = resTrue.body;
+      const bodyFalse = resFalse.body;
 
       bodyTrue.data.forEach((m) => {
         expect(
@@ -244,11 +242,11 @@ test.describe("Modulo Media API", () => {
       const page1 = await apiClient.get("/api/media?limit=5&skip=0");
       const page2 = await apiClient.get("/api/media?limit=5&skip=5");
 
-      expect(page1.ok()).toBeTruthy();
-      expect(page2.ok()).toBeTruthy();
+      expect(page1.ok).toBeTruthy();
+      expect(page2.ok).toBeTruthy();
 
-      const body1 = await page1.json();
-      const body2 = await page2.json();
+      const body1 = page1.body;
+      const body2 = page2.body;
 
       expect(body1.data.length).toBeLessThanOrEqual(5);
       expect(body2.data.length).toBeLessThanOrEqual(5);
@@ -274,8 +272,8 @@ test.describe("Modulo Media API", () => {
 
     test("TC_MED_008_GET_DetailSuccess", async () => {
       const listRes = await apiClient.get("/api/media?limit=1");
-      const listBody = await listRes.json();
-      expect(list(res.status === 200)).toBeTruthy();
+      const listBody = listRes.body;
+      expect(listRes.status === 200).toBeTruthy();
       expect(listBody.data.length).toBeGreaterThan(0);
 
       const mediaId = listBody.data[0]._id;
@@ -461,7 +459,7 @@ test.describe("Modulo Media API", () => {
 
     test("TC_MED_014d_FILTER_Published", async () => {
       const resAll = await apiClient.get("/api/media?all=true&limit=50");
-      const bodyAll = await resAll.json();
+      const bodyAll = resAll.body;
       const published = bodyAll.data.find((m) => m.is_published === true);
       expect(published, "No published media").toBeTruthy();
 
@@ -518,7 +516,7 @@ test.describe("Modulo Media API", () => {
   test.describe("10. Subrecursos (Metas)", () => {
     test("TC_MED_META_GET", async () => {
       const listRes = await apiClient.get("/api/media?all=true&limit=50");
-      const listBody = await listRes.json();
+      const listBody = listRes.body;
       const mediaWithMeta = listBody.data.find(
         (m) => Array.isArray(m.meta) && m.meta.length > 0,
       );
@@ -545,7 +543,7 @@ test.describe("Modulo Media API", () => {
 
     test("TC_MED_META_DELETE", async () => {
       const listRes = await apiClient.get("/api/media?all=true&limit=50");
-      const listBody = await listRes.json();
+      const listBody = listRes.body;
       const target = listBody.data.find(
         (m) => Array.isArray(m.meta) && m.meta.some((mm) => !mm.is_original),
       );
@@ -558,7 +556,7 @@ test.describe("Modulo Media API", () => {
       const delRes = await apiClient.delete(
         `/api/media/${target._id}/meta/${metaId}`,
       );
-      expect(delres.status).toBe(200);
+      expect(delRes.status).toBe(200);
     });
   });
 
@@ -569,30 +567,35 @@ test.describe("Modulo Media API", () => {
     const titlePrefix = `SearchTC_${faker.random.alphaNumeric(6)}`;
     let createdIds = [];
 
-    test.beforeAll(async ({ authRequest }) => {
+    test.beforeAll(async ({ authRequest, baseURL }) => {
+      const seedClient = new ApiClient(authRequest, baseURL);
+      const seedCleaner = {
+        register: (_type, id) => {
+          if (id) createdIds.push(id);
+        },
+      };
       for (let i = 0; i < 5; i++) {
-        const media = await createMedia(apiClient, cleaner, {
+        await createMedia(seedClient, seedCleaner, {
           title: `${titlePrefix} Pub ${i}`,
           is_published: "true",
           tags: uniqueTag,
         });
-        createdIds.push(media._id);
       }
       for (let i = 0; i < 2; i++) {
-        const media = await createMedia(apiClient, cleaner, {
+        await createMedia(seedClient, seedCleaner, {
           title: `${titlePrefix} Draft ${i}`,
           is_published: "false",
           tags: uniqueTag,
         });
-        createdIds.push(media._id);
       }
       await new Promise((r) => setTimeout(r, 2000));
     });
 
-    test.afterAll(async ({ authRequest }) => {
+    test.afterAll(async ({ authRequest, baseURL }) => {
+      const cleanupClient = new ApiClient(authRequest, baseURL);
       for (const id of createdIds) {
         try {
-
+          await cleanupClient.delete(`/api/media/${id}`);
         } catch (e) {
           /* ignore */
         }
@@ -682,7 +685,7 @@ test.describe("Modulo Media API", () => {
     });
 
     test("TC_MED_SUBTITLE_DELETE", async () => {
-      const found = await findMediaWithSubtitle(authRequest);
+      const found = await findMediaWithSubtitle(apiClient);
       if (!found) {
         test.skip();
         return;
@@ -690,11 +693,11 @@ test.describe("Modulo Media API", () => {
       const delRes = await apiClient.delete(
         `/api/media/${found.mediaId}/subtitle/${found.subtitleId}`,
       );
-      expect(delres.status).toBe(200);
+      expect(delRes.status).toBe(200);
       const getRes = await apiClient.get(
         `/api/media/${found.mediaId}/subtitle`,
       );
-      const getBody = await getRes.json();
+      const getBody = getRes.body;
       const items = Array.isArray(getBody.data)
         ? getBody.data
         : (getBody.data?.subtitles ?? []);
@@ -731,7 +734,7 @@ test.describe("Modulo Media API", () => {
     });
 
     test("TC_MED_THUMB_DELETE", async () => {
-      const found = await findMediaWithDeletableThumb(authRequest);
+      const found = await findMediaWithDeletableThumb(apiClient);
       if (!found) {
         test.skip();
         return;
@@ -739,7 +742,7 @@ test.describe("Modulo Media API", () => {
       const delRes = await apiClient.delete(
         `/api/media/${found.mediaId}/thumb/${found.thumbId}`,
       );
-      expect(delres.status).toBe(200);
+      expect(delRes.status).toBe(200);
     });
 
     test("TC_MED_THUMBNAIL_UPLOAD_POST", async () => {
@@ -821,7 +824,7 @@ test.describe("Modulo Media API", () => {
       const uploadRes = await apiClient.get(
         `/api/media/upload?${params.toString()}`,
       );
-      if (!upload(res.status === 200)) {
+      if (uploadRes.status !== 200) {
         test.skip(
           true,
           "Endpoint GET /api/media/upload puede no estar disponible en esta API",
@@ -829,7 +832,7 @@ test.describe("Modulo Media API", () => {
         return;
       }
 
-      const uploadBody = await uploadRes.json();
+      const uploadBody = uploadRes.body;
       expect(uploadBody.status).toBe("OK");
       expect(uploadBody.data).toBeDefined();
       expect(uploadBody.data.jobId).toBeDefined();
@@ -852,9 +855,9 @@ test.describe("Modulo Media API", () => {
       const searchRes = await apiClient.get(
         `/api/media?${searchParams.toString()}`,
       );
-      expect(search(res.status === 200)).toBeTruthy();
+      expect(searchRes.status).toBe(200);
 
-      const searchBody = await searchRes.json();
+      const searchBody = searchRes.body;
       expect(Array.isArray(searchBody.data)).toBe(true);
       expect(searchBody.data.length).toBeGreaterThan(0);
 
@@ -982,7 +985,7 @@ test.describe("Modulo Media API", () => {
   test.describe("3b. Read - Filtro without_category + id", () => {
     test("TC_MED_005c_GET_WithoutCategoryAndId", async () => {
       const listRes = await apiClient.get("/api/media?all=true&limit=50");
-      const listBody = await listRes.json();
+      const listBody = listRes.body;
       const withCategory = listBody.data.find(
         (m) => Array.isArray(m.categories) && m.categories.length > 0,
       );

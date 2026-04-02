@@ -86,14 +86,16 @@ test.describe("Live Stream API", () => {
       return;
     }
 
-    expect(res.status()).toBe(200);
-    expect(body.status).toBe("OK");
     const created = getCreatedStream(body);
-    expect(created).toBeDefined();
-    expect(created).toHaveProperty("_id");
-    createLiveStreamResponseSchema.parse({ status: body.status, data: created });
-
-    await deleteStream(authRequest, created._id);
+    try {
+      expect(res.status()).toBe(200);
+      expect(body.status).toBe("OK");
+      expect(created).toBeDefined();
+      expect(created).toHaveProperty("_id");
+      createLiveStreamResponseSchema.parse({ status: body.status, data: created });
+    } finally {
+      if (created?._id) await deleteStream(authRequest, created._id);
+    }
   });
 
   test("TC_LIV_002_POST_CreateStreamAudio", async ({ authRequest }) => {
@@ -107,12 +109,14 @@ test.describe("Live Stream API", () => {
       return;
     }
 
-    expect(body.status).toBe("OK");
     const created = getCreatedStream(body);
-    expect(created).toBeDefined();
-    expect(created._id).toBeDefined();
-
-    await deleteStream(authRequest, created._id);
+    try {
+      expect(body.status).toBe("OK");
+      expect(created).toBeDefined();
+      expect(created._id).toBeDefined();
+    } finally {
+      if (created?._id) await deleteStream(authRequest, created._id);
+    }
   });
 
   test("TC_LIV_002_GET_ListStreams", async ({ authRequest }) => {

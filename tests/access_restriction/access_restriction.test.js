@@ -12,15 +12,15 @@
  */
 
 const { test, expect } = require("../../fixtures/accessRestriction.fixture");
+require("dotenv").config();
 
 const AR_ENDPOINT = "/api/settings/advanced-access-restrictions";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. LIST (GET) — solo lectura → authRequest
+// 1. LIST (GET) — autenticación
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe("1. List (GET /api/settings/advanced-access-restrictions)", () => {
-  // AR-INTEG-003.1.1
   test("TC_AR_001_GET_ListAllRestrictions", async ({ authRequest }) => {
     const res = await authRequest.get(AR_ENDPOINT);
 
@@ -29,10 +29,35 @@ test.describe("1. List (GET /api/settings/advanced-access-restrictions)", () => 
     expect(body.status).toBe("OK");
     expect(Array.isArray(body.data)).toBe(true);
   });
+
+  test("TC_AR_002_GET_ListNoToken_Returns401", async ({ playwright }) => {
+    const ctx = await playwright.request.newContext({
+      baseURL: process.env.BASE_URL,
+    });
+    try {
+      const res = await ctx.get(AR_ENDPOINT);
+      expect([401, 403]).toContain(res.status());
+    } finally {
+      await ctx.dispose();
+    }
+  });
+
+  test("TC_AR_003_GET_ListInvalidToken_Returns401", async ({ playwright }) => {
+    const ctx = await playwright.request.newContext({
+      baseURL: process.env.BASE_URL,
+      extraHTTPHeaders: { "X-API-Token": "invalid_token_xyz" },
+    });
+    try {
+      const res = await ctx.get(AR_ENDPOINT);
+      expect([401, 403]).toContain(res.status());
+    } finally {
+      await ctx.dispose();
+    }
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. GET BY ID — casos negativos sin datos previos → authRequest
+// 2. GET BY ID — casos negativos
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe("2. Get by ID (GET /api/settings/advanced-access-restrictions/:id)", () => {

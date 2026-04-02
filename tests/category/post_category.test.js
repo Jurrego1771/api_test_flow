@@ -2,6 +2,7 @@ const { test } = require("../../fixtures/category.fixture");
 const { expect } = require("@playwright/test");
 const { ApiClient } = require("../../lib/apiClient");
 const { ResourceCleaner } = require("../../utils/resourceCleaner");
+const { createCategoryResponseSchema } = require("../../schemas/category.schema");
 
 test.describe("POST /api/category - Creación de categorías", () => {
   let apiClient;
@@ -27,9 +28,11 @@ test.describe("POST /api/category - Creación de categorías", () => {
 
     expect(response.status()).toBe(200);
     expect(body.status).toBe("OK");
-    expect(body.data).toBeDefined();
     expect(body.data.name).toBe(name);
     expect(body.data).toHaveProperty("_id");
+
+    // Validación estructural con Zod
+    createCategoryResponseSchema.parse(body);
 
     // Cleanup
     try {
@@ -57,9 +60,11 @@ test.describe("POST /api/category - Creación de categorías", () => {
 
     expect(response.status()).toBe(200);
     expect(body.status).toBe("OK");
-    expect(body.data).toBeDefined();
     expect(body.data.name).toBe(name);
     expect(body.data).toHaveProperty("_id");
+
+    // Validación estructural con Zod
+    createCategoryResponseSchema.parse(body);
 
     // Cleanup
     try {

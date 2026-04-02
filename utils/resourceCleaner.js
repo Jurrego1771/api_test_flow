@@ -41,6 +41,18 @@ class ResourceCleaner {
                     await this.apiClient.delete(`/api/article/${resource.id}`);
                     console.log(`Deleted Article: ${resource.id}`);
                 }
+                else if (resource.type === 'live-stream') {
+                    await this.apiClient.delete(`/api/live-stream/${resource.id}`);
+                    console.log(`Deleted Live Stream: ${resource.id}`);
+                }
+                else if (resource.type === 'coupon') {
+                    await this.apiClient.delete(`/api/coupon/${resource.id}`);
+                    console.log(`Deleted Coupon: ${resource.id}`);
+                }
+                else if (resource.type === 'ad') {
+                    await this.apiClient.delete(`/api/ad/${resource.id}`);
+                    console.log(`Deleted Ad: ${resource.id}`);
+                }
             } catch (error) {
                 console.error(`Failed to cleanup ${resource.type} ${resource.id}`, error);
             }

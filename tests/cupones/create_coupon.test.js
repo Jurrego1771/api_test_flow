@@ -1,6 +1,7 @@
 const { test } = require("../../fixtures/coupon.fixture");
 const { expect } = require("@playwright/test");
 const logger = require("../utils/logger");
+const { listCouponResponseSchema, getCouponResponseSchema } = require("../../schemas/coupon.schema");
 
 // Variables para manejar datos extraídos
 let extractedGroupIds = [];
@@ -8,7 +9,7 @@ let generatedCouponCodes = [];
 let generatedCouponIds = [];
 let allCoupons = [];
 
-test.describe("🎫 Cupones ", () => {
+test.describe("Coupon API", () => {
   test.beforeAll(async ({ authRequest }) => {
     logger.info("🎫 Iniciando tests completos de API Cupones");
 
@@ -45,20 +46,26 @@ test.describe("🎫 Cupones ", () => {
     }
   });
 
-  test.afterAll(() => {
+  test.afterAll(async ({ authRequest }) => {
+    // Eliminar cupones que no fueron limpiados por sus tests (safety net)
+    for (const id of generatedCouponIds) {
+      try {
+        await authRequest.delete(`/api/coupon/${id}`);
+        logger.info(`[afterAll] Cupón eliminado (safety net): ${id}`);
+      } catch (e) {
+        logger.info(`[afterAll] No se pudo eliminar cupón ${id}: ${e}`);
+      }
+    }
+    generatedCouponIds.length = 0;
+    generatedCouponCodes.length = 0;
+
     logger.info("🎫 Tests completos de API Cupones completados");
     logger.info(`📊 Grupos disponibles: ${extractedGroupIds.length}`);
-    logger.info(
-      `📊 Cupones generados en tests: ${generatedCouponCodes.length}`
-    );
-    if (generatedCouponCodes.length > 0) {
-      logger.info(`🎯 Códigos creados: ${generatedCouponCodes.join(", ")}`);
-    }
   });
 
   // ================== TESTS GET ==================
 
-  test("TC-001:  Verificar respuesta básica", async ({
+  test("TC_CPN_001_GET_List_ReturnsOk", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Verificar respuesta básica de cupones");
@@ -76,10 +83,15 @@ test.describe("🎫 Cupones ", () => {
     expect(body.status).toBe("OK");
     expect(Array.isArray(body.data)).toBe(true);
 
+    // Validación estructural con Zod (solo si hay datos)
+    if (body.data.length > 0) {
+      listCouponResponseSchema.parse(body);
+    }
+
     logger.info("✅ Respuesta básica verificada");
   });
 
-  test("TC-002: Verificar filtro por custom_code", async ({
+  test("TC_CPN_002_GET_FilterByCustomCode", async ({
     authRequest,
     coupon,
   }) => {
@@ -114,7 +126,7 @@ test.describe("🎫 Cupones ", () => {
     logger.info(`✅ Cupón encontrado por código: ${coupon.custom_code}`);
   });
 
-  test("TC-003:  Validar estructura de datos", async ({
+  test("TC_CPN_003_GET_ValidateResponseStructure", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Validar estructura de datos de cupones");
@@ -141,7 +153,7 @@ test.describe("🎫 Cupones ", () => {
     }
   });
 
-  test("TC-004:  Test de paginación", async ({
+  test("TC_CPN_004_GET_Pagination", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Validar paginación de cupones");
@@ -160,7 +172,7 @@ test.describe("🎫 Cupones ", () => {
     logger.info("✅ Paginación validada");
   });
 
-  test("TC-005:  Test performance básico", async ({
+  test("TC_CPN_005_GET_ResponseTimeUnder5s", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Performance básico");
@@ -180,7 +192,7 @@ test.describe("🎫 Cupones ", () => {
 
   // ================== TESTS POST ==================
 
-  test("TC-006: Crear cupón no reutilizable (is_reusable: false)", async ({
+  test("TC_CPN_006_POST_CreateCoupon_NonReusable", async ({
     authRequest,
     coupon,
   }) => {
@@ -220,33 +232,29 @@ test.describe("🎫 Cupones ", () => {
     expect(body.data.length).toBeGreaterThan(0);
 
     const createdCoupon = body.data[0];
-    expect(createdCoupon).toHaveProperty("code");
-    expect(createdCoupon).toHaveProperty("_id");
-
-    generatedCouponCodes.push(createdCoupon.code);
     generatedCouponIds.push(createdCoupon._id);
+    generatedCouponCodes.push(createdCoupon.code);
 
-    logger.info(
-      `✅ Cupón no reutilizable creado: ${createdCoupon.code} (ID: ${createdCoupon._id})`
-    );
-
-    // 🧹 Limpieza: eliminar cupón creado por este test
     try {
-      logger.info(`🗑️ Eliminando cupón creado en TC-006: ${createdCoupon._id}`);
-      const delResp = await authRequest.delete(
-        `/api/coupon/${createdCoupon._id}`
-      );
-      const delStatus = delResp.status();
-      const delText = await delResp.text();
-      logger.info(`DELETE TC-006 -> status=${delStatus} body=${delText}`);
-    } catch (e) {
+      expect(createdCoupon).toHaveProperty("code");
+      expect(createdCoupon).toHaveProperty("_id");
       logger.info(
-        `⚠️ No se pudo eliminar cupón TC-006 ${createdCoupon._id}: ${e}`
+        `✅ Cupón no reutilizable creado: ${createdCoupon.code} (ID: ${createdCoupon._id})`
       );
+    } finally {
+      // 🧹 Limpieza inmediata (aunque fallen las assertions)
+      try {
+        const delResp = await authRequest.delete(`/api/coupon/${createdCoupon._id}`);
+        logger.info(`DELETE TC-006 -> status=${delResp.status()}`);
+        const idx = generatedCouponIds.indexOf(createdCoupon._id);
+        if (idx !== -1) generatedCouponIds.splice(idx, 1);
+      } catch (e) {
+        logger.info(`⚠️ No se pudo eliminar cupón TC-006 ${createdCoupon._id}: ${e}`);
+      }
     }
   });
 
-  test("TC-007: Crear cupón reutilizable con código personalizado", async ({
+  test("TC_CPN_007_POST_CreateCoupon_ReusableCustomCode", async ({
     authRequest,
     coupon,
   }) => {
@@ -282,32 +290,28 @@ test.describe("🎫 Cupones ", () => {
     expect(Array.isArray(body.data)).toBe(true);
 
     const createdCoupon = body.data[0];
-    expect(createdCoupon.code).toBe(customCode);
-
-    generatedCouponCodes.push(createdCoupon.code);
     generatedCouponIds.push(createdCoupon._id);
+    generatedCouponCodes.push(createdCoupon.code);
 
-    logger.info(
-      `✅ Cupón reutilizable creado: ${createdCoupon.code} (ID: ${createdCoupon._id})`
-    );
-
-    // 🧹 Limpieza: eliminar cupón creado por este test
     try {
-      logger.info(`🗑️ Eliminando cupón creado en TC-007: ${createdCoupon._id}`);
-      const delResp = await authRequest.delete(
-        `/api/coupon/${createdCoupon._id}`
-      );
-      const delStatus = delResp.status();
-      const delText = await delResp.text();
-      logger.info(`DELETE TC-007 -> status=${delStatus} body=${delText}`);
-    } catch (e) {
+      expect(createdCoupon.code).toBe(customCode);
       logger.info(
-        `⚠️ No se pudo eliminar cupón TC-007 ${createdCoupon._id}: ${e}`
+        `✅ Cupón reutilizable creado: ${createdCoupon.code} (ID: ${createdCoupon._id})`
       );
+    } finally {
+      // 🧹 Limpieza inmediata (aunque fallen las assertions)
+      try {
+        const delResp = await authRequest.delete(`/api/coupon/${createdCoupon._id}`);
+        logger.info(`DELETE TC-007 -> status=${delResp.status()}`);
+        const idx = generatedCouponIds.indexOf(createdCoupon._id);
+        if (idx !== -1) generatedCouponIds.splice(idx, 1);
+      } catch (e) {
+        logger.info(`⚠️ No se pudo eliminar cupón TC-007 ${createdCoupon._id}: ${e}`);
+      }
     }
   });
 
-  test("TC-008:  Error al crear cupón con código duplicado", async ({
+  test("TC_CPN_008_POST_CreateCoupon_DuplicateCode_Returns400", async ({
     authRequest,
     coupon,
   }) => {
@@ -373,7 +377,7 @@ test.describe("🎫 Cupones ", () => {
     logger.info(`✅ Error esperado al intentar duplicar código: ${body.data}`);
   });
 
-  test("TC-009:  Error con datos inválidos", async ({
+  test("TC_CPN_009_POST_CreateCoupon_InvalidData_ReturnsError", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Error con datos inválidos");
@@ -416,7 +420,7 @@ test.describe("🎫 Cupones ", () => {
 
   // ================== TESTS INDIVIDUALES ==================
 
-  test("TC-010:  Obtener cupón por ID", async ({
+  test("TC_CPN_010_GET_CouponById_Success", async ({
     authRequest,
     coupon,
   }) => {
@@ -433,7 +437,9 @@ test.describe("🎫 Cupones ", () => {
     expect(body.data).toBeDefined();
     expect(body.data._id).toBe(couponId);
 
-    // Validar estructura completa del cupón
+    // Validación estructural con Zod
+    getCouponResponseSchema.parse(body);
+
     const retrievedCoupon = body.data;
     expect(retrievedCoupon).toHaveProperty("code");
     expect(retrievedCoupon).toHaveProperty("group");
@@ -442,7 +448,7 @@ test.describe("🎫 Cupones ", () => {
     logger.info(`✅ Cupón obtenido: ${retrievedCoupon.code}`);
   });
 
-  test("TC-011: G Buscar cupón por código", async ({
+  test("TC_CPN_011_GET_SearchCouponByCode", async ({
     authRequest,
     coupon,
   }) => {
@@ -461,7 +467,7 @@ test.describe("🎫 Cupones ", () => {
     logger.info(`✅ Cupón encontrado por código: ${couponCode}`);
   });
 
-  test("TC-012:  Crear y eliminar cupón temporal", async ({
+  test("TC_CPN_012_POST_CreateAndDelete_Coupon", async ({
     authRequest,
     coupon,
   }) => {
@@ -529,7 +535,7 @@ test.describe("🎫 Cupones ", () => {
     );
   });
 
-  test("TC-013:  Error para cupón inexistente", async ({
+  test("TC_CPN_013_GET_CouponById_NotFound", async ({
     authRequest,
   }) => {
     logger.info("🧪 Test: Error para cupón inexistente");

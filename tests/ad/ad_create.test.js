@@ -1,11 +1,15 @@
 const { test, expect } = require("../../fixtures/ad.fixture");
+const { adSchema } = require("../../schemas/ad.schema");
 
-test.describe("💵 Ad - Creación )", () => {
-  test("Crear Ad mínimo (name, type, flags)", async ({ tempAd }) => {
+test.describe("Ad API — Creación", () => {
+  test("TC_AD_001_POST_CreateAd_ValidPayload", async ({ tempAd }) => {
     expect(tempAd).toBeDefined();
+
+    // Validación estructural con Zod
+    adSchema.parse(tempAd);
+
     expect(tempAd).toHaveProperty("_id");
     expect(tempAd).toHaveProperty("name");
-    expect(tempAd).toHaveProperty("type");
     expect([
       "vast",
       "vmap",
@@ -17,8 +21,6 @@ test.describe("💵 Ad - Creación )", () => {
     expect(tempAd).toHaveProperty("is_enabled");
     expect(tempAd).toHaveProperty("preroll_skip_at");
     expect(tempAd).toHaveProperty("min_media_time_length");
-
-    // Estructura opcional esperada
     expect(tempAd).toHaveProperty("schedule");
     expect(tempAd).toHaveProperty("adswizz");
     expect(tempAd).toHaveProperty("insertion");
