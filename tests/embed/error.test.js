@@ -17,9 +17,6 @@ test.describe("Error Handler - Manejo de errores", () => {
     const body = await page.content();
     expect(body.length).toBeGreaterThan(0);
 
-    // Opcional: verificar mensaje de error o página de error
-    const errorIndicator = page.locator('[class*="error"], [class*="not-found"], .error-message');
-    // Si hay un indicador de error, verificar que es visible
   });
 
   test("EMB-50b: ID con formato inválido", async ({ embedRequest, embedUrl }) => {

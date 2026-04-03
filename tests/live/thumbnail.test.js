@@ -5,7 +5,7 @@ require('dotenv').config();
 
 const BASE_URL = process.env.BASE_URL;
 const API_TOKEN = process.env.API_TOKEN;
-const LIVE_ID = "6971288e64b2477e2b935259"; // Usando el ID del usuario
+const LIVE_ID = process.env.LIVE_THUMBNAIL_ID || "6971288e64b2477e2b935259";
 
 const API_BASE = `/api/live-stream/${LIVE_ID}`;
 const THUMB_URI = `${API_BASE}/thumb`;

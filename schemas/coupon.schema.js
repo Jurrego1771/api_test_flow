@@ -6,7 +6,7 @@ const couponSchema = z
   .object({
     _id: z.string(),
     code: z.string(),
-    group: z.string(),
+    group: z.union([z.string(), z.object({}).passthrough()]),
     date_created: z.string().optional(),
     custom_code: z.string().optional(),
     is_reusable: z.boolean().optional(),

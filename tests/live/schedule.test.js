@@ -31,7 +31,7 @@ const {
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 const LIVE_BASE = "/api/live-stream";
-const LIVE_ID   = "68dd426831f7bd5b6561e59e";   // Live pre-existente para pruebas
+const LIVE_ID   = process.env.LIVE_SCHEDULE_ID || "68dd426831f7bd5b6561e59e";
 const SCH_BASE  = (liveId) => `${LIVE_BASE}/${liveId}/schedule-job`;
 
 // IDs de jobs creados durante los tests (para cleanup)

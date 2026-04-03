@@ -179,8 +179,6 @@ test.describe("Modulo Media API", () => {
       expect([200, 400]).toContain(res.status);
       if (res.status === 400) {
         expect(body.status).toBe("ERROR");
-      } else if ((res.status === 200) && body.data?._id) {
-
       }
     });
   });

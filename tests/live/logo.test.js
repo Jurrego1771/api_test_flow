@@ -107,11 +107,8 @@ test.describe("Live Stream Logo API - Exhaustive Suite (Static Assets)", () => {
           attach: fs.createReadStream(LOGO_LARGE)
         }
       });
-      // El servidor debería devolver 400 por exceder 200KB
-      if (res.status() === 200 || res.status() === 500) {
-        test.skip(true, "Servidor no validó límite de tamaño (Status: " + res.status() + ")");
-        return;
-      }
+      // El servidor debe rechazar archivos que excedan 200KB con 400/422
+      // Si este test falla con 200/500, es BUG: el backend no está validando el tamaño
       expect([400, 422]).toContain(res.status());
     });
 
@@ -121,10 +118,8 @@ test.describe("Live Stream Logo API - Exhaustive Suite (Static Assets)", () => {
           attach: fs.createReadStream(FILE_INVALID)
         }
       });
-      if (res.status() === 200 || res.status() === 500) {
-        test.skip(true, `Servidor no validó formato (Status: ${res.status()})`);
-        return;
-      }
+      // El servidor debe rechazar formatos inválidos con 400/422
+      // Si este test falla con 200/500, es BUG: el backend no está validando el formato
       expect([400, 422]).toContain(res.status());
     });
 
