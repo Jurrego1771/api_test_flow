@@ -12,6 +12,7 @@
  */
 
 const { test, expect } = require("../../fixtures/accessRestriction.fixture");
+const { listAccessRestrictionResponseSchema } = require("../../schemas/access_restriction.schema");
 require("dotenv").config();
 
 const AR_ENDPOINT = "/api/settings/advanced-access-restrictions";
@@ -28,6 +29,7 @@ test.describe("1. List (GET /api/settings/advanced-access-restrictions)", () => 
     const body = await res.json();
     expect(body.status).toBe("OK");
     expect(Array.isArray(body.data)).toBe(true);
+    listAccessRestrictionResponseSchema.parse(body);
   });
 
   test("TC_AR_002_GET_ListNoToken_Returns401", async ({ playwright }) => {

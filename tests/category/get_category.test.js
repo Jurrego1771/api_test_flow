@@ -1,5 +1,6 @@
 const { test } = require("../../fixtures/category.fixture");
 const { expect } = require("@playwright/test");
+const { listCategoryResponseSchema } = require("../../schemas/category.schema");
 
 test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
   test("Debe devolver OK y un array de categorías (sin filtros)", async ({
@@ -11,6 +12,7 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
     expect(response.ok()).toBeTruthy();
     expect(body.status).toBe("OK");
     expect(Array.isArray(body.data)).toBe(true);
+    listCategoryResponseSchema.parse(body);
   });
 
   test("Debe permitir buscar por category_name", async ({

@@ -6,6 +6,7 @@ const adTypeEnum = z.enum([
   "googleima",
   "local",
   "ad-insertion",
+  "ad-insertion-google",
   "adswizz",
 ]);
 

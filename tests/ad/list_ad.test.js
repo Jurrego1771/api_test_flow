@@ -1,4 +1,5 @@
 const { test, expect } = require("../../fixtures/ad.fixture");
+const { listAdResponseSchema } = require("../../schemas/ad.schema");
 
 test.describe("Ad API — List & Search (GET /api/ad)", () => {
   test("TC_AD_GET_list_default", async ({ authRequest }) => {
@@ -8,6 +9,7 @@ test.describe("Ad API — List & Search (GET /api/ad)", () => {
     expect(res.status()).toBe(200);
     expect(body.status).toBe("OK");
     expect(Array.isArray(body.data)).toBe(true);
+    listAdResponseSchema.parse(body);
   });
 
   test("TC_AD_GET_list_pagination", async ({ authRequest }) => {
@@ -18,6 +20,7 @@ test.describe("Ad API — List & Search (GET /api/ad)", () => {
     expect(body.status).toBe("OK");
     expect(Array.isArray(body.data)).toBe(true);
     expect(body.data.length).toBeLessThanOrEqual(2);
+    listAdResponseSchema.parse(body);
   });
 
   test("TC_AD_GET_search_by_name", async ({ createAd, authRequest }) => {
