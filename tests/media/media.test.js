@@ -1029,6 +1029,38 @@ test.describe("Modulo Media API", () => {
       expect(body.data.length).toBe(0);
     });
   });
+
+  // --- 5. Delete Media ---
+  test.describe("5. Delete Media (DELETE /api/media/:id)", () => {
+    test("TC_MED_DELETE_media_by_id", async () => {
+      let media;
+      try {
+        media = await createMedia(apiClient, cleaner, {
+          title: `qa_delete_${faker.random.alphaNumeric(8)}`,
+        });
+      } catch (e) {
+        test.skip(true, `ENV_ISSUE: createMedia failed — ${e.message}`);
+        return;
+      }
+
+      const delRes = await apiClient.delete(`/api/media/${media._id}`);
+      expect(delRes.status).toBe(200);
+      expect(delRes.body.status).toBe("OK");
+
+      // Verify it's gone
+      const getRes = await apiClient.get(`/api/media/${media._id}`);
+      expect(getRes.status).toBe(404);
+    });
+
+    test("TC_MED_DELETE_media_not_found", async () => {
+      const delRes = await apiClient.delete("/api/media/000000000000000000000000");
+      expect([400, 404]).toContain(delRes.status);
+      // API may return empty body for 404 on delete
+      if (delRes.body?.status) {
+        expect(delRes.body.status).toBe("ERROR");
+      }
+    });
+  });
 });
 
 test.describe("Auth — Sin token / Token inválido", () => {

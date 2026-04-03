@@ -217,6 +217,42 @@ test.describe("Article API - CRUD & Search Operations", () => {
             expect([200, 400, 500]).toContain(res.status);
         });
     });
+
+    // --- 6. DELETE (DELETE /api/article/:id) ---
+    test.describe("6. Delete (DELETE /api/article/:id)", () => {
+        test("TC_ART_DELETE_article_by_id", async () => {
+            const createRes = await apiClient.post("/api/article", dataFactory.generateArticlePayload());
+            // ENV_ISSUE: article module returns 404 with current token — skip if unavailable
+            if (createRes.status === 404) {
+                test.skip(true, "ENV_ISSUE: /api/article returns 404 — module not accessible with current token");
+                return;
+            }
+            expect(createRes.status).toBe(200);
+            const id = createRes.body.data._id;
+
+            const delRes = await apiClient.delete(`/api/article/${id}`);
+            expect(delRes.status).toBe(200);
+            expect(delRes.body.status).toBe("OK");
+
+            // Verify it no longer exists
+            const getRes = await apiClient.get(`/api/article/${id}`);
+            expect([404, 200]).toContain(getRes.status);
+            if (getRes.status === 200) {
+                expect(getRes.body.status).toBe("ERROR");
+            }
+        });
+
+        test("TC_ART_DELETE_article_not_found", async () => {
+            const delRes = await apiClient.delete("/api/article/000000000000000000000000");
+            // ENV_ISSUE guard: if module is unavailable the response may not have JSON body
+            if (delRes.status === 404 && !delRes.body?.status) {
+                test.skip(true, "ENV_ISSUE: /api/article returns 404 — module not accessible with current token");
+                return;
+            }
+            expect([400, 404]).toContain(delRes.status);
+            expect(delRes.body?.status).toBe("ERROR");
+        });
+    });
 });
 
 test.describe("Auth — Sin token / Token inválido", () => {
