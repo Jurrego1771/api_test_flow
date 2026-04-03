@@ -67,3 +67,28 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
     expect(ids).toContain(childCategory._id);
   });
 });
+
+test.describe("Auth — Sin token / Token inválido", () => {
+  test("TC_CAT_GET_list_no_token", async ({ playwright }) => {
+    const ctx = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
+    try {
+      const res = await ctx.get("/api/category");
+      expect([401, 403]).toContain(res.status());
+    } finally {
+      await ctx.dispose();
+    }
+  });
+
+  test("TC_CAT_GET_list_invalid_token", async ({ playwright }) => {
+    const ctx = await playwright.request.newContext({
+      baseURL: process.env.BASE_URL,
+      extraHTTPHeaders: { "X-API-Token": "invalid_token_xyz" },
+    });
+    try {
+      const res = await ctx.get("/api/category");
+      expect([401, 403]).toContain(res.status());
+    } finally {
+      await ctx.dispose();
+    }
+  });
+});

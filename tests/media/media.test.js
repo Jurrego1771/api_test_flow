@@ -1030,3 +1030,28 @@ test.describe("Modulo Media API", () => {
     });
   });
 });
+
+test.describe("Auth — Sin token / Token inválido", () => {
+  test("TC_MED_GET_list_no_token", async ({ playwright }) => {
+    const ctx = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
+    try {
+      const res = await ctx.get("/api/media");
+      expect([401, 403]).toContain(res.status());
+    } finally {
+      await ctx.dispose();
+    }
+  });
+
+  test("TC_MED_GET_list_invalid_token", async ({ playwright }) => {
+    const ctx = await playwright.request.newContext({
+      baseURL: process.env.BASE_URL,
+      extraHTTPHeaders: { "X-API-Token": "invalid_token_xyz" },
+    });
+    try {
+      const res = await ctx.get("/api/media");
+      expect([401, 403]).toContain(res.status());
+    } finally {
+      await ctx.dispose();
+    }
+  });
+});
