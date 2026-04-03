@@ -499,6 +499,74 @@ test.describe("5. Edge Cases y Validaciones", () => {
     expect(created.description).toContain("Émojis");
   });
 });
+
+  // --- 6. List & Filters ---
+  // NOTE: GET /api/show returns { version, data } — no "status" field (unlike other endpoints)
+  test.describe("6. List & Filters (GET /api/show)", () => {
+    test("TC_SHW_GET_list_default", async ({ authRequest }) => {
+      const res = await authRequest.get("/api/show");
+      const body = await res.json();
+
+      expect(res.status()).toBe(200);
+      expect(Array.isArray(body.data)).toBe(true);
+    });
+
+    test("TC_SHW_GET_list_pagination", async ({ authRequest }) => {
+      const res = await authRequest.get("/api/show?limit=5&skip=0");
+      const body = await res.json();
+
+      expect(res.status()).toBe(200);
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.length).toBeLessThanOrEqual(5);
+    });
+
+    test("TC_SHW_GET_list_filter_by_type", async ({ authRequest }) => {
+      const res = await authRequest.get("/api/show?type=tvshow&limit=10");
+      const body = await res.json();
+
+      expect(res.status()).toBe(200);
+      expect(Array.isArray(body.data)).toBe(true);
+      body.data.forEach((show) => {
+        expect(show.type).toBe("tvshow");
+      });
+    });
+
+    test("TC_SHW_GET_list_sort_by_title", async ({ authRequest }) => {
+      const res = await authRequest.get("/api/show?sort=title&limit=10");
+      const body = await res.json();
+
+      expect(res.status()).toBe(200);
+      expect(Array.isArray(body.data)).toBe(true);
+
+      // Verify ascending sort: each title >= previous
+      const titles = body.data.map((s) => (s.title || "").toLowerCase());
+      for (let i = 1; i < titles.length; i++) {
+        expect(titles[i] >= titles[i - 1]).toBe(true);
+      }
+    });
+
+    test("TC_SHW_GET_list_filter_by_title", async ({ authRequest }) => {
+      const uniqueTitle = `qa_list_filter_${Date.now()}`;
+      const createRes = await authRequest.post("/api/show", {
+        form: { title: uniqueTitle, type: "tvshow" },
+      });
+      expect(createRes.status()).toBe(200);
+      const createBody = await createRes.json();
+      const raw = createBody?.data ?? createBody;
+      const show = Array.isArray(raw) ? raw[0] : raw;
+
+      cleaner.register("show", show._id);
+
+      const res = await authRequest.get(
+        `/api/show?title=${encodeURIComponent(uniqueTitle)}&title_rule=is`
+      );
+      const body = await res.json();
+
+      expect(res.status()).toBe(200);
+      expect(Array.isArray(body.data)).toBe(true);
+      expect(body.data.some((s) => s._id === show._id)).toBe(true);
+    });
+  });
 });
 
 test.describe("Auth — Sin token / Token inválido", () => {
