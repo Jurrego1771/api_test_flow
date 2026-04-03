@@ -44,6 +44,21 @@ jobs:
         BASE_URL: ${{ secrets.BASE_URL }}
         API_TOKEN: ${{ secrets.API_TOKEN }}
         ACCOUNT_ID: ${{ secrets.ACCOUNT_ID }}
+        VMS_BASE_URL: ${{ secrets.VMS_BASE_URL }}
+        VMS_TOKEN: ${{ secrets.VMS_TOKEN }}
+        LIVE_SCHEDULE_ID: ${{ secrets.LIVE_SCHEDULE_ID }}
+        LIVE_THUMBNAIL_ID: ${{ secrets.LIVE_THUMBNAIL_ID }}
+        EMBED_HOST: ${{ secrets.EMBED_HOST }}
+        EMBED_PROTOCOL: ${{ secrets.EMBED_PROTOCOL }}
+        EMBED_MEDIA_ID: ${{ secrets.EMBED_MEDIA_ID }}
+        EMBED_LIVE_STREAM_ID: ${{ secrets.EMBED_LIVE_STREAM_ID }}
+        EMBED_PLAYLIST_ID: ${{ secrets.EMBED_PLAYLIST_ID }}
+        EMBED_ACCOUNT_ID: ${{ secrets.EMBED_ACCOUNT_ID }}
+        EMBED_CATEGORY_ID: ${{ secrets.EMBED_CATEGORY_ID }}
+        EMBED_PLAYER_ID: ${{ secrets.EMBED_PLAYER_ID }}
+        EMBED_SCHEDULE_JOB_LIVE_ID: ${{ secrets.EMBED_SCHEDULE_JOB_LIVE_ID }}
+        EMBED_SCHEDULE_JOB_VOD_ID: ${{ secrets.EMBED_SCHEDULE_JOB_VOD_ID }}
+        EMBED_TEST_POSTER_URL: ${{ secrets.EMBED_TEST_POSTER_URL }}
 
     - name: 📤 Upload Allure results
       if: always()
