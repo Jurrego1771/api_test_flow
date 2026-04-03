@@ -29,6 +29,33 @@
       "discovered_on": "2026-04-02",
       "run_count": 1,
       "confirmed_by_user": true
+    },
+    {
+      "id": "L_V_20260402_4",
+      "category": "api_quirk",
+      "description": "POST /api/ad/:id con tags=[] no limpia el array. La API devuelve el valor anterior concatenado como string único. Bug confirmado con test TC_AD_POST_update_clear_tags.",
+      "scope": "module:ad",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
+    {
+      "id": "L_V_20260402_5",
+      "category": "api_quirk",
+      "description": "POST /api/category/:id con description='' no limpia el campo. GET devuelve el valor original sin cambios. Bug confirmado con test TC_CAT_POST_update_clear_description.",
+      "scope": "module:category",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
+    {
+      "id": "L_V_20260402_6",
+      "category": "test_pattern",
+      "description": "Para field_clear en módulos donde el campo no se acepta en create (ej. show.description): usar flujo 3 pasos — create (sin campo) → update (set value) → update (clear value) → GET verify. No mezclar set+clear en un solo POST.",
+      "scope": "pattern:field_clear",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
     }
   ]
 }

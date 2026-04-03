@@ -327,6 +327,27 @@ test.describe("3. Update (POST /api/show/:id)", () => {
     expect(show.description).toBe(updatePayload.description);
   });
 
+  test("TC_SHW_POST_update_clear_description", async ({ authRequest, accountId }) => {
+    const createRes = await authRequest.post("/api/show", {
+      form: {
+        account: accountId,
+        title: `qa_show_clear_${Date.now()}`,
+        type: "tvshow",
+        description: "qa_original_description",
+      },
+    });
+    expect(createRes.status()).toBe(200);
+    const created = getShowFromBody(await createRes.json());
+    cleaner.register("show", created._id);
+
+    await authRequest.post(`/api/show/${created._id}`, { form: { description: "" } });
+
+    const getRes = await authRequest.get(`/api/show/${created._id}`);
+    expect(getRes.status()).toBe(200);
+    const show = getShowFromBody(await getRes.json());
+    expect(!show.description || show.description === "").toBeTruthy();
+  });
+
   test("TC_SHW_NEG_042_UPDATE_InvalidNextEpisodeDate", async ({
     authRequest,
     tempShow,

@@ -375,6 +375,35 @@ test.describe("Modulo Media API", () => {
     });
   });
 
+  // --- 4b. Suite: Field Clear ---
+
+  test.describe("4b. Field Clear (POST /api/media/:id)", () => {
+    test("TC_MED_POST_update_clear_description", async () => {
+      const media = await createMedia(apiClient, cleaner, {
+        description: "qa_original_description",
+      });
+
+      await apiClient.post(`/api/media/${media._id}`, { description: "" });
+
+      const getRes = await apiClient.get(`/api/media/${media._id}`);
+      expect(getRes.status).toBe(200);
+      const desc = getRes.body.data.description;
+      expect(!desc || desc === "").toBeTruthy();
+    });
+
+    test("TC_MED_POST_update_clear_categories", async () => {
+      const media = await createMedia(apiClient, cleaner);
+
+      await apiClient.post(`/api/media/${media._id}`, { categories: [] });
+
+      const getRes = await apiClient.get(`/api/media/${media._id}`);
+      expect(getRes.status).toBe(200);
+      const categories = getRes.body.data.categories ?? [];
+      expect(Array.isArray(categories)).toBe(true);
+      expect(categories).toHaveLength(0);
+    });
+  });
+
   // --- 5. Suite: Delete Media ---
 
   test.describe("5. Delete Media (DELETE /api/media/:id)", () => {

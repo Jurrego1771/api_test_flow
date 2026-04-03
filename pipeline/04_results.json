@@ -2,35 +2,83 @@
   "pipeline_version": "1.0",
   "run_date": "2026-04-02",
   "source": "03_manifest.json",
+  "audit_cycle": "field_clear",
+  "overall_status": "BUG_FOUND",
   "summary": {
-    "total": 4,
-    "pass": 3,
-    "fail": 1
+    "total": 6,
+    "pass": 1,
+    "bug_real": 2,
+    "test_issue": 1,
+    "env_issue": 2
   },
-  "failures": [
+  "results": [
     {
-      "test_id": "TC_ART_GET_update_persist_title_synopsis",
-      "file": "tests/article/article.test.js",
-      "failure_type": "ENV_ISSUE",
-      "expected": "200",
-      "received": "404",
-      "error_message": "Todos los tests del módulo article devuelven 404. El módulo no está disponible en el entorno configurado.",
-      "recommendation": "check_env",
-      "fix": "Verificar si el módulo article está habilitado para el token en .env. Tests de article están excluidos hasta resolverlo."
-    }
-  ],
-  "pre_existing_failures": [
-    {
-      "test_id": "TC_AD_004_POST_UpdateAd_Success",
-      "failure_type": "TEST_ISSUE",
-      "note": "getAdResponseSchema espera 'insertion' como objeto pero la API devuelve null. Pre-existente."
+      "test_id": "TC_AD_POST_update_clear_tags",
+      "file": "tests/ad/update_ad.test.js",
+      "status": "BUG_REAL",
+      "classification_reason": "API receives tags=[] but returns [\"qa_tag_1,qa_tag_2\"] — original value not cleared. Array concatenated into single string. Confirms user-reported bug.",
+      "error": "expect(received).toHaveLength(0) — Expected length: 0, Received length: 1",
+      "actionable": "Backend bug: POST /api/ad/:id with tags=[] should clear the array, not preserve/concatenate previous value."
     },
     {
-      "test_id": "TC_SHW_001 / TC_SHW_002",
-      "failure_type": "TEST_ISSUE",
-      "note": "apiClient.post envía JSON pero POST /api/show requiere form-encoded. Pre-existente."
+      "test_id": "TC_AD_POST_update_clear_categories",
+      "file": "tests/ad/update_ad.test.js",
+      "status": "PASS",
+      "classification_reason": "categories field cleared correctly after sending categories=[].",
+      "error": null,
+      "actionable": null
+    },
+    {
+      "test_id": "TC_MED_POST_update_clear_description",
+      "file": "tests/media/media.test.js",
+      "status": "ENV_ISSUE",
+      "classification_reason": "createMedia helper returns 404 {} — media creation not accessible with current token/environment.",
+      "error": "createMedia failed: 404 {}",
+      "actionable": "Verify BASE_URL and API_TOKEN have write access to /api/media. Re-run when environment is stable."
+    },
+    {
+      "test_id": "TC_MED_POST_update_clear_categories",
+      "file": "tests/media/media.test.js",
+      "status": "ENV_ISSUE",
+      "classification_reason": "Same root cause as TC_MED_POST_update_clear_description — createMedia returns 404.",
+      "error": "createMedia failed: 404 {}",
+      "actionable": "Re-run when media endpoint is accessible."
+    },
+    {
+      "test_id": "TC_SHW_POST_update_clear_description",
+      "file": "tests/show/show.test.js",
+      "status": "TEST_ISSUE",
+      "classification_reason": "Show create returns non-200 when description is included in create payload. Test flow is wrong: cannot create+set+clear in one step. Fix: create (name only) → update (set description) → update (clear) → GET verify.",
+      "error": "expect(createRes.status()).toBe(200) — received non-200",
+      "actionable": "Fix test to use 3-step flow. Not a backend bug."
+    },
+    {
+      "test_id": "TC_CAT_POST_update_clear_description",
+      "file": "tests/category/post_category.test.js",
+      "status": "BUG_REAL",
+      "classification_reason": "After POST /api/category/:id with description='', GET still returns original description. Field not cleared. Same pattern as Ad tags bug.",
+      "error": "expect(!desc || desc === '').toBeTruthy() — received false",
+      "actionable": "Backend bug: POST /api/category/:id with description='' should clear the field."
     }
   ],
-  "pipeline_status": "BUG_FOUND",
-  "next_action": "check_env"
+  "bugs_confirmed": [
+    {
+      "bug_id": "BUG_FIELD_CLEAR_001",
+      "module": "ad",
+      "field": "tags",
+      "endpoint": "POST /api/ad/:id",
+      "description": "Sending tags=[] does not clear the tags array. API concatenates previous tags into a single string element.",
+      "severity": "medium",
+      "test_id": "TC_AD_POST_update_clear_tags"
+    },
+    {
+      "bug_id": "BUG_FIELD_CLEAR_002",
+      "module": "category",
+      "field": "description",
+      "endpoint": "POST /api/category/:id",
+      "description": "Sending description='' does not clear the description field. GET returns original value unchanged.",
+      "severity": "medium",
+      "test_id": "TC_CAT_POST_update_clear_description"
+    }
+  ]
 }

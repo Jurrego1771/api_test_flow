@@ -1,3 +1,9 @@
+---
+name: agent3-write
+description: QA Pipeline Agent 3 — Test Writer. Reads pipeline/02_test_plan.json and generates real Playwright test code. Appends to existing test files or creates new ones. Always run after agent2-plan or agent2-audit.
+version: 1.0.0
+---
+
 # Skill: agent3-write — Test Writer
 
 ## Rol

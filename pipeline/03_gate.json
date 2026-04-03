@@ -1,22 +1,15 @@
 {
   "agent": "writer",
   "status": "READY",
-  "summary": "4 archivos modificados, 4 tests agregados",
+  "summary": "4 archivos modificados, 6 tests de field_clear agregados",
   "decisions": [
-    "TC_CAT_GET_create_persist_fields: usa cleaner.register('category', id) en lugar del cleanup manual con try/catch que usan los otros tests del mismo archivo — más consistente con el patrón del proyecto",
-    "TC_SHW_GET_update_persist: crea su propio show en lugar de usar tempShow fixture para evitar interferencia con otros tests del describe",
-    "Todos los tests usan el patrón UPDATE → GET en lugar de verificar solo el body del UPDATE"
+    "Media: los tests van en un nuevo describe '4b. Field Clear' para separar semánticamente del describe de update existente",
+    "Ad: tags se pasa como array vacío [] via form — si la API lo ignora el test fallará y confirmará el bug",
+    "Show/Category: aplicado L_V_20260402_2 (authRequest+form) y L_W3_20260402_1 (cleaner.register) automáticamente",
+    "Assertions de descripción: usan !desc || desc === '' para aceptar tanto string vacío como null/undefined — la API puede manejar el borrado de cualquier forma"
   ],
   "questions": [],
   "todos": [],
-  "new_learnings": [
-    {
-      "id": "L_W3_20260402_1",
-      "category": "convention",
-      "description": "post_category.test.js mezcla dos patrones de cleanup: cleaner.register() en beforeEach/afterEach y delete manual con try/catch dentro del test. El nuevo test usa cleaner.register() — considerar unificar en una futura refactor.",
-      "scope": "module:category",
-      "apply": "pending"
-    }
-  ],
+  "new_learnings": [],
   "next_command": "/agent4-validate"
 }

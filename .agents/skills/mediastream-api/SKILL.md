@@ -53,25 +53,61 @@ Todas las respuestas retornan JSON con esta estructura:
 
 Cada módulo tiene su archivo de referencia detallado en `references/`:
 
-| Módulo | Ruta Base | Referencia |
-|--------|-----------|------------|
-| Category | `/api/category` | [category.md](references/category.md) |
-| Media | `/api/media` | [media.md](references/media.md) |
-| Live Stream | `/api/live-stream` | [live-stream.md](references/live-stream.md) |
-| Playlist | `/api/playlist` | [playlist.md](references/playlist.md) |
-| Ads | `/api/ad` | [ads.md](references/ads.md) |
-| Channel | `/api/channel` | [channel.md](references/channel.md) |
-| Customer | `/api/customer` | [customer.md](references/customer.md) |
-| Image | `/api/image` | [image.md](references/image.md) |
-| Article | `/api/article` | [article.md](references/article.md) |
-| Access Token | `/api/auth` | [access-token.md](references/access-token.md) |
-| Lookup | `/api/lookup` | [lookup.md](references/lookup.md) |
-| Show / Season / Episode | `/api/show` | [show.md](references/show.md) |
-| CDN | `/api/cdn` | [cdn.md](references/cdn.md) |
-| Sale / Reseller | `/api/sale` | [sale.md](references/sale.md) |
-| Settings | `/api/settings` | [settings.md](references/settings.md) |
-| Customer Coupon | `/api/coupon` | [customer-coupon.md](references/customer-coupon.md) |
-| Machine Learning | `/api/machine-learning` | [machine-learning.md](references/machine-learning.md) |
+### Gestión de Contenido
+
+| Módulo | Ruta Base | Referencia | Estado |
+|--------|-----------|------------|--------|
+| Media (colección) | `/api/media` | [media.md](references/media.md) | ✅ Completo |
+| Media (recurso) | `/api/media/{id}` | [media-id.md](references/media-id.md) | ✅ Completo |
+| Live Stream (colección) | `/api/live-stream` | [live-stream.md](references/live-stream.md) | ✅ Completo |
+| Live Stream (recurso) | `/api/live-stream/{id}` | [live-stream-id.md](references/live-stream-id.md) | ✅ Completo |
+| Playlist | `/api/playlist` | [playlist.md](references/playlist.md) | ✅ Completo |
+| Category | `/api/category` | [category.md](references/category.md) | ✅ Completo |
+| Show | `/api/show` | [show.md](references/show.md) | ✅ Completo |
+| Show (recurso/temporadas) | `/api/show/{id}` | [show-id.md](references/show-id.md) | ✅ Completo |
+| Show Season/Episode | `/api/show/{id}/season` | [show-season-episode.md](references/show-season-episode.md) | ✅ Completo |
+| Article | `/api/article` | [article.md](references/article.md) | ✅ Completo |
+| Image | `/api/image` | [image.md](references/image.md) | ✅ Completo |
+| Channel | `/api/channel` | [channel.md](references/channel.md) | ✅ Completo |
+
+### Publicidad y Monetización
+
+| Módulo | Ruta Base | Referencia | Estado |
+|--------|-----------|------------|--------|
+| Ads | `/api/ad` | [ads.md](references/ads.md) | ✅ Completo |
+| Customer Coupon | `/api/coupon` + `/api/coupon-group` | [coupon.md](references/coupon.md) | ✅ Completo |
+
+### Usuarios y Clientes
+
+| Módulo | Ruta Base | Referencia | Estado |
+|--------|-----------|------------|--------|
+| Customer | `/api/customer` | [customer.md](references/customer.md) | ✅ Completo |
+
+### Acceso y Seguridad
+
+| Módulo | Ruta Base | Referencia | Estado |
+|--------|-----------|------------|--------|
+| Access Token (Closed Access) | `/api/access/issue` | [access-token.md](references/access-token.md) | ✅ Completo |
+| Access Restrictions (Settings) | `/api/settings/advanced-access-restrictions` | [access-restrictions.md](references/access-restrictions.md) | ✅ Completo |
+
+### Infraestructura y Herramientas
+
+| Módulo | Ruta Base | Referencia | Estado |
+|--------|-----------|------------|--------|
+| CDN | `/api/cdn` | [cdn.md](references/cdn.md) | ✅ Completo |
+| Lookup (catálogos) | `/api/lookup` | [lookup.md](references/lookup.md) | ✅ Completo |
+| Machine Learning | `/api/machine-learning` | [machine-learning.md](references/machine-learning.md) | ✅ Completo |
+
+### Módulos Sin Referencia (pendientes de documentar)
+
+| Módulo | Ruta Base | Prioridad |
+|--------|-----------|-----------|
+| Sale / Reseller | `/api/sale` | Media |
+| Customer Session | `/api/customer/session` | Media |
+| Show Related | `/api/show/{id}/related` | Baja |
+| Show Image | `/api/show/{id}/image` | Baja |
+| Show Episode | `/api/show/{id}/season/{sid}/episode` | Baja |
+| Media Chunk Upload | `/api/upload` | Baja |
 
 ## Patrones CRUD Estándar
 

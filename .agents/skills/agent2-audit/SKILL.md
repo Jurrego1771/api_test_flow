@@ -1,3 +1,9 @@
+---
+name: agent2-audit
+description: QA Pipeline Agent 2 (audit mode) — Test Auditor. Analyzes existing tests against documented endpoints to detect coverage gaps. Configure pipeline/input/audit_request.json with focus (persistence, field_clear, coverage, auth, edge_cases) before invoking.
+version: 1.0.0
+---
+
 # Skill: agent2-audit — Test Auditor
 
 ## Rol
@@ -30,7 +36,8 @@ Escribe:
 
 | Valor | Qué detecta |
 |-------|-------------|
-| `persistence` | Endpoints POST/PUT sin test que verifique GET posterior |
+| `persistence` | Endpoints POST/PUT sin test que verifique GET posterior con valor actualizado |
+| `field_clear` | Endpoints POST/PUT sin test que verifique que enviar un campo vacío/null realmente lo borra en GET |
 | `coverage` | Endpoints documentados sin ningún test |
 | `auth` | Endpoints sin caso `no_token` → 401 |
 | `edge_cases` | Endpoints sin caso de payload inválido o límite |
@@ -75,6 +82,23 @@ En `depth: "quick"` → buscar por nombre: test con `_valid` que contenga llamad
 En `depth: "full"` → leer el cuerpo del test y verificar que hay assertion sobre los datos modificados.
 
 Marcar como gap si: el endpoint tiene POST o PUT pero ningún test verifica la persistencia.
+
+#### `field_clear`
+Un endpoint tiene test de borrado de campo si existe un test que:
+1. Crea un recurso con el campo X con valor no-vacío
+2. Hace POST/PUT enviando ese campo como `""`, `null` o valor vacío equivalente
+3. Hace GET y verifica que el campo X está vacío, null o ausente
+
+En `depth: "quick"` → buscar tests con scenario `clear_field` o `remove_field` en el nombre.
+En `depth: "full"` → leer el cuerpo y verificar el patrón: set value → clear → GET → assert empty.
+
+Campos candidatos por módulo (los más frecuentemente problemáticos):
+- Campos opcionales de texto: `description`, `synopsis`, `notes`
+- Campos de relación: `ad`, `category`, `player`, `thumbnail`
+- Campos booleanos que pueden desactivarse: `is_enabled`, `featured`, `visible`
+
+Marcar como gap si: el endpoint tiene campos opcionales modificables pero ningún test verifica que vaciarlos persiste.
+Priorizar campos de relación (`ad`, `category`, `player`) sobre campos de texto.
 
 #### `coverage`
 Cruzar endpoints en `references/<module>.md` contra tests existentes.

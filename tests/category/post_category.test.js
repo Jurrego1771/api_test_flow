@@ -179,4 +179,25 @@ test.describe("POST /api/category - Creación de categorías", () => {
     expect(getBody.data.name).toBe(name);
     expect(getBody.data.description).toBe(payload.description);
   });
+
+  test("TC_CAT_POST_update_clear_description", async ({ authRequest }) => {
+    const createRes = await authRequest.post("/api/category", {
+      form: { name: `qa_cat_clear_${Date.now()}`, description: "qa_original_description" },
+    });
+    const createBody = await createRes.json();
+    expect(createRes.status()).toBe(200);
+
+    const id = createBody.data._id;
+    cleaner.register("category", id);
+
+    await authRequest.post(`/api/category/${id}`, { form: { description: "" } });
+
+    const getRes = await authRequest.get(`/api/category/${id}`);
+    const getBody = await getRes.json();
+
+    expect(getRes.status()).toBe(200);
+    expect(getBody.status).toBe("OK");
+    const desc = getBody.data.description;
+    expect(!desc || desc === "").toBeTruthy();
+  });
 });

@@ -1,3 +1,9 @@
+---
+name: agent2-plan
+description: QA Pipeline Agent 2 — Test Planner. Reads pipeline/01_changes.json and API references to produce a structured test plan in pipeline/02_test_plan.json. Use after agent1-watch when working from a git diff.
+version: 1.0.0
+---
+
 # Skill: agent2-plan — Test Planner
 
 ## Rol

@@ -1,3 +1,9 @@
+---
+name: agent4-validate
+description: QA Pipeline Agent 4 — Test Validator. Runs tests listed in pipeline/03_manifest.json one file at a time, classifies failures as BUG_REAL, TEST_ISSUE or ENV_ISSUE, and produces pipeline/04_results.json. Always run after agent3-write.
+version: 1.0.0
+---
+
 # Skill: agent4-validate — Test Validator
 
 ## Rol

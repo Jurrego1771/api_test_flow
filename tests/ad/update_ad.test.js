@@ -95,4 +95,39 @@ test.describe("Ad API — Update", () => {
     expect(body.data.is_enabled).toBeTruthy();
     expect(body.data.preroll_skip_at).toBe(updatePayload.preroll_skip_at);
   });
+
+  test("TC_AD_POST_update_clear_tags", async ({ createAd, authRequest }) => {
+    const { ad } = await createAd({
+      name: `qa_ad_clear_tags_${Date.now()}`,
+      type: "vast",
+      tags: ["qa_tag_1", "qa_tag_2"],
+    });
+
+    await authRequest.post(`/api/ad/${ad._id}`, { form: { tags: [] } });
+
+    const res = await authRequest.get(`/api/ad/${ad._id}`);
+    const body = await res.json();
+
+    expect(res.status()).toBe(200);
+    expect(body.status).toBe("OK");
+    const tags = body.data.tags ?? [];
+    expect(tags).toHaveLength(0);
+  });
+
+  test("TC_AD_POST_update_clear_categories", async ({ createAd, authRequest }) => {
+    const { ad } = await createAd({
+      name: `qa_ad_clear_cats_${Date.now()}`,
+      type: "vast",
+    });
+
+    await authRequest.post(`/api/ad/${ad._id}`, { form: { categories: [] } });
+
+    const res = await authRequest.get(`/api/ad/${ad._id}`);
+    const body = await res.json();
+
+    expect(res.status()).toBe(200);
+    expect(body.status).toBe("OK");
+    const categories = body.data.categories ?? [];
+    expect(categories).toHaveLength(0);
+  });
 });

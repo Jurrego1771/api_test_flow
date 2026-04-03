@@ -1,3 +1,9 @@
+---
+name: agent1-watch
+description: QA Pipeline Agent 1 — API Watcher. Parses a git diff from pipeline/input/diff.patch to detect new, modified and deleted API endpoints. Updates references and produces pipeline/01_changes.json for the Test Planner agent.
+version: 1.0.0
+---
+
 # Skill: agent1-watch — API Watcher
 
 ## Rol
