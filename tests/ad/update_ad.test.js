@@ -2,7 +2,7 @@ const { test, expect } = require("../../fixtures/ad.fixture");
 const { getAdResponseSchema } = require("../../schemas/ad.schema");
 
 test.describe("Ad API — Update", () => {
-  test("TC_AD_004_POST_UpdateAd_Success", async ({ createAd, authRequest }) => {
+  test("TC_AD_POST_update_ad_valid", async ({ createAd, authRequest }) => {
     const { ad } = await createAd({
       name: `qa_ad_update_${Date.now()}`,
       type: "vast",
@@ -35,7 +35,7 @@ test.describe("Ad API — Update", () => {
     getAdResponseSchema.parse(body);
   });
 
-  test("TC_AD_005_POST_UpdateAd_NegativeMinLength_NormalizedOr400", async ({
+  test("TC_AD_POST_update_ad_neg_min_length", async ({
     createAd,
     authRequest,
   }) => {
@@ -56,7 +56,7 @@ test.describe("Ad API — Update", () => {
     }
   });
 
-  test("TC_AD_006_POST_UpdateAd_NotFound", async ({ authRequest }) => {
+  test("TC_AD_POST_update_ad_not_found", async ({ authRequest }) => {
     const nonExistingId = "5ee2704ea666e81cf291a085";
     const res = await authRequest.post(`/api/ad/${nonExistingId}`, {
       form: { name: "should_not_exist" },

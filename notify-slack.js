@@ -8,8 +8,8 @@ const RESULTS_FILE = "test-results/results.json";
 const REPORT_URL = "https://jurrego1771.github.io/api_test_flow/";
 
 if (!WEBHOOK_URL) {
-  console.error("❌ No se encontró SLACK_WEBHOOK_URL en el archivo .env");
-  process.exit(1);
+  console.log("⚠️  SLACK_WEBHOOK_URL no configurado, omitiendo notificación");
+  process.exit(0);
 }
 
 if (!fs.existsSync(RESULTS_FILE)) {

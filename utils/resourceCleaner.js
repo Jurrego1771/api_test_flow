@@ -59,6 +59,10 @@ class ResourceCleaner {
         }
         this.createdResources = [];
     }
+
+    async cleanAll() {
+        return this.clean();
+    }
 }
 
 module.exports = { ResourceCleaner };

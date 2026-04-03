@@ -2,7 +2,7 @@ const { test, expect } = require("../../fixtures/ad.fixture");
 const { adSchema } = require("../../schemas/ad.schema");
 
 test.describe("Ad API — Creación", () => {
-  test("TC_AD_001_POST_CreateAd_ValidPayload", async ({ tempAd }) => {
+  test("TC_AD_POST_create_ad_valid", async ({ tempAd }) => {
     expect(tempAd).toBeDefined();
 
     // Validación estructural con Zod

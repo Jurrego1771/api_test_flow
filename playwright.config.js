@@ -5,6 +5,12 @@ module.exports = defineConfig({
   testDir: "./tests",
   timeout: 30_000,
 
+  // 2 workers: safe for API tests against shared account without starving CI
+  workers: 2,
+
+  // Retry only in CI to absorb transient network hiccups
+  retries: process.env.CI ? 1 : 0,
+
   use: {
     baseURL: process.env.BASE_URL,
     headless: true,
@@ -24,7 +30,7 @@ module.exports = defineConfig({
     ["json", { outputFile: "test-results/results.json" }], // 🧾 útil para Slack o CI
     ["html", { outputFolder: "playwright-report", open: "never" }], // 🌐 reporte Playwright (fallback)
     [
-      "allure-playwright",
+      "./reporters/allure-enhanced.js",
       {
         detail: true,              // incluye steps internos de Playwright
         outputFolder: "allure-results", // datos crudos; el HTML se genera en CI
