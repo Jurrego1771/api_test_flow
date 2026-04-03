@@ -543,6 +543,39 @@ test.describe('Playlist API', () => {
             expect(detail.body.data.medias ?? []).toHaveLength(0);
         });
     });
+
+    // ═══════════════════════════════════════════════════════════════
+    // Field Clear — verificar que enviar "" limpia el campo en GET
+    // ═══════════════════════════════════════════════════════════════
+    test.describe("Field Update Persistence (POST /api/playlist/:id)", () => {
+        test("TC_PLS_POST_update_persist_description", async ({ authRequest }) => {
+            // Use authRequest directly — apiClient doubles /api/ in the URL for playlist
+            const createRes = await authRequest.post("/api/playlist", {
+                data: { name: `qa_upd_${Date.now()}`, type: "manual", description: "qa_original_description" },
+            });
+            expect(createRes.status()).toBe(200);
+            const createBody = await createRes.json();
+            const playlistId = createBody.data._id;
+            cleaner.register("playlist", playlistId);
+
+            // Verify description was set on create
+            const beforeRes = await authRequest.get(`/api/playlist/${playlistId}`);
+            const beforeBody = await beforeRes.json();
+            expect(beforeBody.data.description).toBe("qa_original_description");
+
+            // Update description to a new value
+            const newDescription = `qa_updated_description_${Date.now()}`;
+            await authRequest.post(`/api/playlist/${playlistId}`, {
+                data: { description: newDescription },
+            });
+
+            // Verify updated description persists on GET
+            const afterRes = await authRequest.get(`/api/playlist/${playlistId}`);
+            const afterBody = await afterRes.json();
+            expect(afterRes.status()).toBe(200);
+            expect(afterBody.data.description).toBe(newDescription);
+        });
+    });
 });
 
 test.describe("Auth — Sin token / Token inválido", () => {

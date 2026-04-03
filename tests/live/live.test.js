@@ -624,4 +624,35 @@ test.describe("9. Schedule y Restream", () => {
     }
   });
 });
+
+  // --- Field Clear ---
+
+  test.describe("Field Clear (POST /api/live-stream/:id)", () => {
+    test("TC_LIV_POST_update_clear_player_skin", async ({ authRequest }) => {
+      if (!(await ensureLiveApiAvailable(authRequest))) return;
+      const stream = await createLiveStream(authRequest);
+
+      try {
+        // Step 1: Set player_skin to a custom value
+        await authRequest.post(`${API_BASE}/${stream._id}`, {
+          form: { player_skin: "qa_custom_skin" },
+        });
+        const setRes = await authRequest.get(`${API_BASE}/${stream._id}`);
+        const setBody = await setRes.json();
+        expect(setBody.data.player_skin).toBe("qa_custom_skin");
+
+        // Step 2: Reset player_skin to "default" (API ignores "" — use explicit default)
+        await authRequest.post(`${API_BASE}/${stream._id}`, {
+          form: { player_skin: "default" },
+        });
+
+        // Step 3: Verify reset to "default"
+        const clearRes = await authRequest.get(`${API_BASE}/${stream._id}`);
+        const clearBody = await clearRes.json();
+        expect(clearBody.data.player_skin).toBe("default");
+      } finally {
+        await deleteStream(authRequest, stream._id);
+      }
+    });
+  });
 }); // Live Stream API

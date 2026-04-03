@@ -255,6 +255,44 @@ test.describe("Article API - CRUD & Search Operations", () => {
     });
 });
 
+test.describe("Field Clear (POST /api/article/:id)", () => {
+    let apiClient;
+    let cleaner;
+
+    test.beforeEach(async ({ authRequest, baseURL }) => {
+        const { ApiClient } = require("../../lib/apiClient");
+        const { ResourceCleaner } = require("../../utils/resourceCleaner");
+        apiClient = new ApiClient(authRequest, baseURL);
+        cleaner = new ResourceCleaner(apiClient);
+    });
+
+    test.afterEach(async () => {
+        await cleaner.clean();
+    });
+
+    test("TC_ART_POST_update_clear_synopsis", async () => {
+        const createRes = await apiClient.post("/api/article", dataFactory.generateArticlePayload({
+            synopsis: "qa_original_synopsis",
+        }));
+        if (createRes.status === 404) {
+            test.skip(true, "ENV_ISSUE: /api/article returns 404 — module not accessible with current token");
+            return;
+        }
+        expect(createRes.status).toBe(200);
+        const id = createRes.body.data._id;
+        cleaner.register("article", id);
+
+        // Clear synopsis
+        await apiClient.post(`/api/article/${id}`, { synopsis: "" });
+
+        // Verify cleared
+        const getRes = await apiClient.get(`/api/article/${id}`);
+        expect(getRes.status).toBe(200);
+        const synopsis = getRes.body.data.synopsis;
+        expect(!synopsis || synopsis === "").toBeTruthy();
+    });
+});
+
 test.describe("Auth — Sin token / Token inválido", () => {
   test("TC_ART_GET_list_no_token", async ({ playwright }) => {
     const ctx = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
