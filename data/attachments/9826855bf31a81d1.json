@@ -1,0 +1,25 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/68dd426831f7bd5b6561e59e/schedule-job",
+  "requestHeaders": {},
+  "requestBody": {
+    "name": "[QA-AUTO] SchBox 2026-04-03T20-00-29-303Z - am65ty",
+    "geo_restriction": "allow",
+    "geo_restriction_countries": [
+      "co"
+    ],
+    "tz_offset": -5,
+    "type": "onetime",
+    "date_start": "2026-04-04",
+    "date_end": "2026-04-04",
+    "date_start_hour": "18",
+    "date_start_minute": "00",
+    "date_end_hour": "10",
+    "date_end_minute": "00"
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "INVALID_DATE_ERROR"
+  }
+}

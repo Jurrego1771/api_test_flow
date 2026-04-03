@@ -1,0 +1,13 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/undefined",
+  "requestHeaders": {},
+  "requestBody": {
+    "logo_live_position": "bottom-left"
+  },
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

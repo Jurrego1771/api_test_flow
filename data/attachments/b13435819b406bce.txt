@@ -1,0 +1,3 @@
+Cleaning up 2 resources...
+Deleted Season: 69d01cca755aa003329ff39f (show: 69d01cc9de7dcd0355a8ce52)
+Deleted Season: 69d01cca755aa003329ff397 (show: 69d01cc9de7dcd0355a8ce52)

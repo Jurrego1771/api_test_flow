@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "url": "/api/category/000000000000000000000000",
+  "requestHeaders": {},
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

@@ -1,0 +1,3 @@
+Cleaning up 2 resources...
+Deleted Episode: 69d01cd1755aa003329ff4ed (season: 69d01cd1de7dcd0355a8d016)
+Deleted Season: 69d01cd1de7dcd0355a8d016 (show: 69d01cd1de7dcd0355a8d008)

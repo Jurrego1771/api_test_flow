@@ -1,0 +1,31 @@
+{
+  "method": "POST",
+  "url": "https://dev.platform.mediastre.am/api/live-stream/69724db4002efe954a6c0e00/quizzes",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "title": "qa_quiz_nocorrect_knxrmo",
+    "questions": [
+      {
+        "text": "Q?",
+        "options": [
+          {
+            "text": "A",
+            "isCorrect": false
+          },
+          {
+            "text": "B",
+            "isCorrect": false
+          }
+        ]
+      }
+    ]
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "message": "Each question must have at least one correct option"
+  }
+}

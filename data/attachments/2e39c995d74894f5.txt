@@ -1,0 +1,5 @@
+✅ Creada categoría padre: qa_parent_1775246197005 69d01b755493800312849648
+Cleaning up 2 resources...
+Deleted Article: 69d01b75549380031284965f
+Deleted Article: 69d01b755493800312849654
+🧹 DELETE parentCategory -> status=200 body={"status":"OK","data":null}

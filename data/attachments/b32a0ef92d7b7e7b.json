@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "url": "/api/live-stream/68dd426831f7bd5b6561e59e/schedule-job/000000000000000000000099",
+  "requestHeaders": {},
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

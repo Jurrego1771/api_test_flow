@@ -1,0 +1,10 @@
+{
+  "method": "GET",
+  "url": "https://develop.mdstrm.com/feed/apps/507f1f77bcf86cd799439014/media?category=6960065ac768f2683e5dee11&page=1&limit=10",
+  "requestHeaders": {},
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "ACCOUNT_NOT_FOUND"
+  }
+}

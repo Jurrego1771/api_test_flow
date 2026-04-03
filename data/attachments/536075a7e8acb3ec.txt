@@ -1,0 +1,15 @@
+Usando grupo existente: qa_cpngrp_luv0bdn6ke (ID: 69d01b7f461dd502cd6b1a0c)
+{
+  "coupon_total": 0,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 0,
+  "_id": "69d01b7f461dd502cd6b1a0c",
+  "name": "qa_cpngrp_luv0bdn6ke",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2026-04-03T19:56:47.699Z",
+  "_name": "qa_cpngrp_luv0bdn6ke",
+  "__v": 0
+}
+Cleaning up 0 resources...
+[Fixture] Intentando eliminar cupón: 69d01b80461dd502cd6b1a3b
+[Fixture] DELETE /api/coupon/69d01b80461dd502cd6b1a3b -> status=200 body={"status":"OK"}

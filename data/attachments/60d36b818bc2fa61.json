@@ -1,0 +1,16 @@
+{
+  "method": "POST",
+  "url": "/api/category",
+  "requestHeaders": {},
+  "requestBody": {
+    "name": "",
+    "description": "Nombre vacío",
+    "track": true,
+    "visible": true
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NAME_IS_REQUIRED"
+  }
+}

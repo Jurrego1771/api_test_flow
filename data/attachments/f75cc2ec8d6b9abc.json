@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "url": "https://develop.mdstrm.com/nonexistent/endpoint/12345",
+  "requestHeaders": {},
+  "responseStatus": 404,
+  "responseBody": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /nonexistent/endpoint/12345</pre>\n</body>\n</html>\n"
+}

@@ -1,0 +1,13 @@
+{
+  "method": "GET",
+  "url": "https://dev.platform.mediastre.am/api/media/69b9f58d1dfb8f70c932753c/metadata",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab"
+  },
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "METADATA_NOT_FOUND"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "method": "DELETE",
+  "url": "/api/live-stream/undefined/logo?token=70992a5e909d74be1673ea2267f5e2ab",
+  "requestHeaders": {},
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

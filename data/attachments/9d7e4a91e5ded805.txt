@@ -1,0 +1,132 @@
+❌ VMS Fetch Error: [
+  {
+    "code": "invalid_value",
+    "values": [
+      "Transcode",
+      "MediaInit",
+      "ExtractMetadata",
+      "GenerateThumbnail",
+      "GenerateSubtitle"
+    ],
+    "path": [
+      "jobs",
+      0,
+      "job_type"
+    ],
+    "message": "Invalid option: expected one of \"Transcode\"|\"MediaInit\"|\"ExtractMetadata\"|\"GenerateThumbnail\"|\"GenerateSubtitle\""
+  },
+  {
+    "code": "invalid_value",
+    "values": [
+      "Transcode",
+      "MediaInit",
+      "ExtractMetadata",
+      "GenerateThumbnail",
+      "GenerateSubtitle"
+    ],
+    "path": [
+      "jobs",
+      1,
+      "job_type"
+    ],
+    "message": "Invalid option: expected one of \"Transcode\"|\"MediaInit\"|\"ExtractMetadata\"|\"GenerateThumbnail\"|\"GenerateSubtitle\""
+  },
+  {
+    "code": "invalid_value",
+    "values": [
+      "Transcode",
+      "MediaInit",
+      "ExtractMetadata",
+      "GenerateThumbnail",
+      "GenerateSubtitle"
+    ],
+    "path": [
+      "jobs",
+      2,
+      "job_type"
+    ],
+    "message": "Invalid option: expected one of \"Transcode\"|\"MediaInit\"|\"ExtractMetadata\"|\"GenerateThumbnail\"|\"GenerateSubtitle\""
+  },
+  {
+    "code": "invalid_value",
+    "values": [
+      "Transcode",
+      "MediaInit",
+      "ExtractMetadata",
+      "GenerateThumbnail",
+      "GenerateSubtitle"
+    ],
+    "path": [
+      "jobs",
+      3,
+      "job_type"
+    ],
+    "message": "Invalid option: expected one of \"Transcode\"|\"MediaInit\"|\"ExtractMetadata\"|\"GenerateThumbnail\"|\"GenerateSubtitle\""
+  }
+]
+⚠️ Failed to connect to VMS: [
+  {
+    "code": "invalid_value",
+    "values": [
+      "Transcode",
+      "MediaInit",
+      "ExtractMetadata",
+      "GenerateThumbnail",
+      "GenerateSubtitle"
+    ],
+    "path": [
+      "jobs",
+      0,
+      "job_type"
+    ],
+    "message": "Invalid option: expected one of \"Transcode\"|\"MediaInit\"|\"ExtractMetadata\"|\"GenerateThumbnail\"|\"GenerateSubtitle\""
+  },
+  {
+    "code": "invalid_value",
+    "values": [
+      "Transcode",
+      "MediaInit",
+      "ExtractMetadata",
+      "GenerateThumbnail",
+      "GenerateSubtitle"
+    ],
+    "path": [
+      "jobs",
+      1,
+      "job_type"
+    ],
+    "message": "Invalid option: expected one of \"Transcode\"|\"MediaInit\"|\"ExtractMetadata\"|\"GenerateThumbnail\"|\"GenerateSubtitle\""
+  },
+  {
+    "code": "invalid_value",
+    "values": [
+      "Transcode",
+      "MediaInit",
+      "ExtractMetadata",
+      "GenerateThumbnail",
+      "GenerateSubtitle"
+    ],
+    "path": [
+      "jobs",
+      2,
+      "job_type"
+    ],
+    "message": "Invalid option: expected one of \"Transcode\"|\"MediaInit\"|\"ExtractMetadata\"|\"GenerateThumbnail\"|\"GenerateSubtitle\""
+  },
+  {
+    "code": "invalid_value",
+    "values": [
+      "Transcode",
+      "MediaInit",
+      "ExtractMetadata",
+      "GenerateThumbnail",
+      "GenerateSubtitle"
+    ],
+    "path": [
+      "jobs",
+      3,
+      "job_type"
+    ],
+    "message": "Invalid option: expected one of \"Transcode\"|\"MediaInit\"|\"ExtractMetadata\"|\"GenerateThumbnail\"|\"GenerateSubtitle\""
+  }
+]. This may be expected if VMS is not accessible in this environment.

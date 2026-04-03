@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "url": "/api/ad/69d01b7054938003128494d7",
+  "requestHeaders": {},
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

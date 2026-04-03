@@ -1,0 +1,8 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/69d01c36549380031284a755/refresh-token",
+  "requestHeaders": {},
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot POST /api/live-stream/69d01c36549380031284a755/refresh-token</pre>\n</body>\n</html>\n"
+}

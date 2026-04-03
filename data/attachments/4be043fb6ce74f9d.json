@@ -1,0 +1,20 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/undefined/logo?token=70992a5e909d74be1673ea2267f5e2ab",
+  "requestHeaders": {},
+  "requestBody": {
+    "attach": {
+      "name": "empty.png",
+      "mimeType": "image/png",
+      "buffer": {
+        "type": "Buffer",
+        "data": []
+      }
+    }
+  },
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "Live stream not found"
+  }
+}

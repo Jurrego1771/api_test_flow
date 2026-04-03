@@ -1,0 +1,7 @@
+{
+  "method": "GET",
+  "url": "https://develop.mdstrm.com/embed/invalid-id-format",
+  "requestHeaders": {},
+  "responseStatus": 404,
+  "responseBody": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /embed/invalid-id-format</pre>\n</body>\n</html>\n"
+}

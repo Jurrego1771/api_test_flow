@@ -1,0 +1,19 @@
+{
+  "method": "POST",
+  "url": "https://dev.platform.mediastre.am/api/customer",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "email": "qa_mi6jvz3r0i@example.com",
+    "password": "Qa!3f4gf4yztv1",
+    "first_name": "qa_dup",
+    "last_name": "qa_dup"
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "EMAIL_ALREADY_REGISTERED"
+  }
+}

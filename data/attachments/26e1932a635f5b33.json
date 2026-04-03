@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "url": "https://dev.platform.mediastre.am/api/coupon-group/69d0011a461dd502cd6992fc/disable",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {},
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "DB_ERROR",
+    "message": "BOTH_DATE_START_AND_DATE_END_ARE_REQUIRED"
+  }
+}

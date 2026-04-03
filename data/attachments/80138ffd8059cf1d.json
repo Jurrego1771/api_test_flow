@@ -1,0 +1,10 @@
+{
+  "method": "GET",
+  "url": "https://develop.mdstrm.com/api/media/6900fff86ddf33fd39a52825/related",
+  "requestHeaders": {},
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "PLAYER_NOT_FOUND"
+  }
+}

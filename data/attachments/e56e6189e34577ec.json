@@ -1,0 +1,18 @@
+{
+  "method": "POST",
+  "url": "https://dev.platform.mediastre.am/api/customer",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {
+    "email": "qa_nofn_qszmlbqy@example.com",
+    "password": "Qa!2m2iv5behy1",
+    "last_name": "qa_nofirstname"
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "Path `first_name` is required."
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "method": "DELETE",
+  "url": "https://dev.platform.mediastre.am/api/playlist/000000000000000000000000",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab"
+  },
+  "requestBody": "N/A",
+  "responseStatus": 404,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "NOT_FOUND"
+  }
+}

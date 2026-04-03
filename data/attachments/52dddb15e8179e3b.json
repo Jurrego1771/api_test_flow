@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "url": "https://dev.platform.mediastre.am/api/access/issue?id=000000000000000000000000&type=media",
+  "requestHeaders": {
+    "x-api-token": "70992a5e909d74be1673ea2267f5e2ab",
+    "Content-Type": "application/json"
+  },
+  "requestBody": {},
+  "responseStatus": 401,
+  "responseBody": {
+    "status": "ERROR",
+    "message": "INVALID_OBJECT_ID",
+    "access_token": null
+  }
+}

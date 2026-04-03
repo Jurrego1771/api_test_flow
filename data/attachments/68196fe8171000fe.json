@@ -1,0 +1,13 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/68dd426831f7bd5b6561e59e/schedule-job",
+  "requestHeaders": {},
+  "requestBody": {
+    "name": "PartialJob"
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "INVALID_DATE_ERROR"
+  }
+}

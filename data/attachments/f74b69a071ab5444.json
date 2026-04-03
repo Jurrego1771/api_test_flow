@@ -1,0 +1,30 @@
+{
+  "method": "POST",
+  "url": "/api/live-stream/undefined/logo?token=70992a5e909d74be1673ea2267f5e2ab",
+  "requestHeaders": {},
+  "requestBody": {
+    "attach": {
+      "fd": null,
+      "path": "/home/runner/work/api_test_flow/api_test_flow/tests/resources/invalid_format.txt",
+      "flags": "r",
+      "mode": 438,
+      "end": null,
+      "bytesRead": 108,
+      "_events": {},
+      "_readableState": {
+        "highWaterMark": 65536,
+        "buffer": [],
+        "bufferIndex": 0,
+        "length": 0,
+        "pipes": [],
+        "awaitDrainWriters": null
+      },
+      "_eventsCount": 3
+    }
+  },
+  "responseStatus": 400,
+  "responseBody": {
+    "status": "ERROR",
+    "data": "Image doesn't meet requirements."
+  }
+}
