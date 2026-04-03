@@ -3,7 +3,7 @@ const { test, expect } = require("../../fixtures/embed.fixture");
 
 test.describe("Playlist y Share", () => {
 
-  test("EMB-33: Redirección a primer video de playlist", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_playlist_redirects_to_first_video", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.playlist(embedConfig.playlistId);
     const response = await embedRequest.get(url, { maxRedirects: 0, failOnStatusCode: false });
 
@@ -18,7 +18,7 @@ test.describe("Playlist y Share", () => {
     }
   });
 
-  test("EMB-34: Share media (VOD)", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_share_vod", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.share("media", embedConfig.mediaId);
     const response = await embedRequest.get(url, { maxRedirects: 0, failOnStatusCode: false });
 
@@ -30,7 +30,7 @@ test.describe("Playlist y Share", () => {
     }
   });
 
-  test("EMB-35: Share live", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_share_live", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.share("live", embedConfig.liveStreamId);
     const response = await embedRequest.get(url, { maxRedirects: 0, failOnStatusCode: false });
 

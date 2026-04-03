@@ -3,7 +3,7 @@ const { test, expect } = require("../../fixtures/embed.fixture");
 
 test.describe("Error Handler - Manejo de errores", () => {
 
-  test("EMB-50: URL con ID inexistente (404)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_not_found_id", async ({ page, embedUrl, embedConfig }) => {
     // ID inválido de 24 caracteres hex (todos ceros)
     const invalidId = "000000000000000000000000";
     const url = embedUrl.vod(invalidId);
@@ -19,7 +19,7 @@ test.describe("Error Handler - Manejo de errores", () => {
 
   });
 
-  test("EMB-50b: ID con formato inválido", async ({ embedRequest, embedUrl }) => {
+  test("TC_EMB_GET_vod_invalid_id_format", async ({ embedRequest, embedUrl }) => {
     // ID con formato incorrecto (no hex)
     const invalidId = "invalid-id-format";
     const url = embedUrl.vod(invalidId);
@@ -30,7 +30,7 @@ test.describe("Error Handler - Manejo de errores", () => {
     expect([200, 400, 404, 500]).toContain(response.status());
   });
 
-  test("EMB-50c: Endpoint inexistente", async ({ embedRequest, embedConfig }) => {
+  test("TC_EMB_GET_nonexistent_endpoint", async ({ embedRequest, embedConfig }) => {
     const url = `https://${embedConfig.host}/nonexistent/endpoint/12345`;
 
     const response = await embedRequest.get(url, { failOnStatusCode: false });

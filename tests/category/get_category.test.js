@@ -3,7 +3,7 @@ const { expect } = require("@playwright/test");
 const { listCategoryResponseSchema } = require("../../schemas/category.schema");
 
 test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
-  test("Debe devolver OK y un array de categorías (sin filtros)", async ({
+  test("TC_CAT_GET_list_no_filter", async ({
     authRequest,
   }) => {
     const response = await authRequest.get("/api/category");
@@ -15,7 +15,7 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
     listCategoryResponseSchema.parse(body);
   });
 
-  test("Debe permitir buscar por category_name", async ({
+  test("TC_CAT_GET_list_filter_by_name", async ({
     authRequest,
     parentCategory,
   }) => {
@@ -32,7 +32,7 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
     expect(names).toContain(parentCategory.name);
   });
 
-  test("Debe soportar flag full (ruta completa en nombre)", async ({
+  test("TC_CAT_GET_list_full_flag", async ({
     authRequest,
   }) => {
     const response = await authRequest.get("/api/category?full=true");
@@ -43,7 +43,7 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
     expect(Array.isArray(body.data)).toBe(true);
   });
 
-  test("Debe soportar with_count (conteo de hijos)", async ({
+  test("TC_CAT_GET_list_with_count_flag", async ({
     authRequest,
   }) => {
     const response = await authRequest.get("/api/category?with_count=true");
@@ -54,7 +54,7 @@ test.describe("GET /api/category - Búsqueda y listados de categorías", () => {
     expect(Array.isArray(body.data)).toBe(true);
   });
 
-  test("Debe listar y contener la categoría hija creada", async ({
+  test("TC_CAT_GET_list_contains_child_category", async ({
     authRequest,
     childCategory,
   }) => {

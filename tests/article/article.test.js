@@ -24,7 +24,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
 
     // --- 1. INSERT (POST /api/article) ---
     test.describe("1. Create (POST /api/article)", () => {
-        test("TC_ART_001: Crear artículo completo (Happy Path)", async () => {
+        test("TC_ART_POST_create_valid", async () => {
             const payload = dataFactory.generateArticlePayload({
                 author: "QA Tester Auto",
                 is_published: true
@@ -44,7 +44,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
             createArticleResponseSchema.parse(body);
         });
 
-        test("TC_ART_002: Error al crear artículo sin título (Sad Path)", async () => {
+        test("TC_ART_POST_create_missing_title", async () => {
             const payload = {
                 synopsis: "Sin título"
             };
@@ -57,7 +57,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
 
     // --- 2. DETAIL (GET /api/article/:id) ---
     test.describe("2. Detail (GET /api/article/:id)", () => {
-        test("TC_ART_003: Obtener detalle de artículo por ID", async () => {
+        test("TC_ART_GET_detail_by_id", async () => {
             const createRes = await apiClient.post("/api/article", dataFactory.generateArticlePayload());
             const article = createRes.body.data;
             cleaner.register("article", article._id);
@@ -71,7 +71,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
 
     // --- 3. UPDATE (POST /api/article/:id) ---
     test.describe("3. Update (POST /api/article/:id)", () => {
-        test("TC_ART_004: Actualizar título y sinopsis", async () => {
+        test("TC_ART_POST_update_title_and_synopsis", async () => {
             const createRes = await apiClient.post("/api/article", dataFactory.generateArticlePayload());
             const article = createRes.body.data;
             cleaner.register("article", article._id);
@@ -109,7 +109,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
 
     // --- 4. LIST & FILTERS (GET /api/article) ---
     test.describe("4. List & Filters (GET /api/article)", () => {
-        test("TC_ART_005: Listar artículos con paginación y filtros básicos", async () => {
+        test("TC_ART_GET_list_pagination", async () => {
             // Aseguramos que haya al menos uno
             const art = await apiClient.post("/api/article", dataFactory.generateArticlePayload());
             cleaner.register("article", art.body.data._id);
@@ -124,7 +124,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
             listArticleResponseSchema.parse(body);
         });
 
-        test("TC_ART_006: Obtener contador de artículos (count=true)", async () => {
+        test("TC_ART_GET_list_count_flag", async () => {
             const res = await apiClient.get("/api/article?count=true");
             expect(res.status).toBe(200);
             
@@ -139,7 +139,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
             expect(typeof count).toBe("number");
         });
 
-        test("TC_ART_007: Filtrar listado general para artículos sin categoría (without_category=true)", async ({ parentCategory }) => {
+        test("TC_ART_GET_list_without_category", async ({ parentCategory }) => {
             // 1. Crear un artículo CON categoría
             const payloadWithCat = dataFactory.generateArticlePayload({ categories: [parentCategory._id] });
             const resWithCat = await apiClient.post("/api/article", payloadWithCat);
@@ -162,7 +162,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
             expect(idsList, "BUG: El listado 'without_category=true' NO incluye artículos con categories=null").toContain(resWithoutCat.body.data._id);
         });
 
-        test("TC_ART_008: Validar filtro 'without_category' en consulta por ID con y sin categoría", async ({ parentCategory }) => {
+        test("TC_ART_GET_list_without_category_by_id", async ({ parentCategory }) => {
             // 1. Artículo con categoría
             const payloadWithCat = dataFactory.generateArticlePayload({ categories: [parentCategory._id] });
             const resWithCat = await apiClient.post("/api/article", payloadWithCat);
@@ -190,7 +190,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
 
     // --- 5. SEARCH (GET /api/article/search) ---
     test.describe("5. Search (GET /api/article/search)", () => {
-        test.skip("TC_ART_009: Búsqueda avanzada por título y tags", async () => {
+        test.skip("TC_ART_GET_search_by_title_and_tags", async () => {
             const uniqueTag = `tag_${Date.now()}`;
             const art = await apiClient.post("/api/article", dataFactory.generateArticlePayload({
                 tags: [uniqueTag]
@@ -209,7 +209,7 @@ test.describe("Article API - CRUD & Search Operations", () => {
 
     // --- 6. AI & PREVIEW ---
     test.describe("6. AI & Preview", () => {
-        test("TC_ART_010: Endpoint de Preview (validación de existencia)", async () => {
+        test("TC_ART_POST_preview_valid", async () => {
             const art = await apiClient.post("/api/article", dataFactory.generateArticlePayload());
             cleaner.register("article", art.body.data._id);
 

@@ -3,7 +3,7 @@ const { test, expect } = require("../../fixtures/embed.fixture");
 
 test.describe("Feed - RSS/Atom style", () => {
 
-  test("EMB-36: Feed de medios por categoría", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_feed_filter_by_category", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.feed(embedConfig.accountId, "media", null, {
       category: embedConfig.categoryId,
       page: 1,
@@ -21,7 +21,7 @@ test.describe("Feed - RSS/Atom style", () => {
     }
   });
 
-  test("EMB-37: Feed con ordenamiento (sort=-date_created)", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_feed_sort_desc", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.feed(embedConfig.accountId, "media", null, {
       sort: "-date_created",
       limit: 5,
@@ -36,7 +36,7 @@ test.describe("Feed - RSS/Atom style", () => {
     }
   });
 
-  test("EMB-38: Feed filtrado por tags", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_feed_filter_by_tags", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.feed(embedConfig.accountId, "media", null, {
       tags: "tag1,tag2",
     });
@@ -45,7 +45,7 @@ test.describe("Feed - RSS/Atom style", () => {
     expect([200, 404]).toContain(response.status());
   });
 
-  test("EMB-39: Límite máximo permitido (limit=100)", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_feed_limit_max", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.feed(embedConfig.accountId, "media", null, {
       limit: 100,
     });
@@ -61,7 +61,7 @@ test.describe("Feed - RSS/Atom style", () => {
     }
   });
 
-  test("EMB-40: Límite excedido (limit=200 -> max 100)", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_feed_limit_exceeded_capped", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.feed(embedConfig.accountId, "media", null, {
       limit: 200,
     });

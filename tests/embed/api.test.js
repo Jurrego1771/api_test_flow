@@ -3,7 +3,7 @@ const { test, expect } = require("../../fixtures/embed.fixture");
 
 test.describe("API Embed - Endpoints de metadata", () => {
 
-  test("EMB-46: Detalle de video en JSON", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_api_video_detail_json", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.video(embedConfig.mediaId, "json");
 
     const response = await embedRequest.get(url, { failOnStatusCode: false });
@@ -18,7 +18,7 @@ test.describe("API Embed - Endpoints de metadata", () => {
     }
   });
 
-  test("EMB-47: Medios relacionados", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_api_related_media", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.api(`/api/media/${embedConfig.mediaId}/related`);
 
     const response = await embedRequest.get(url, { failOnStatusCode: false });
@@ -31,7 +31,7 @@ test.describe("API Embed - Endpoints de metadata", () => {
     }
   });
 
-  test("EMB-48: Contenido de playlist", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_api_playlist_content", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.api(`/api/playlist/${embedConfig.playlistId}/content`);
 
     const response = await embedRequest.get(url, { failOnStatusCode: false });
@@ -43,7 +43,7 @@ test.describe("API Embed - Endpoints de metadata", () => {
     }
   });
 
-  test("EMB-49: Verificación de restricciones de acceso", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_api_access_restrictions", async ({ embedRequest, embedUrl, embedConfig }) => {
     const url = embedUrl.api(`/api/access-restrictions/media/${embedConfig.mediaId}`);
 
     const response = await embedRequest.get(url, { failOnStatusCode: false });

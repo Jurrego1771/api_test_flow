@@ -3,7 +3,7 @@ const { test, expect } = require("../../fixtures/embed.fixture");
 
 test.describe("OEmbed - Metadata", () => {
 
-  test("EMB-41: Metadata en JSON", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_oembed_metadata_json", async ({ embedRequest, embedUrl, embedConfig }) => {
     const embedVideoUrl = embedUrl.vod(embedConfig.mediaId);
     const url = embedUrl.oembed(embedVideoUrl, { format: "json" });
 
@@ -21,7 +21,7 @@ test.describe("OEmbed - Metadata", () => {
     }
   });
 
-  test("EMB-42: Metadata en XML", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_oembed_metadata_xml", async ({ embedRequest, embedUrl, embedConfig }) => {
     const embedVideoUrl = embedUrl.vod(embedConfig.mediaId);
     const url = embedUrl.oembed(embedVideoUrl, { format: "xml" });
 
@@ -35,7 +35,7 @@ test.describe("OEmbed - Metadata", () => {
     }
   });
 
-  test("EMB-43: Dimensiones maxwidth/maxheight", async ({ embedRequest, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_oembed_max_dimensions", async ({ embedRequest, embedUrl, embedConfig }) => {
     const embedVideoUrl = embedUrl.vod(embedConfig.mediaId);
     const url = embedUrl.oembed(embedVideoUrl, {
       format: "json",

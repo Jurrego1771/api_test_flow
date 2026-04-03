@@ -7,7 +7,7 @@ const { test, expect } = require("../../fixtures/embed.fixture");
  */
 test.describe("Embed VOD - Videos bajo demanda", () => {
 
-  test("EMB-01: Carga básica de video en reproductor", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_basic_load", async ({ page, embedUrl, embedConfig }) => {
     // Ir a la URL del embed
     const url = embedUrl.vod(embedConfig.mediaId);
     await page.goto(url);
@@ -29,7 +29,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     // expect(consoleErrors.filter(e => e.includes('FATAL') || e.includes('Critical'))).toHaveLength(0);
   });
 
-  test("EMB-02: Autoplay sin intervención del usuario", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_autoplay_enabled", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { autoplay: "true" });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -47,7 +47,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     }
   });
 
-  test("EMB-03: Inicio en posición específica (position=60)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_start_position_param", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { position: 60 });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -65,7 +65,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     }
   });
 
-  test("EMB-04: Loop al finalizar (loop=true)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_loop_param", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { loop: "true" });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -82,7 +82,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     }
   });
 
-  test("EMB-05: Ocultar controles del player (controls=false)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_controls_hidden", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { controls: "false" });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -95,7 +95,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     await page.waitForTimeout(2000);
   });
 
-  test("EMB-06: Volumen inicial personalizado (volume=50)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_custom_volume", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { volume: 50 });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -112,7 +112,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     }
   });
 
-  test("EMB-07: Título y descripción personalizados", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_custom_title_description", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, {
       title: "Mi Título de Prueba",
       description: "Mi Descripción de Prueba",
@@ -128,7 +128,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     await page.waitForTimeout(2000);
   });
 
-  test("EMB-08: Ocultar título del contenido (show_title=false)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_title_hidden", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { show_title: "false" });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -136,7 +136,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     expect(page.url()).toContain("show_title=false");
   });
 
-  test("EMB-09: Ocultar indicador de estado (show_status=false)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_status_hidden", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { show_status: "false" });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -144,7 +144,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     expect(page.url()).toContain("show_status=false");
   });
 
-  test("EMB-10: Poster personalizado", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_custom_poster", async ({ page, embedUrl, embedConfig }) => {
     const posterUrl = embedConfig.testPosterUrl;
     const url = embedUrl.vod(embedConfig.mediaId, { poster: posterUrl });
     await page.goto(url);
@@ -157,7 +157,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     await page.waitForTimeout(2000);
   });
 
-  test("EMB-11: Player específico por ID", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_custom_player_id", async ({ page, embedUrl, embedConfig }) => {
     test.skip(!embedConfig.playerId, "Se requiere EMBED_PLAYER_ID configurado");
 
     const url = embedUrl.vod(embedConfig.mediaId, { player: embedConfig.playerId });
@@ -167,7 +167,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     expect(page.url()).toContain("player=");
   });
 
-  test("EMB-12: Skin del player (lightning)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_player_skin", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { player_skin: "lightning" });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -175,7 +175,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     expect(page.url()).toContain("player_skin=lightning");
   });
 
-  test("EMB-13: Sin anuncios con admin_token (no_ad=true)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_no_ad_with_admin_token", async ({ page, embedUrl, embedConfig }) => {
     test.skip(!embedConfig.adminToken, "Se requiere EMBED_ADMIN_TOKEN configurado");
 
     const url = embedUrl.vod(embedConfig.mediaId, {
@@ -189,7 +189,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     expect(page.url()).toContain("admin_token=");
   });
 
-  test("EMB-14: Acceso con token de cuenta (acc_token)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_account_token_access", async ({ page, embedUrl, embedConfig }) => {
     test.skip(!embedConfig.accToken, "Se requiere EMBED_ACC_TOKEN configurado");
 
     const url = embedUrl.vod(embedConfig.mediaId, { acc_token: embedConfig.accToken });
@@ -199,7 +199,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     expect(page.url()).toContain("acc_token=");
   });
 
-  test("EMB-15: Query Override en path (autoplay/true/volume/80)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_path_query_override", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vodPathOverride(embedConfig.mediaId, {
       autoplay: "true",
       volume: 80,
@@ -212,7 +212,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     expect(page.url()).toContain("/volume/80");
   });
 
-  test("EMB-16: Modo debug del player (debug=true)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_debug_mode", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { debug: "true" });
 
     // Capturar logs de consola
@@ -229,7 +229,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     // Los logs de debug deberían estar presentes
   });
 
-  test("EMB-17: Modo sin cookies (without_cookies=true)", async ({ page, embedUrl, embedConfig, context }) => {
+  test("TC_EMB_GET_vod_cookieless_mode", async ({ page, embedUrl, embedConfig, context }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { without_cookies: "true" });
     await page.goto(url);
     await page.waitForLoadState("networkidle");
@@ -243,7 +243,7 @@ test.describe("Embed VOD - Videos bajo demanda", () => {
     // Nota: La verificación depende de la implementación
   });
 
-  test("EMB-18: DNT - Do Not Track (dnt=true)", async ({ page, embedUrl, embedConfig }) => {
+  test("TC_EMB_GET_vod_do_not_track", async ({ page, embedUrl, embedConfig }) => {
     const url = embedUrl.vod(embedConfig.mediaId, { dnt: "true" });
     await page.goto(url);
     await page.waitForLoadState("networkidle");

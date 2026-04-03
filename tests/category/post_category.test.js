@@ -17,7 +17,7 @@ test.describe("POST /api/category - Creación de categorías", () => {
     await cleaner.clean();
   });
 
-  test("TC-CAT-POST-001: Crear categoría mínima (solo name)", async ({
+  test("TC_CAT_POST_create_minimal", async ({
     authRequest,
   }) => {
     const name = `qa_min_${Date.now()}`;
@@ -41,7 +41,7 @@ test.describe("POST /api/category - Creación de categorías", () => {
     } catch {}
   });
 
-  test("TC-CAT-POST-002: Crear categoría completa con parent, drm, track y visible", async ({
+  test("TC_CAT_POST_create_full_payload", async ({
     authRequest,
     parentCategory,
   }) => {
@@ -75,7 +75,7 @@ test.describe("POST /api/category - Creación de categorías", () => {
 
   // ================== NEGATIVOS / REGLAS DE NEGOCIO ==================
 
-  test("TC-CAT-POST-NEG-001: Debe fallar si falta 'name' (400 NAME_IS_REQUIRED)", async ({
+  test("TC_CAT_POST_create_missing_name", async ({
     authRequest,
   }) => {
     const payload = {
@@ -94,7 +94,7 @@ test.describe("POST /api/category - Creación de categorías", () => {
     expect(body.data).toBe("NAME_IS_REQUIRED");
   });
 
- test("TC-CAT-POST-NEG-002: Debe fallar si 'drm' tiene un valor inválido", async ({
+ test("TC_CAT_POST_create_invalid_drm", async ({
    authRequest,
  }) => {
    const payload = {
@@ -117,7 +117,7 @@ test.describe("POST /api/category - Creación de categorías", () => {
    expect(body.data.drm.allow_incompatible_devices).toBe(false);
  });
 
-  test("TC-CAT-POST-NEG-003: Debe fallar si 'parent' no es un ID válido", async ({
+  test("TC_CAT_POST_create_invalid_parent_id", async ({
     authRequest,
   }) => {
     const payload = {
@@ -135,7 +135,7 @@ test.describe("POST /api/category - Creación de categorías", () => {
     expect(body.data).toBeDefined();
   });
 
-  test("TC-CAT-POST-NEG-004: Debe fallar si 'name' es vacío", async ({
+  test("TC_CAT_POST_create_empty_name", async ({
     authRequest,
   }) => {
     const payload = {
@@ -153,7 +153,7 @@ test.describe("POST /api/category - Creación de categorías", () => {
     // Si el backend normaliza como NAME_IS_REQUIRED también vale
   });
 
-  test("TC_CAT_GET_create_persist_fields", async ({ authRequest }) => {
+  test("TC_CAT_POST_create_persist_fields", async ({ authRequest }) => {
     const name = `qa_persist_${Date.now()}`;
     const payload = {
       name,

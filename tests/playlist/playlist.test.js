@@ -50,7 +50,7 @@ test.describe('Playlist API', () => {
     // ═══════════════════════════════════════════════════════════════
     test.describe('GET /api/playlist · Listado de playlists', () => {
 
-        test('[PL-API-003.1.1] Retorna 200 con array de playlists y schema válido', async () => {
+        test('TC_PLS_GET_list_returns_array', async () => {
             const response = await apiClient.get('/api/playlist');
 
             expect(response.status).toBe(200);
@@ -61,14 +61,14 @@ test.describe('Playlist API', () => {
             expect(parsed.success, `Schema inválido: ${JSON.stringify(parsed.error?.issues)}`).toBe(true);
         });
 
-        test('[PL-API-003.1.1] Respeta el parámetro limit', async () => {
+        test('TC_PLS_GET_list_limit_param', async () => {
             const response = await apiClient.get('/api/playlist?limit=3&offset=0');
 
             expect(response.status).toBe(200);
             expect(response.body.data.length).toBeLessThanOrEqual(3);
         });
 
-        test('[PL-API-003.1.1] Filtra por tipo con ?type=manual', async () => {
+        test('TC_PLS_GET_list_filter_by_type', async () => {
             const response = await apiClient.get('/api/playlist?type=manual');
 
             expect(response.status).toBe(200);
@@ -77,7 +77,7 @@ test.describe('Playlist API', () => {
             });
         });
 
-        test('[PL-API-003.1.1] La playlist recién creada aparece en el listado', async () => {
+        test('TC_PLS_GET_list_contains_created', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const response = await apiClient.get('/api/playlist?all=true&limit=200');
@@ -93,7 +93,7 @@ test.describe('Playlist API', () => {
     // ═══════════════════════════════════════════════════════════════
     test.describe('GET /api/playlist/{id} · Detalle de playlist', () => {
 
-        test('[PL-API-003.1.2] Retorna 200 con campos obligatorios y schema válido', async () => {
+        test('TC_PLS_GET_detail_required_fields', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const response = await apiClient.get(`/api/playlist/${playlistId}`);
@@ -112,7 +112,7 @@ test.describe('Playlist API', () => {
             expect(parsed.success, `Schema inválido: ${JSON.stringify(parsed.error?.issues)}`).toBe(true);
         });
 
-        test('[PL-API-003.1.2] Incluye medias cuando se pasa ?medias=true', async () => {
+        test('TC_PLS_GET_detail_with_medias_flag', async () => {
             const mediaRes = await apiClient.post('/api/media', dataFactory.generateMediaPayload());
             expect(mediaRes.status).toBe(200);
             const mediaId = mediaRes.body.data._id;
@@ -127,7 +127,7 @@ test.describe('Playlist API', () => {
             expect(response.body.data).toHaveProperty('medias');
         });
 
-        test('[PL-API-003.2 NEG] 404 al solicitar playlist inexistente', async () => {
+        test('TC_PLS_GET_detail_not_found', async () => {
             const fakeId = '000000000000000000000000';
             const response = await apiClient.get(`/api/playlist/${fakeId}`);
 
@@ -142,7 +142,7 @@ test.describe('Playlist API', () => {
     test.describe('POST /api/playlist · Creación de playlists', () => {
 
         // ── Manual ──────────────────────────────────────────────────
-        test('[PL-FUNC-001.1.1 / PL-API-003.1.3] Crea playlist Manual y asocia medias via update (Happy Path)', async () => {
+        test('TC_PLS_POST_create_manual_with_medias', async () => {
             const mediaRes = await apiClient.post('/api/media', dataFactory.generateMediaPayload());
             expect(mediaRes.status).toBe(200);
             const mediaId = mediaRes.body.data._id;
@@ -189,7 +189,7 @@ test.describe('Playlist API', () => {
             expect(populatedIds).toContain(mediaId);
         });
 
-        test('[PL-FUNC-001.1.1] Crea playlist Manual mínima (sin medias)', async () => {
+        test('TC_PLS_POST_create_manual_minimal', async () => {
             const payload = dataFactory.generateManualPlaylistPayload();
             const response = await apiClient.post('/api/playlist', payload);
 
@@ -198,7 +198,7 @@ test.describe('Playlist API', () => {
             cleaner.register('playlist', response.body.data._id);
         });
 
-        test('[PL-BRULE-002.2.7] Crea playlist Manual con featured=true', async () => {
+        test('TC_PLS_POST_create_manual_featured', async () => {
             const payload = dataFactory.generateManualPlaylistPayload([], { featured: true });
             const response = await apiClient.post('/api/playlist', payload);
 
@@ -208,7 +208,7 @@ test.describe('Playlist API', () => {
         });
 
         // ── Smart ────────────────────────────────────────────────────
-        test('[PL-FUNC-001.1.2 / PL-BRULE-002.2.3] Crea playlist Smart con criterios de filtrado', async () => {
+        test('TC_PLS_POST_create_smart_with_filters', async () => {
             const payload = dataFactory.generateSmartPlaylistPayload({
                 rules: {
                     smart: { sort_by: 'date_created', sort_asc: false, limit: 20 },
@@ -227,7 +227,7 @@ test.describe('Playlist API', () => {
         });
 
         // ── Series ───────────────────────────────────────────────────
-        test('[PL-FUNC-001.1.3] Crea playlist Series con estructura de temporadas', async () => {
+        test('TC_PLS_POST_create_series_with_seasons', async () => {
             const payload = dataFactory.generateSeriesPlaylistPayload();
             const response = await apiClient.post('/api/playlist', payload);
 
@@ -242,7 +242,7 @@ test.describe('Playlist API', () => {
         });
 
         // ── Playout ──────────────────────────────────────────────────
-        test('[PL-FUNC-001.1.4] Crea playlist Playout con múltiples reglas', async () => {
+        test('TC_PLS_POST_create_playout_with_rules', async () => {
             const payload = dataFactory.generatePlayoutPlaylistPayload();
             const response = await apiClient.post('/api/playlist', payload);
 
@@ -256,19 +256,19 @@ test.describe('Playlist API', () => {
         });
 
         // ── Validaciones negativas ────────────────────────────────────
-        test('[PL-API-003.2.1 / PL-BRULE-002.2.2 NEG] 400 cuando falta el campo name', async () => {
+        test('TC_PLS_POST_create_missing_name', async () => {
             const response = await apiClient.post('/api/playlist', { type: 'manual' });
             expect(response.status).toBe(500);
         });
 
-        test('[PL-API-003.2.2 / PL-BRULE-002.2.2 NEG] 400 cuando falta el campo type', async () => {
+        test('TC_PLS_POST_create_missing_type', async () => {
             const response = await apiClient.post('/api/playlist', {
                 name: dataFactory.generateTitle('PL-NoType'),
             });
             expect(response.status).toBe(500);
         });
 
-        test('[PL-API-003.2.3 NEG] 400 con type con valor inválido', async () => {
+        test('TC_PLS_POST_create_invalid_type', async () => {
             const response = await apiClient.post('/api/playlist', {
                 name: dataFactory.generateTitle('PL-BadType'),
                 type: 'invalid_type',
@@ -282,7 +282,7 @@ test.describe('Playlist API', () => {
     // ═══════════════════════════════════════════════════════════════
     test.describe('PUT /api/playlist/{id} · Actualización de playlists', () => {
 
-        test('[PL-FUNC-001.1.5] Actualiza nombre y descripción', async () => {
+        test('TC_PLS_POST_update_name_and_description', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const newName = `[Updated] ${dataFactory.generateTitle('PL')}`;
@@ -297,7 +297,7 @@ test.describe('Playlist API', () => {
             expect(updateRes.body.data.description).toBe(newDesc);
         });
 
-        test('[PL-FUNC-001.1.5] Actualiza medias: agrega y luego vacía rules.manual.medias', async () => {
+        test('TC_PLS_POST_update_medias_add_and_clear', async () => {
             const mediaRes = await apiClient.post('/api/media', dataFactory.generateMediaPayload());
             const mediaId = mediaRes.body.data._id;
             cleaner.register('media', mediaId);
@@ -327,7 +327,7 @@ test.describe('Playlist API', () => {
             expect(detail.body.data.medias ?? []).toHaveLength(0);
         });
 
-        test('[PL-BRULE-002.2.7] Actualiza flags featured y no_ad', async () => {
+        test('TC_PLS_POST_update_flags_featured_and_no_ad', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const updateRes = await apiClient.post(`/api/playlist/${playlistId}`, {
@@ -340,7 +340,7 @@ test.describe('Playlist API', () => {
             expect(updateRes.body.data.no_ad).toBe(true);
         });
 
-        test('[PL-FUNC-001.3 / UC-PL-006] Aplica restricciones geográficas vía access_rules', async () => {
+        test('TC_PLS_POST_update_geo_access_rules', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const updateRes = await apiClient.post(`/api/playlist/${playlistId}`, {
@@ -358,7 +358,7 @@ test.describe('Playlist API', () => {
     // ═══════════════════════════════════════════════════════════════
     test.describe('DELETE /api/playlist/{id} · Eliminación de playlists', () => {
 
-        test('[PL-FUNC-001.1.6 / PL-API-003.1.5] Elimina playlist y verifica 404 en GET subsecuente', async () => {
+        test('TC_PLS_DELETE_by_id_verifies_gone', async () => {
             const plRes = await apiClient.post('/api/playlist', dataFactory.generateManualPlaylistPayload());
             expect(plRes.status).toBe(200);
             const playlistId = plRes.body.data._id;
@@ -371,7 +371,7 @@ test.describe('Playlist API', () => {
             expect(getRes.status).toBe(404);
         });
 
-        test('[PL-API-003.2 NEG] 404 al eliminar playlist inexistente', async () => {
+        test('TC_PLS_DELETE_not_found', async () => {
             const fakeId = '000000000000000000000000';
             const response = await apiClient.delete(`/api/playlist/${fakeId}`);
             expect(response.status).toBe(404);
@@ -385,7 +385,7 @@ test.describe('Playlist API', () => {
     // ═══════════════════════════════════════════════════════════════
     test.describe('GET /api/playlist/{id}?medias=true · Medias incluidas en el detalle', () => {
 
-        test('[PL-API-003.1.6] Retorna 200 con campo medias presente en la respuesta', async () => {
+        test('TC_PLS_GET_detail_medias_field_present', async () => {
             const mediaRes = await apiClient.post('/api/media', dataFactory.generateMediaPayload());
             expect(mediaRes.status).toBe(200);
             const mediaId = mediaRes.body.data._id;
@@ -403,7 +403,7 @@ test.describe('Playlist API', () => {
             expect(Array.isArray(response.body.data.medias)).toBe(true);
         });
 
-        test('[PL-API-003.1.6] La media asociada vía update aparece en el campo medias del detalle', async () => {
+        test('TC_PLS_GET_detail_medias_after_update', async () => {
             const mediaRes = await apiClient.post('/api/media', dataFactory.generateMediaPayload());
             const mediaId = mediaRes.body.data._id;
             cleaner.register('media', mediaId);
@@ -427,7 +427,7 @@ test.describe('Playlist API', () => {
             expect(ids).toContain(mediaId);
         });
 
-        test('[PL-API-003.1.6] Sin ?medias=true el campo medias no incluye objetos detallados', async () => {
+        test('TC_PLS_GET_detail_medias_without_flag', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const response = await apiClient.get(`/api/playlist/${playlistId}`);
@@ -440,7 +440,7 @@ test.describe('Playlist API', () => {
             }
         });
 
-        test('[PL-API-003.1.6] Playlist sin medias devuelve medias como array vacío con ?medias=true', async () => {
+        test('TC_PLS_GET_detail_empty_medias_with_flag', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const response = await apiClient.get(`/api/playlist/${playlistId}?medias=true`);
@@ -457,7 +457,7 @@ test.describe('Playlist API', () => {
     // ═══════════════════════════════════════════════════════════════
     test.describe('Reglas de negocio (BR) verificables por API', () => {
 
-        test('[BR-PL-002] El slug se genera automáticamente al crear la playlist', async () => {
+        test('TC_PLS_POST_create_auto_slug', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const response = await apiClient.get(`/api/playlist/${playlistId}`);
@@ -465,7 +465,7 @@ test.describe('Playlist API', () => {
             expect(typeof response.body.data.slug).toBe('string');
         });
 
-        test('[BR-PL-005]  actualizar con type diferente ', async () => {
+        test('TC_PLS_POST_update_type_immutable', async () => {
             const { playlistId } = await createMinimalPlaylist(apiClient, cleaner);
 
             const updateRes = await apiClient.post(`/api/playlist/${playlistId}`, {
@@ -497,7 +497,7 @@ test.describe('Playlist API', () => {
         });
         */
 
-        test('[PL-FUNC-001.2.1 / BR-PL-003] Media asociada vía update aparece al hacer GET?medias=true&all=true', async () => {
+        test('TC_PLS_GET_detail_medias_all_flag', async () => {
             const mediaRes = await apiClient.post('/api/media', dataFactory.generateMediaPayload());
             const mediaId = mediaRes.body.data._id;
             cleaner.register('media', mediaId);
@@ -524,7 +524,7 @@ test.describe('Playlist API', () => {
             expect(ids).toContain(mediaId);
         });
 
-        test('[PL-FUNC-001.2.3 / BR-PL-003] Al vaciar rules.manual.medias vía update, medias ya no aparece', async () => {
+        test('TC_PLS_POST_update_clear_medias_verifies_gone', async () => {
             const mediaRes = await apiClient.post('/api/media', dataFactory.generateMediaPayload());
             const mediaId = mediaRes.body.data._id;
             cleaner.register('media', mediaId);
