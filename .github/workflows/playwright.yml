@@ -7,6 +7,11 @@ on:
     branches: [ main, develop ]
   workflow_dispatch:
 
+# Forzar Node.js 24 en todas las actions para evitar rotura cuando Node.js 20
+# sea eliminado (deadline: 2026-09-16). Detecta incompatibilidades desde ahora.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # ── Job 1: Ejecutar tests ────────────────────────────────────────────────────
   test:
@@ -28,6 +33,7 @@ jobs:
       run: npm ci
 
     - name: 🎭 Cache Playwright browsers
+      id: playwright-cache
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
@@ -35,8 +41,15 @@ jobs:
         restore-keys: |
           playwright-${{ runner.os }}-
 
+    # Solo instala si no hubo cache hit — ahorra ~18s por run cuando hay hit
     - name: 🎭 Install Playwright Browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
       run: npx playwright install chrome --with-deps
+
+    # Si hubo cache hit, solo instala dependencias del sistema (no el browser)
+    - name: 🎭 Install Playwright system deps (cache hit)
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: npx playwright install-deps chrome
 
     - name: 🧪 Run Playwright tests
       run: npm test
@@ -59,6 +72,8 @@ jobs:
         EMBED_SCHEDULE_JOB_LIVE_ID: ${{ secrets.EMBED_SCHEDULE_JOB_LIVE_ID }}
         EMBED_SCHEDULE_JOB_VOD_ID: ${{ secrets.EMBED_SCHEDULE_JOB_VOD_ID }}
         EMBED_TEST_POSTER_URL: ${{ secrets.EMBED_TEST_POSTER_URL }}
+        # Suprime el spam de tips de dotenv@17 en los logs de CI
+        DOTENV_QUIET: "true"
 
     - name: 📤 Upload Allure results
       if: always()
@@ -138,6 +153,9 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./allure-report
         publish_branch: gh-pages
+        # force_orphan: evita los 200+ "git rm" individuales en el log —
+        # reemplaza el branch completo en un solo commit limpio
+        force_orphan: true
         commit_message: "ci: deploy allure report [${{ github.run_number }}] - ${{ github.event_name }}"
 
     - name: 📥 Download Playwright results
@@ -152,3 +170,4 @@ jobs:
       run: node notify-slack.js
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        DOTENV_QUIET: "true"

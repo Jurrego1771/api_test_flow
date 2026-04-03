@@ -1,9 +1,11 @@
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 const { defineConfig } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests",
-  timeout: 30_000,
+  // En CI se aumenta a 45s para dar margen a los tests de embed/live
+  // que dependen de endpoints externos con latencia variable
+  timeout: process.env.CI ? 45_000 : 30_000,
 
   // 2 workers: safe for API tests against shared account without starving CI
   workers: 2,
