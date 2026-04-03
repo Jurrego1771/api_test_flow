@@ -184,6 +184,16 @@ Antes de generar el código final:
 2. Ejecutar: `playwright test tests/<modulo>/`
 3. Iterar hasta que todos los tests pasen o documentar los que requieren recursos especiales
 
+### Paso 6: Actualizar el inventario de endpoints (OBLIGATORIO)
+
+Siempre actualizar `inventary-endpoints.md` al terminar:
+
+1. Marcar los endpoints cubiertos como `✅` en la tabla del módulo correspondiente
+2. Añadir los Test IDs en la columna `Test IDs`
+3. En el checklist de pendientes, marcar como `[x]` los ítems completados y añadir nota con el archivo y cantidad de casos
+4. Si se detectó un bug de la API durante los tests (ej. 500 en lugar de 404), anotarlo en el ítem del checklist
+5. Actualizar `_Última actualización_` con la fecha y el nombre del archivo creado
+
 ---
 
 ## Checklist antes de entregar
@@ -198,3 +208,4 @@ Antes de generar el código final:
 - [ ] Hay al menos un test 400 (body inválido) si el módulo tiene POST
 - [ ] Se verifica `body.status === "OK"` en happy paths
 - [ ] No hay IDs hardcodeados de recursos reales
+- [ ] `inventary-endpoints.md` actualizado: endpoints marcados ✅, checklist al día, fecha actualizada
