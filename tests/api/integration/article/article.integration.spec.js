@@ -12,10 +12,14 @@ const { createArticleResponseSchema, listArticleResponseSchema } = require('../.
 test.describe("Article API - CRUD & Search Operations", () => {
     let apiClient;
     let cleaner;
+    let category;
 
     test.beforeEach(async ({ request, baseURL }) => {
         apiClient = new ApiClient(request, baseURL);
         cleaner = new ResourceCleaner(apiClient);
+        // Fetch an existing category to use in category-filter tests
+        const catRes = await apiClient.get('/api/category?limit=1');
+        category = catRes.body?.data?.[0] ?? { _id: '000000000000000000000001' };
     });
 
     test.afterEach(async () => {
@@ -139,9 +143,9 @@ test.describe("Article API - CRUD & Search Operations", () => {
             expect(typeof count).toBe("number");
         });
 
-        test("TC_ART_GET_list_without_category", async ({ parentCategory }) => {
+        test("TC_ART_GET_list_without_category", async () => {
             // 1. Crear un artículo CON categoría
-            const payloadWithCat = dataFactory.generateArticlePayload({ categories: [parentCategory._id] });
+            const payloadWithCat = dataFactory.generateArticlePayload({ categories: [category._id] });
             const resWithCat = await apiClient.post("/api/article", payloadWithCat);
             cleaner.register("article", resWithCat.body.data._id);
 
@@ -162,9 +166,9 @@ test.describe("Article API - CRUD & Search Operations", () => {
             expect(idsList, "BUG: El listado 'without_category=true' NO incluye artículos con categories=null").toContain(resWithoutCat.body.data._id);
         });
 
-        test("TC_ART_GET_list_without_category_by_id", async ({ parentCategory }) => {
+        test("TC_ART_GET_list_without_category_by_id", async () => {
             // 1. Artículo con categoría
-            const payloadWithCat = dataFactory.generateArticlePayload({ categories: [parentCategory._id] });
+            const payloadWithCat = dataFactory.generateArticlePayload({ categories: [category._id] });
             const resWithCat = await apiClient.post("/api/article", payloadWithCat);
             const artWithCat = resWithCat.body.data;
             cleaner.register("article", artWithCat._id);

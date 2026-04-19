@@ -72,21 +72,24 @@ async function createEpisode(apiClient, showId, seasonId, cleaner, attrs = {}) {
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 
 test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/episode)", () => {
-  let apiClient, cleaner;
+  let apiClient, cleaner, show;
 
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
+    show = showRes.body.data;
+    cleaner.register("show", show._id);
   });
 
   test.afterEach(async () => await cleaner.cleanAll());
 
-  test("TC_SHW_POST_episode_valid", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_POST_episode_valid", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
     const title = `qa_episode_${faker.random.alphaNumeric(8)}`;
 
     const res = await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode`,
+      `/api/show/${show._id}/season/${season._id}/episode`,
       { title, content: [{ content_type: "Media", type: "full", value: mediaId }] }
     );
 
@@ -95,15 +98,15 @@ test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/epis
     expect(res.body._id).toBeTruthy();
     expect(res.body.title).toBe(title);
 
-    cleaner.register("episode", `${tempShow._id}/${season._id}/${res.body._id}`);
+    cleaner.register("episode", `${show._id}/${season._id}/${res.body._id}`);
     episodeSchema.parse(res.body);
   });
 
-  test("TC_SHW_POST_episode_with_optional_fields", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_POST_episode_with_optional_fields", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
 
     const res = await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode`,
+      `/api/show/${show._id}/season/${season._id}/episode`,
       {
         title: `qa_episode_opt_${faker.random.alphaNumeric(6)}`,
         description: "qa_episode_description",
@@ -116,16 +119,16 @@ test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/epis
     expect(res.body._id).toBeTruthy();
     expect(res.body.description).toBe("qa_episode_description");
 
-    cleaner.register("episode", `${tempShow._id}/${season._id}/${res.body._id}`);
+    cleaner.register("episode", `${show._id}/${season._id}/${res.body._id}`);
   });
 
-  test("TC_SHW_POST_episode_order_auto_assigned", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_POST_episode_order_auto_assigned", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
     // Use different media IDs — same media cannot appear in two episodes of the same season
-    const ep1 = await createEpisode(apiClient, tempShow._id, season._id, cleaner, {
+    const ep1 = await createEpisode(apiClient, show._id, season._id, cleaner, {
       content: [{ content_type: "Media", type: "full", value: mediaId }],
     });
-    const ep2 = await createEpisode(apiClient, tempShow._id, season._id, cleaner, {
+    const ep2 = await createEpisode(apiClient, show._id, season._id, cleaner, {
       content: [{ content_type: "Media", type: "full", value: mediaId2 }],
     });
 
@@ -136,11 +139,11 @@ test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/epis
 
   // ── Validation ────────────────────────────────────────────────────────────
 
-  test("TC_SHW_POST_episode_missing_title", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_POST_episode_missing_title", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
 
     const res = await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode`,
+      `/api/show/${show._id}/season/${season._id}/episode`,
       { content: [{ content_type: "Media", value: mediaId }] }
     );
 
@@ -148,11 +151,11 @@ test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/epis
     expect(res.body.data).toMatch(/title/i);
   });
 
-  test("TC_SHW_POST_episode_missing_content", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_POST_episode_missing_content", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
 
     const res = await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode`,
+      `/api/show/${show._id}/season/${season._id}/episode`,
       { title: `qa_episode_no_content_${faker.random.alphaNumeric(6)}` }
     );
 
@@ -160,21 +163,21 @@ test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/epis
     expect(res.body.data).toMatch(/content/i);
   });
 
-  test("TC_SHW_POST_episode_season_not_found", async ({ tempShow }) => {
+  test("TC_SHW_POST_episode_season_not_found", async () => {
     const res = await apiClient.post(
-      `/api/show/${tempShow._id}/season/000000000000000000000000/episode`,
+      `/api/show/${show._id}/season/000000000000000000000000/episode`,
       { title: "qa_irrelevant", content: [{ content_type: "Media", value: mediaId }] }
     );
     // BUG: returns 500 instead of documented 404 SEASON_NOT_FOUND
     expect([404, 500]).toContain(res.status);
   });
 
-  test("TC_SHW_POST_episode_no_token", async ({ playwright, tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_POST_episode_no_token", async ({ playwright }) => {
+    const season = await createSeason(apiClient, show._id, cleaner);
     const ctx = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
     try {
       const res = await ctx.post(
-        `/api/show/${tempShow._id}/season/${season._id}/episode`,
+        `/api/show/${show._id}/season/${season._id}/episode`,
         { data: { title: "qa_no_auth", content: [{ content_type: "Media", value: mediaId }] } }
       );
       expect([401, 403]).toContain(res.status());
@@ -187,21 +190,24 @@ test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/epis
 // ─── LIST ─────────────────────────────────────────────────────────────────────
 
 test.describe("Show Episode — List (GET /api/show/:id/season/:seasonId/episode)", () => {
-  let apiClient, cleaner;
+  let apiClient, cleaner, show;
 
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
+    show = showRes.body.data;
+    cleaner.register("show", show._id);
   });
 
   test.afterEach(async () => await cleaner.cleanAll());
 
-  test("TC_SHW_GET_episode_list_valid", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
-    await createEpisode(apiClient, tempShow._id, season._id, cleaner);
+  test("TC_SHW_GET_episode_list_valid", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
+    await createEpisode(apiClient, show._id, season._id, cleaner);
 
     const res = await apiClient.get(
-      `/api/show/${tempShow._id}/season/${season._id}/episode`
+      `/api/show/${show._id}/season/${season._id}/episode`
     );
 
     expect(res.status).toBe(200);
@@ -210,41 +216,41 @@ test.describe("Show Episode — List (GET /api/show/:id/season/:seasonId/episode
     expect(res.body.data.length).toBeGreaterThan(0);
   });
 
-  test("TC_SHW_GET_episode_list_empty_season", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_GET_episode_list_empty_season", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
 
     const res = await apiClient.get(
-      `/api/show/${tempShow._id}/season/${season._id}/episode`
+      `/api/show/${show._id}/season/${season._id}/episode`
     );
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
-  test("TC_SHW_GET_episode_list_with_limit", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_GET_episode_list_with_limit", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
     // Use different media IDs — same media cannot appear in two episodes of the same season
-    await createEpisode(apiClient, tempShow._id, season._id, cleaner, {
+    await createEpisode(apiClient, show._id, season._id, cleaner, {
       content: [{ content_type: "Media", type: "full", value: mediaId }],
     });
-    await createEpisode(apiClient, tempShow._id, season._id, cleaner, {
+    await createEpisode(apiClient, show._id, season._id, cleaner, {
       content: [{ content_type: "Media", type: "full", value: mediaId2 }],
     });
 
     const res = await apiClient.get(
-      `/api/show/${tempShow._id}/season/${season._id}/episode?limit=1`
+      `/api/show/${show._id}/season/${season._id}/episode?limit=1`
     );
 
     expect(res.status).toBe(200);
     expect(res.body.data.length).toBeLessThanOrEqual(1);
   });
 
-  test("TC_SHW_GET_episode_list_no_token", async ({ playwright, tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_GET_episode_list_no_token", async ({ playwright }) => {
+    const season = await createSeason(apiClient, show._id, cleaner);
     const ctx = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
     try {
       const res = await ctx.get(
-        `/api/show/${tempShow._id}/season/${season._id}/episode`
+        `/api/show/${show._id}/season/${season._id}/episode`
       );
       expect([401, 403]).toContain(res.status());
     } finally {
@@ -256,21 +262,24 @@ test.describe("Show Episode — List (GET /api/show/:id/season/:seasonId/episode
 // ─── GET BY ID ────────────────────────────────────────────────────────────────
 
 test.describe("Show Episode — Get by ID (GET /api/show/:id/season/:seasonId/episode/:episodeId)", () => {
-  let apiClient, cleaner;
+  let apiClient, cleaner, show;
 
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
+    show = showRes.body.data;
+    cleaner.register("show", show._id);
   });
 
   test.afterEach(async () => await cleaner.cleanAll());
 
-  test("TC_SHW_GET_episode_by_id_valid", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
-    const episode = await createEpisode(apiClient, tempShow._id, season._id, cleaner);
+  test("TC_SHW_GET_episode_by_id_valid", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
+    const episode = await createEpisode(apiClient, show._id, season._id, cleaner);
 
     const res = await apiClient.get(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`
+      `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`
     );
 
     expect(res.status).toBe(200);
@@ -281,25 +290,25 @@ test.describe("Show Episode — Get by ID (GET /api/show/:id/season/:seasonId/ep
     episodeSchema.parse(res.body);
   });
 
-  test("TC_SHW_GET_episode_by_id_not_found", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_GET_episode_by_id_not_found", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
 
     const res = await apiClient.get(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/000000000000000000000000`
+      `/api/show/${show._id}/season/${season._id}/episode/000000000000000000000000`
     );
 
     // BUG: returns 500 "2 UNKNOWN: NOT_FOUND" instead of documented 404
     expect([404, 500]).toContain(res.status);
   });
 
-  test("TC_SHW_GET_episode_by_id_no_token", async ({ playwright, tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
-    const episode = await createEpisode(apiClient, tempShow._id, season._id, cleaner);
+  test("TC_SHW_GET_episode_by_id_no_token", async ({ playwright }) => {
+    const season = await createSeason(apiClient, show._id, cleaner);
+    const episode = await createEpisode(apiClient, show._id, season._id, cleaner);
 
     const ctx = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
     try {
       const res = await ctx.get(
-        `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`
+        `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`
       );
       expect([401, 403]).toContain(res.status());
     } finally {
@@ -311,22 +320,25 @@ test.describe("Show Episode — Get by ID (GET /api/show/:id/season/:seasonId/ep
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
 
 test.describe("Show Episode — Update (POST /api/show/:id/season/:seasonId/episode/:episodeId)", () => {
-  let apiClient, cleaner;
+  let apiClient, cleaner, show;
 
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
+    show = showRes.body.data;
+    cleaner.register("show", show._id);
   });
 
   test.afterEach(async () => await cleaner.cleanAll());
 
-  test("TC_SHW_POST_episode_update_title", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
-    const episode = await createEpisode(apiClient, tempShow._id, season._id, cleaner);
+  test("TC_SHW_POST_episode_update_title", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
+    const episode = await createEpisode(apiClient, show._id, season._id, cleaner);
     const newTitle = `qa_ep_updated_${faker.random.alphaNumeric(6)}`;
 
     const res = await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`,
+      `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`,
       { title: newTitle }
     );
 
@@ -334,12 +346,12 @@ test.describe("Show Episode — Update (POST /api/show/:id/season/:seasonId/epis
     expect(res.body.title).toBe(newTitle);
   });
 
-  test("TC_SHW_POST_episode_update_description", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
-    const episode = await createEpisode(apiClient, tempShow._id, season._id, cleaner);
+  test("TC_SHW_POST_episode_update_description", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
+    const episode = await createEpisode(apiClient, show._id, season._id, cleaner);
 
     const res = await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`,
+      `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`,
       { description: "qa_updated_description" }
     );
 
@@ -347,28 +359,28 @@ test.describe("Show Episode — Update (POST /api/show/:id/season/:seasonId/epis
     expect(res.body.description).toBe("qa_updated_description");
   });
 
-  test("TC_SHW_POST_episode_update_persists", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
-    const episode = await createEpisode(apiClient, tempShow._id, season._id, cleaner);
+  test("TC_SHW_POST_episode_update_persists", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
+    const episode = await createEpisode(apiClient, show._id, season._id, cleaner);
     const newTitle = `qa_ep_persist_${faker.random.alphaNumeric(6)}`;
 
     await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`,
+      `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`,
       { title: newTitle }
     );
 
     const getRes = await apiClient.get(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`
+      `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`
     );
     expect(getRes.status).toBe(200);
     expect(getRes.body.title).toBe(newTitle);
   });
 
-  test("TC_SHW_POST_episode_update_not_found", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_POST_episode_update_not_found", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
 
     const res = await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/000000000000000000000000`,
+      `/api/show/${show._id}/season/${season._id}/episode/000000000000000000000000`,
       { title: "qa_irrelevant" }
     );
 
@@ -376,14 +388,14 @@ test.describe("Show Episode — Update (POST /api/show/:id/season/:seasonId/epis
     expect([404, 500]).toContain(res.status);
   });
 
-  test("TC_SHW_POST_episode_update_no_token", async ({ playwright, tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
-    const episode = await createEpisode(apiClient, tempShow._id, season._id, cleaner);
+  test("TC_SHW_POST_episode_update_no_token", async ({ playwright }) => {
+    const season = await createSeason(apiClient, show._id, cleaner);
+    const episode = await createEpisode(apiClient, show._id, season._id, cleaner);
 
     const ctx = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
     try {
       const res = await ctx.post(
-        `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`,
+        `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`,
         { data: { title: "qa_no_auth" } }
       );
       expect([401, 403]).toContain(res.status());
@@ -396,21 +408,24 @@ test.describe("Show Episode — Update (POST /api/show/:id/season/:seasonId/epis
 // ─── DELETE ───────────────────────────────────────────────────────────────────
 
 test.describe("Show Episode — Delete (DELETE /api/show/:id/season/:seasonId/episode/:episodeId)", () => {
-  let apiClient, cleaner;
+  let apiClient, cleaner, show;
 
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
+    show = showRes.body.data;
+    cleaner.register("show", show._id);
   });
 
   test.afterEach(async () => await cleaner.cleanAll());
 
-  test("TC_SHW_DELETE_episode_valid", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_DELETE_episode_valid", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
 
     // Create without registering in cleaner — test deletes it
     const createRes = await apiClient.post(
-      `/api/show/${tempShow._id}/season/${season._id}/episode`,
+      `/api/show/${show._id}/season/${season._id}/episode`,
       {
         title: `qa_ep_del_${faker.random.alphaNumeric(6)}`,
         content: [{ content_type: "Media", type: "full", value: mediaId }],
@@ -420,30 +435,30 @@ test.describe("Show Episode — Delete (DELETE /api/show/:id/season/:seasonId/ep
     const episode = createRes.body;
 
     const res = await apiClient.delete(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`
+      `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`
     );
     expect(res.status).toBe(200);
   });
 
-  test("TC_SHW_DELETE_episode_not_found", async ({ tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
+  test("TC_SHW_DELETE_episode_not_found", async () => {
+    const season = await createSeason(apiClient, show._id, cleaner);
 
     const res = await apiClient.delete(
-      `/api/show/${tempShow._id}/season/${season._id}/episode/000000000000000000000000`
+      `/api/show/${show._id}/season/${season._id}/episode/000000000000000000000000`
     );
 
     // BUG: returns 500 "2 UNKNOWN: NOT_FOUND" instead of documented 404
     expect([404, 500]).toContain(res.status);
   });
 
-  test("TC_SHW_DELETE_episode_no_token", async ({ playwright, tempShow }) => {
-    const season = await createSeason(apiClient, tempShow._id, cleaner);
-    const episode = await createEpisode(apiClient, tempShow._id, season._id, cleaner);
+  test("TC_SHW_DELETE_episode_no_token", async ({ playwright }) => {
+    const season = await createSeason(apiClient, show._id, cleaner);
+    const episode = await createEpisode(apiClient, show._id, season._id, cleaner);
 
     const ctx = await playwright.request.newContext({ baseURL: process.env.BASE_URL });
     try {
       const res = await ctx.delete(
-        `/api/show/${tempShow._id}/season/${season._id}/episode/${episode._id}`
+        `/api/show/${show._id}/season/${season._id}/episode/${episode._id}`
       );
       expect([401, 403]).toContain(res.status());
     } finally {
