@@ -32,7 +32,7 @@ async function createMedia(client, attrs = {}) {
     return getCreatedMedia(res.body);
 }
 
-test.describe('Media - Smoke', { tag: ['@smoke'] }, () => {
+test.describe('Media - Smoke', () => {
     test('TC_MED_001_POST_CreateStandardVideo', async () => {
         // Intent: happy path de creación de media tipo video y validación de contrato.
         const payload = {

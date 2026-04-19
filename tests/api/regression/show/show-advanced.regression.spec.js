@@ -37,7 +37,7 @@ async function createShow(client, attrs = {}) {
 
 // --- 1. CREATE ---
 
-test.describe('1. Create (POST /api/show)', { tag: ['@regression', '@negative'] }, () => {
+test.describe('1. Create (POST /api/show)', { tag: ['@negative'] }, () => {
     test('TC_SHW_001_INSERT_MinimalPayload - schema validation', async () => {
         const payload = dataFactory.generateShowPayload({
             account: ACCOUNT_ID,
@@ -140,7 +140,7 @@ test.describe('1. Create (POST /api/show)', { tag: ['@regression', '@negative'] 
 
 // --- 2. READ ---
 
-test.describe('2. Read (GET /api/show/:id)', { tag: ['@regression'] }, () => {
+test.describe('2. Read (GET /api/show/:id)', () => {
     test('TC_SHW_011_GET_ShowWithPopulate', async () => {
         // Intent: validar que ?populate=1 incluye campos relacionados.
         const show = await createShow(apiClient, { type: 'tvshow', is_published: 'true' });
@@ -163,7 +163,7 @@ test.describe('2. Read (GET /api/show/:id)', { tag: ['@regression'] }, () => {
 
 // --- 3. UPDATE ---
 
-test.describe('3. Update (POST /api/show/:id)', { tag: ['@regression'] }, () => {
+test.describe('3. Update (POST /api/show/:id)', () => {
     test('TC_SHW_040_UPDATE_PartialUpdate', async () => {
         // Intent: validar actualización parcial y persistencia de campos.
         const show = await createShow(apiClient, { type: 'tvshow', is_published: 'true' });
@@ -224,7 +224,7 @@ test.describe('3. Update (POST /api/show/:id)', { tag: ['@regression'] }, () => 
 
 // --- 4. DELETE ---
 
-test.describe('4. Remove (DELETE /api/show/:id)', { tag: ['@regression'] }, () => {
+test.describe('4. Remove (DELETE /api/show/:id)', () => {
     test('TC_SHW_051_REMOVE_ShowStatusDeletedAfterRemove', async () => {
         // Intent: validar que show eliminado queda con status DELETE o es inaccesible.
         const show = await createShow(apiClient, { type: 'radioshow' });
@@ -252,7 +252,7 @@ test.describe('4. Remove (DELETE /api/show/:id)', { tag: ['@regression'] }, () =
 
 // --- 5. Edge Cases ---
 
-test.describe('5. Edge Cases y Validaciones', { tag: ['@regression', '@negative'] }, () => {
+test.describe('5. Edge Cases y Validaciones', { tag: ['@negative'] }, () => {
     test('TC_SHW_070_VALIDATION_EmptyTitle', async () => {
         const res = await apiClient.post('/api/show', {
             account: ACCOUNT_ID, title: '', type: 'tvshow',

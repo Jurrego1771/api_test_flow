@@ -24,7 +24,7 @@ test.afterEach(async () => {
     await cleaner.clean();
 });
 
-test.describe('Access Restriction - Contract', { tag: ['@contract'] }, () => {
+test.describe('Access Restriction - Contract', () => {
     test.skip('TC_CON_AR_001 POST /api/settings/advanced-access-restrictions response schema', async () => {
         // POST requires session auth (MIDDLEWARE.AUTH), not API token — needs browser session to run
         const payload = {

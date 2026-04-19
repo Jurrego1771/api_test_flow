@@ -28,7 +28,7 @@ async function createMinimalPlaylist(overrides = {}) {
 
 // --- Creación - tipos de playlist ---
 
-test.describe('POST /api/playlist - Tipos de playlist', { tag: ['@regression'] }, () => {
+test.describe('POST /api/playlist - Tipos de playlist', () => {
     test('[PL-FUNC-001.1.2] Crea playlist Smart con criterios de filtrado', async () => {
         // Intent: validar creación de playlist tipo smart con reglas.
         const payload = dataFactory.generateSmartPlaylistPayload({
@@ -72,7 +72,7 @@ test.describe('POST /api/playlist - Tipos de playlist', { tag: ['@regression'] }
 
 // --- Creación - validaciones negativas ---
 
-test.describe('POST /api/playlist - Validaciones negativas', { tag: ['@regression', '@negative'] }, () => {
+test.describe('POST /api/playlist - Validaciones negativas', { tag: ['@negative'] }, () => {
     test('[PL-NEG] 400 o 500 cuando falta el campo name', async () => {
         const response = await apiClient.post('/api/playlist', { type: 'manual' });
         expect([400, 500]).toContain(response.status);
@@ -99,7 +99,7 @@ test.describe('POST /api/playlist - Validaciones negativas', { tag: ['@regressio
 
 // --- Actualización ---
 
-test.describe('PUT /api/playlist/{id} - Actualización', { tag: ['@regression'] }, () => {
+test.describe('PUT /api/playlist/{id} - Actualización', () => {
     test('[PL-FUNC-001.1.5] Actualiza nombre y descripción', async () => {
         // Intent: validar actualización de campos básicos y persistencia.
         const { playlistId } = await createMinimalPlaylist();
@@ -167,7 +167,7 @@ test.describe('PUT /api/playlist/{id} - Actualización', { tag: ['@regression'] 
 
 // --- Eliminación negativa ---
 
-test.describe('DELETE /api/playlist - negativo', { tag: ['@regression', '@negative'] }, () => {
+test.describe('DELETE /api/playlist - negativo', { tag: ['@negative'] }, () => {
     test('[PL-NEG] 404 al eliminar playlist inexistente', async () => {
         const response = await apiClient.delete('/api/playlist/000000000000000000000000');
         expect(response.status).toBe(404);
@@ -176,7 +176,7 @@ test.describe('DELETE /api/playlist - negativo', { tag: ['@regression', '@negati
 
 // --- Access Tokens ---
 
-test.describe('Access Tokens', { tag: ['@regression', '@critical'] }, () => {
+test.describe('Access Tokens', { tag: ['@critical'] }, () => {
     // SKIP: /api/playlist/:id/access-token route does not exist in sm2.
     // Access tokens are managed via POST /api/playlist/:id with { access_tokens: [...] }.
     // These tests need a full rewrite once the dedicated endpoint is implemented.
@@ -235,7 +235,7 @@ test.describe('Access Tokens', { tag: ['@regression', '@critical'] }, () => {
 
 // --- Reglas de negocio ---
 
-test.describe('Reglas de negocio (BR)', { tag: ['@regression', '@contract'] }, () => {
+test.describe('Reglas de negocio (BR)', { tag: ['@contract'] }, () => {
     test('[BR-PL-002] El slug se genera automáticamente al crear la playlist', async () => {
         // Intent: validar que slug es generado automáticamente con la creación.
         const { playlistId } = await createMinimalPlaylist();
@@ -257,7 +257,7 @@ test.describe('Reglas de negocio (BR)', { tag: ['@regression', '@contract'] }, (
 
 // --- Medias incluidas ---
 
-test.describe('GET ?medias=true - Medias incluidas', { tag: ['@regression', '@critical'] }, () => {
+test.describe('GET ?medias=true - Medias incluidas', { tag: ['@critical'] }, () => {
     test('[PL-FUNC-001.2.1] Media asociada vía update aparece en GET?all=true', async () => {
         // Intent: validar que media asociada vía update es accesible en el detalle.
         // API: ?medias=<id> filtra por IDs específicos. ?medias=true se interpreta como filtro id='true' → 0 resultados.

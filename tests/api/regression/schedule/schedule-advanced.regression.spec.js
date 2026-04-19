@@ -118,7 +118,7 @@ async function createLiveStream(client, attrs = {}) {
     return getCreatedStream(res.body);
 }
 
-test.describe('Schedule - Regression', { tag: ['@regression'] }, () => {
+test.describe('Schedule - Regression', () => {
     test('TC_SCH_005_POST_CreateScheduleJob_HappyPath @critical', async () => {
         // Intent: validar que POST schedule-job acepta payload correcto y crea el registro.
         // Cubre: SCHED-RISK-011 (validación), SCHED-RISK-005 (materialización)

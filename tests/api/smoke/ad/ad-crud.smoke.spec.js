@@ -28,7 +28,7 @@ async function createAd(client, overrides = {}) {
     return Array.isArray(raw) ? raw[0] : raw;
 }
 
-test.describe('Ad - Creación', { tag: ['@smoke'] }, () => {
+test.describe('Ad - Creación', () => {
     test('Crear Ad mínimo (name, type, flags)', async () => {
         // Intent: validar creación exitosa de Ad y contrato de respuesta.
         const ad = await createAd(apiClient);
@@ -49,7 +49,7 @@ test.describe('Ad - Creación', { tag: ['@smoke'] }, () => {
     });
 });
 
-test.describe('Ad - GET', { tag: ['@smoke'] }, () => {
+test.describe('Ad - GET', () => {
     test('Obtener Ad por ID (200)', async () => {
         // Intent: validar que GET por ID retorna el recurso correcto.
         const ad = await createAd(apiClient, { name: `qa_ad_get_${Date.now()}` });
@@ -72,7 +72,7 @@ test.describe('Ad - GET', { tag: ['@smoke'] }, () => {
     });
 });
 
-test.describe('Ad - Update', { tag: ['@smoke'] }, () => {
+test.describe('Ad - Update', () => {
     test('Actualizar Ad existente (200)', async () => {
         // Intent: validar actualización parcial y persistencia de cambios.
         const ad = await createAd(apiClient, { name: `qa_ad_update_${Date.now()}` });

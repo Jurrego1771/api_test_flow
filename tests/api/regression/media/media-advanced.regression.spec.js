@@ -44,7 +44,7 @@ async function createMedia(client, attrs = {}) {
 
 // --- Create variantes ---
 
-test.describe('2b. Create Media - variantes', { tag: ['@regression'] }, () => {
+test.describe('2b. Create Media - variantes', () => {
     test('TC_MED_002_POST_CreateFullPayload', async () => {
         // Intent: validar que todos los campos del payload se persisten correctamente.
         const payload = dataFactory.generateMediaPayload({ type: 'video', visible: 'true', is_published: 'true' });
@@ -80,7 +80,7 @@ test.describe('2b. Create Media - variantes', { tag: ['@regression'] }, () => {
 
 // --- Read variantes ---
 
-test.describe('3b. Read Media - variantes', { tag: ['@regression'] }, () => {
+test.describe('3b. Read Media - variantes', () => {
     test('TC_MED_005a_GET_ListAllTrue - incluye no publicados', async () => {
         // Intent: validar que all=true expone media sin publicar.
         const res = await apiClient.get('/api/media?all=true&limit=50');
@@ -128,7 +128,7 @@ test.describe('3b. Read Media - variantes', { tag: ['@regression'] }, () => {
 
 // --- Update variantes ---
 
-test.describe('4b. Partial Update - variantes', { tag: ['@regression', '@critical'] }, () => {
+test.describe('4b. Partial Update - variantes', { tag: ['@critical'] }, () => {
     test('TC_MED_010b_UPDATE_PublishUnpublish', async () => {
         // Intent: validar ciclo publish/unpublish y visibilidad en búsqueda pública vs admin.
         const prefix = `qa_pub_${Date.now()}_`;
@@ -158,7 +158,7 @@ test.describe('4b. Partial Update - variantes', { tag: ['@regression', '@critica
 
 // --- Delete variantes ---
 
-test.describe('5b. Delete Media - variantes', { tag: ['@regression'] }, () => {
+test.describe('5b. Delete Media - variantes', () => {
     test('TC_MED_014_DELETE_AlreadyDeleted', async () => {
         // Intent: validar comportamiento al eliminar media ya eliminada.
         const media = await createMedia(apiClient);
@@ -171,7 +171,7 @@ test.describe('5b. Delete Media - variantes', { tag: ['@regression'] }, () => {
 
 // --- Filtros Avanzados ---
 
-test.describe('6. Filtros Avanzados (filterData)', { tag: ['@regression'] }, () => {
+test.describe('6. Filtros Avanzados (filterData)', () => {
     test('TC_MED_014a_FILTER_TitleIs', async () => {
         // Intent: validar filtro exacto por título.
         const media = await createMedia(apiClient, { title: `qa_exact_${Date.now()}` });
@@ -218,7 +218,7 @@ test.describe('6. Filtros Avanzados (filterData)', { tag: ['@regression'] }, () 
 
 // --- Visibilidad ---
 
-test.describe('8. Visibility Index', { tag: ['@regression', '@contract'] }, () => {
+test.describe('8. Visibility Index', { tag: ['@contract'] }, () => {
     test('TC_MED_017a_INDEX_VisibilityMasking - solo publicados en endpoint público', async () => {
         // Intent: validar que endpoint público solo retorna media publicada.
         const res = await apiClient.get('/api/media?all=false&limit=100');
@@ -236,7 +236,7 @@ test.describe('8. Visibility Index', { tag: ['@regression', '@contract'] }, () =
 
 // --- Subrecursos ---
 
-test.describe('10. Subrecursos (Metas)', { tag: ['@regression'] }, () => {
+test.describe('10. Subrecursos (Metas)', () => {
     test('TC_MED_META_GET', async () => {
         const listRes = await apiClient.get('/api/media?all=true&limit=50');
         const mediaWithMeta = listRes.body.data.find((m) => Array.isArray(m.meta) && m.meta.length > 0);
@@ -255,7 +255,7 @@ test.describe('10. Subrecursos (Metas)', { tag: ['@regression'] }, () => {
     });
 });
 
-test.describe('3c. Read - without_category + id', { tag: ['@regression'] }, () => {
+test.describe('3c. Read - without_category + id', () => {
     test('TC_MED_005c_GET_WithoutCategoryAndId', async () => {
         // Intent: validar que without_category=true + id específico retorna vacío si tiene categoría.
         const listRes = await apiClient.get('/api/media?all=true&limit=50');
@@ -270,7 +270,7 @@ test.describe('3c. Read - without_category + id', { tag: ['@regression'] }, () =
     });
 });
 
-test.describe('6b. Filtros - Published', { tag: ['@regression'] }, () => {
+test.describe('6b. Filtros - Published', () => {
     test('TC_MED_014d_FILTER_Published', async () => {
         // Intent: validar filtro por estado publicado.
         const resAll = await apiClient.get('/api/media?all=true&limit=50');
@@ -285,7 +285,7 @@ test.describe('6b. Filtros - Published', { tag: ['@regression'] }, () => {
     });
 });
 
-test.describe('10b. Subrecursos (Metas) - DELETE', { tag: ['@regression'] }, () => {
+test.describe('10b. Subrecursos (Metas) - DELETE', () => {
     test('TC_MED_META_DELETE', async () => {
         const listRes = await apiClient.get('/api/media?all=true&limit=50');
         const target = listRes.body.data.find(
@@ -299,7 +299,7 @@ test.describe('10b. Subrecursos (Metas) - DELETE', { tag: ['@regression'] }, () 
     });
 });
 
-test.describe('11. Subrecursos Adicionales', { tag: ['@regression'] }, () => {
+test.describe('11. Subrecursos Adicionales', () => {
     test('TC_MED_SUBTITLE_GET', async () => {
         const media = await createMedia(apiClient);
         cleaner.register('media', media._id);

@@ -19,7 +19,7 @@ test.afterEach(async () => {
     await cleaner.clean();
 });
 
-test.describe('Media - Ciclo de vida completo', { tag: ['@integration', '@critical'] }, () => {
+test.describe('Media - Ciclo de vida completo', { tag: ['@critical'] }, () => {
     test('Flujo: create → update → publish → verify visibility → delete', async () => {
         // Intent: validar el ciclo completo de una media desde draft hasta eliminación.
         // Detecta: fallos en transición de estado, persistencia y visibilidad pública.

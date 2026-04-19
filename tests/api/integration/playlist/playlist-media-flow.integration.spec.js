@@ -18,7 +18,7 @@ test.afterEach(async () => {
     await cleaner.clean();
 });
 
-test.describe('Playlist - Flujo de asociación de medias', { tag: ['@integration', '@critical'] }, () => {
+test.describe('Playlist - Flujo de asociación de medias', { tag: ['@critical'] }, () => {
     test('Flujo: create playlist → associate media → verify → clear → verify empty', async () => {
         // Intent: validar ciclo completo de gestión de medias en una playlist manual.
         // Detecta: fallos en persistencia bidireccional de medias, vaciado, y visibilidad.

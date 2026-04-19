@@ -1,10 +1,10 @@
 const { test, expect } = require('@playwright/test');
 const { ApiClient, ResourceCleaner } = require('../../helpers');
 const {
-    createAdResponseSchema,
-    getAdResponseSchema,
-    listAdResponseSchema,
-} = require('../../../../schemas/ad.schema');
+    createMediaResponseSchema,
+    getMediaResponseSchema,
+    listMediaResponseSchema,
+} = require('../../../../schemas/media.schema');
 
 const ACCOUNT_ID = process.env.ACCOUNT_ID || 'test-account-id';
 
@@ -20,44 +20,42 @@ test.afterEach(async () => {
     await cleaner.clean();
 });
 
-test.describe('Ad - Contract', () => {
-    test('TC_CON_AD_001 POST /api/ad response schema', async () => {
+test.describe('Media - Contract', () => {
+    test('TC_CON_MED_001 POST /api/media response schema', async () => {
         const payload = {
-            name: `[QA-CONTRACT] Ad ${Date.now()}`,
+            title: `[QA-CONTRACT] Media ${Date.now()}`,
             account: ACCOUNT_ID,
-            type: 'schedule',
         };
-        const res = await apiClient.post('/api/ad/new', payload, { form: true });
+        const res = await apiClient.post('/api/media', payload, { form: true });
         expect(res.ok, `Create failed: ${res.status} ${JSON.stringify(res.body)}`).toBeTruthy();
 
-        const parsed = createAdResponseSchema.safeParse(res.body);
+        const parsed = createMediaResponseSchema.safeParse(res.body);
         expect(parsed.success, `Schema mismatch: ${JSON.stringify(parsed.error?.issues)}`).toBe(true);
 
-        cleaner.register('ad', parsed.data.data._id);
+        cleaner.register('media', parsed.data.data._id);
     });
 
-    test('TC_CON_AD_002 GET /api/ad/:id response schema', async () => {
-        const createRes = await apiClient.post('/api/ad/new', {
-            name: `[QA-CONTRACT] Ad ${Date.now()}`,
+    test('TC_CON_MED_002 GET /api/media/:id response schema', async () => {
+        const createRes = await apiClient.post('/api/media', {
+            title: `[QA-CONTRACT] Media ${Date.now()}`,
             account: ACCOUNT_ID,
-            type: 'schedule',
         }, { form: true });
         expect(createRes.ok).toBeTruthy();
-        const adId = createRes.body.data._id;
-        cleaner.register('ad', adId);
+        const mediaId = createRes.body.data._id;
+        cleaner.register('media', mediaId);
 
-        const res = await apiClient.get(`/api/ad/${adId}`);
+        const res = await apiClient.get(`/api/media/${mediaId}`);
         expect(res.ok, `GET failed: ${res.status}`).toBeTruthy();
 
-        const parsed = getAdResponseSchema.safeParse(res.body);
+        const parsed = getMediaResponseSchema.safeParse(res.body);
         expect(parsed.success, `Schema mismatch: ${JSON.stringify(parsed.error?.issues)}`).toBe(true);
     });
 
-    test('TC_CON_AD_003 GET /api/ad list response schema', async () => {
-        const res = await apiClient.get('/api/ad', { account: ACCOUNT_ID });
+    test('TC_CON_MED_003 GET /api/media list response schema', async () => {
+        const res = await apiClient.get('/api/media', { account: ACCOUNT_ID });
         expect(res.ok, `List failed: ${res.status}`).toBeTruthy();
 
-        const parsed = listAdResponseSchema.safeParse(res.body);
+        const parsed = listMediaResponseSchema.safeParse(res.body);
         expect(parsed.success, `Schema mismatch: ${JSON.stringify(parsed.error?.issues)}`).toBe(true);
     });
 });

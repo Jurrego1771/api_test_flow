@@ -42,7 +42,7 @@ async function createCoupon(client, groupId, overrides = {}) {
     return coupon;
 }
 
-test.describe('Cupones - Smoke', { tag: ['@smoke'] }, () => {
+test.describe('Cupones - Smoke', () => {
     test('TC-001: GET lista básica retorna OK y array', async () => {
         // Intent: validar contrato base del listado de cupones.
         const res = await apiClient.get('/api/coupon');

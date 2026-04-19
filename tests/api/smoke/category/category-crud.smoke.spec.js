@@ -27,7 +27,7 @@ async function createCategory(client, overrides = {}) {
     return Array.isArray(raw) ? raw[0] : raw;
 }
 
-test.describe('GET /api/category - Búsqueda y listados de categorías', { tag: ['@smoke'] }, () => {
+test.describe('GET /api/category - Búsqueda y listados de categorías', () => {
     test('Debe devolver OK y un array de categorías (sin filtros)', async () => {
         // Intent: validar contrato base del listado de categorías.
         const res = await apiClient.get('/api/category');
@@ -81,7 +81,7 @@ test.describe('GET /api/category - Búsqueda y listados de categorías', { tag: 
     });
 });
 
-test.describe('POST /api/category - Creación de categorías', { tag: ['@smoke'] }, () => {
+test.describe('POST /api/category - Creación de categorías', () => {
     test('TC-CAT-POST-001: Crear categoría mínima (solo name)', async () => {
         // Intent: happy path de creación con mínimo de campos.
         const name = `qa_min_${Date.now()}`;

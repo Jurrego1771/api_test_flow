@@ -1,5 +1,5 @@
 const { test, expect } = require('@playwright/test');
-const { ApiClient, ResourceCleaner, dataFactory } = require('../../helpers');
+const { ApiClient, ResourceCleaner, dataFactory, ensureEndpointAvailable } = require('../../helpers');
 const { faker } = require('@faker-js/faker');
 
 const API_BASE = '/api/live-stream';
@@ -21,12 +21,10 @@ function getCreatedStream(body) {
 }
 
 async function ensureLiveApiAvailable(client) {
-    const res = await client.get(`${API_BASE}?limit=1`);
-    if (res.status === 404 || res.status === 401) {
-        test.skip(true, 'API Live no disponible en este entorno');
-        return false;
-    }
-    return res.ok;
+    const { available } = await ensureEndpointAvailable(client, `${API_BASE}?limit=1`, {
+        context: 'API Live no disponible en este entorno',
+    });
+    return available;
 }
 
 async function createLiveStream(client, attrs = {}) {
@@ -38,14 +36,14 @@ async function createLiveStream(client, attrs = {}) {
 
 // --- CRUD adicional ---
 
-test.describe('1b. CRUD adicional', { tag: ['@regression'] }, () => {
+test.describe('1b. CRUD adicional', () => {
     test('TC_LIV_002_POST_CreateStreamAudio', async () => {
         // Intent: validar creación de stream tipo audio.
         if (!(await ensureLiveApiAvailable(apiClient))) return;
 
         const payload = dataFactory.generateLiveStreamPayload({ type: 'audio' });
         const res = await apiClient.post(API_BASE, payload, { form: true });
-        if (!res.ok) { test.skip(true, 'POST Live no disponible'); return; }
+        expect(res.ok, `POST Live failed: ${res.status} ${JSON.stringify(res.body)}`).toBeTruthy();
 
         const created = getCreatedStream(res.body);
         expect(created._id).toBeDefined();
@@ -61,7 +59,7 @@ test.describe('1b. CRUD adicional', { tag: ['@regression'] }, () => {
         const newName = `updated_${faker.random.alphaNumeric(6)}`;
 
         const updRes = await apiClient.post(`${API_BASE}/${stream._id}`, { name: newName }, { form: true });
-        if (!updRes.ok) { test.skip(true, 'Update no disponible'); return; }
+        expect(updRes.ok, `Update failed: ${updRes.status} ${JSON.stringify(updRes.body)}`).toBeTruthy();
 
         const getRes = await apiClient.get(`${API_BASE}/${stream._id}`);
         expect(getRes.body.data.name).toBe(newName);
@@ -74,7 +72,7 @@ test.describe('1b. CRUD adicional', { tag: ['@regression'] }, () => {
         cleaner.register('live-stream', stream._id);
 
         const updRes = await apiClient.post(`${API_BASE}/${stream._id}`, { dvr: 'true' }, { form: true });
-        if (!updRes.ok) { test.skip(true, 'Update parcial no disponible'); return; }
+        expect(updRes.ok, `Partial update failed: ${updRes.status} ${JSON.stringify(updRes.body)}`).toBeTruthy();
 
         const getRes = await apiClient.get(`${API_BASE}/${stream._id}`);
         expect(getRes.body.data.dvr).toBe(true);
@@ -83,7 +81,7 @@ test.describe('1b. CRUD adicional', { tag: ['@regression'] }, () => {
 
 // --- Búsqueda y Filtros ---
 
-test.describe('2. Búsqueda y Filtros', { tag: ['@regression'] }, () => {
+test.describe('2. Búsqueda y Filtros', () => {
     test('TC_LIV_006_GET_SearchByName', async () => {
         // Intent: validar que búsqueda por nombre devuelve el stream correcto.
         if (!(await ensureLiveApiAvailable(apiClient))) return;
@@ -163,7 +161,7 @@ test.describe('2. Búsqueda y Filtros', { tag: ['@regression'] }, () => {
 
 // --- Estado Online/Offline ---
 
-test.describe('3. Estado Online/Offline', { tag: ['@regression', '@critical'] }, () => {
+test.describe('3. Estado Online/Offline', { tag: ['@critical'] }, () => {
     test('TC_LIV_012_POST_ToggleOnline', async () => {
         // Intent: validar que toggle-online cambia el estado del stream.
         if (!(await ensureLiveApiAvailable(apiClient))) return;
@@ -188,7 +186,7 @@ test.describe('3. Estado Online/Offline', { tag: ['@regression', '@critical'] },
 
 // --- Favoritos ---
 
-test.describe('4. Favoritos (toggle-bookmark)', { tag: ['@regression'] }, () => {
+test.describe('4. Favoritos (toggle-bookmark)', () => {
     test('TC_LIV_014_POST_SetFavorite', async () => {
         // Intent: validar que toggle-bookmark activa el favorito correctamente.
         if (!(await ensureLiveApiAvailable(apiClient))) return;
@@ -220,7 +218,7 @@ test.describe('4. Favoritos (toggle-bookmark)', { tag: ['@regression'] }, () => 
 
 // --- Grabación, Token, Thumbnails, Config, Schedule ---
 
-test.describe('5. Grabación', { tag: ['@regression'] }, () => {
+test.describe('5. Grabación', () => {
     test('TC_LIV_023_POST_StartRecord', async () => {
         if (!(await ensureLiveApiAvailable(apiClient))) return;
         const stream = await createLiveStream(apiClient);
@@ -236,7 +234,7 @@ test.describe('5. Grabación', { tag: ['@regression'] }, () => {
     });
 });
 
-test.describe('6. Token de Publicación', { tag: ['@regression'] }, () => {
+test.describe('6. Token de Publicación', () => {
     test('TC_LIV_024_POST_RefreshToken', async () => {
         // Intent: validar regeneración de token de publicación.
         if (!(await ensureLiveApiAvailable(apiClient))) return;
@@ -253,7 +251,7 @@ test.describe('6. Token de Publicación', { tag: ['@regression'] }, () => {
     });
 });
 
-test.describe('7. Thumbnails y Logo', { tag: ['@regression'] }, () => {
+test.describe('7. Thumbnails y Logo', () => {
     test('TC_LIV_025_GET_ThumbList', async () => {
         if (!(await ensureLiveApiAvailable(apiClient))) return;
         const stream = await createLiveStream(apiClient);
@@ -283,7 +281,7 @@ test.describe('7. Thumbnails y Logo', { tag: ['@regression'] }, () => {
     });
 });
 
-test.describe('8. Configuración Avanzada', { tag: ['@regression'] }, () => {
+test.describe('8. Configuración Avanzada', () => {
     test('TC_LIV_039_POST_EnableDVR', async () => {
         // Intent: validar que DVR se activa y persiste.
         if (!(await ensureLiveApiAvailable(apiClient))) return;
@@ -366,7 +364,7 @@ test.describe('8. Configuración Avanzada', { tag: ['@regression'] }, () => {
     });
 });
 
-test.describe('9. Schedule y Restream', { tag: ['@regression'] }, () => {
+test.describe('9. Schedule y Restream', () => {
     test('TC_LIV_044_GET_Schedule', async () => {
         if (!(await ensureLiveApiAvailable(apiClient))) return;
         const stream = await createLiveStream(apiClient);

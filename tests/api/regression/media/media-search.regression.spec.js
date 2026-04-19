@@ -24,7 +24,7 @@ async function createMedia(client, attrs = {}) {
     return getCreatedMedia(res.body);
 }
 
-test.describe('7. Search (GET /api/media/search)', { tag: ['@regression', '@critical'] }, () => {
+test.describe('7. Search (GET /api/media/search)', { tag: ['@critical'] }, () => {
     test.beforeAll(async ({ playwright }) => {
         const context = await playwright.request.newContext();
         searchApiClient = new ApiClient(context, process.env.BASE_URL);

@@ -5,6 +5,7 @@ const axios = require("axios");
 const WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 const RESULTS_FILE = "test-results/results.json";
 const SUITE_NAME = process.env.SUITE_NAME || "API Tests";
+const PLATFORM  = process.env.PLATFORM_NAME || "sm2 · Mediastream Platform";
 const REPORT_URL = process.env.REPORT_URL || "https://jurrego1771.github.io/api_test_flow/";
 const NOTIFY_ON_FAIL_ONLY = process.env.NOTIFY_ON_FAIL_ONLY === "true";
 
@@ -45,7 +46,7 @@ const message = {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*:shield: ${SUITE_NAME}* — ${statusText} ${emoji}`,
+        text: `*:shield: ${PLATFORM} · ${SUITE_NAME}* — ${statusText} ${emoji}`,
       },
     },
     { type: "divider" },
@@ -73,7 +74,7 @@ const message = {
     },
   ],
   attachments: [{ color }],
-  text: `${SUITE_NAME}: ${statusText} — total=${total}, pass=${passed}, fail=${failed}, flaky=${flaky}, skip=${skipped}`,
+  text: `[${PLATFORM}] ${SUITE_NAME}: ${statusText} — total=${total}, pass=${passed}, fail=${failed}, flaky=${flaky}, skip=${skipped}`,
 };
 
 axios

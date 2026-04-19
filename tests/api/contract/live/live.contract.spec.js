@@ -20,7 +20,7 @@ test.afterEach(async () => {
     await cleaner.clean();
 });
 
-test.describe('Live - Contract', { tag: ['@contract'] }, () => {
+test.describe('Live - Contract', () => {
     test('TC_CON_LIV_001 POST /api/live-stream response schema', async () => {
         const payload = {
             name: `[QA-CONTRACT] Live ${Date.now()}`,

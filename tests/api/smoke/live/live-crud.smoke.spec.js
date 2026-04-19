@@ -25,7 +25,10 @@ async function ensureLiveApiAvailable(client) {
         test.skip(true, 'API Live no disponible en este entorno');
         return false;
     }
-    return res.ok;
+    if (!res.ok) {
+        throw new Error(`API Live availability check failed: ${res.status} ${JSON.stringify(res.body)}`);
+    }
+    return true;
 }
 
 async function createLiveStream(client, attrs = {}) {
@@ -35,14 +38,14 @@ async function createLiveStream(client, attrs = {}) {
     return getCreatedStream(res.body);
 }
 
-test.describe('Live Stream - Smoke', { tag: ['@smoke'] }, () => {
+test.describe('Live Stream - Smoke', () => {
     test('TC_LIV_001_POST_CreateStreamVideo', async () => {
         // Intent: happy path de creación de live stream tipo video.
         if (!(await ensureLiveApiAvailable(apiClient))) return;
 
         const payload = dataFactory.generateLiveStreamPayload({ type: 'video' });
         const res = await apiClient.post(API_BASE, payload, { form: true });
-        if (!res.ok) { test.skip(true, 'POST Live no disponible'); return; }
+        expect(res.ok, `POST Live failed: ${res.status} ${JSON.stringify(res.body)}`).toBeTruthy();
 
         expect(res.status).toBe(200);
         expect(res.body.status).toBe('OK');

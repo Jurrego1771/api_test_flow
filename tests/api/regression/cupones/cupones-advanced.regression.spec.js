@@ -42,7 +42,7 @@ async function createCoupon(client, groupId, overrides = {}) {
     return coupon;
 }
 
-test.describe('Cupones - GET avanzado', { tag: ['@regression'] }, () => {
+test.describe('Cupones - GET avanzado', () => {
     test('TC-002: Verificar filtro por custom_code', async () => {
         // Intent: validar que el filtro custom_code retorna solo el cupón correcto.
         const groupId = await getCouponGroupId(apiClient);
@@ -83,7 +83,7 @@ test.describe('Cupones - GET avanzado', { tag: ['@regression'] }, () => {
     });
 });
 
-test.describe('Cupones - POST avanzado', { tag: ['@regression'] }, () => {
+test.describe('Cupones - POST avanzado', () => {
     test('TC-007: Crear cupón reutilizable con código personalizado', async () => {
         // Intent: validar que custom_code queda persistido como code.
         const groupId = await getCouponGroupId(apiClient);

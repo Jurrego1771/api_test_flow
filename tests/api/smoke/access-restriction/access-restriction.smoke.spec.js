@@ -9,7 +9,7 @@ test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
 });
 
-test.describe('Access Restrictions - Smoke', { tag: ['@smoke'] }, () => {
+test.describe('Access Restrictions - Smoke', () => {
     test('TC_AR_001_GET_ListAllRestrictions', async () => {
         // Intent: validar que el endpoint de listado retorna contrato base.
         const res = await apiClient.get(AR_ENDPOINT);

@@ -14,7 +14,7 @@ test.afterEach(async () => {
     await cleaner.clean();
 });
 
-test.describe('Playlist - Smoke', { tag: ['@smoke'] }, () => {
+test.describe('Playlist - Smoke', () => {
     test('[PL-SMOKE-001] GET lista retorna 200 con schema válido', async () => {
         // Intent: validar contrato base del listado de playlists.
         const response = await apiClient.get('/api/playlist');

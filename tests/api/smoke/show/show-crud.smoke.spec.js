@@ -32,7 +32,7 @@ async function createShow(client, attrs = {}) {
     return getShowFromBody(res.body);
 }
 
-test.describe('Show - Smoke', { tag: ['@smoke'] }, () => {
+test.describe('Show - Smoke', () => {
     test('TC_SHW_001_POST_CreateMinimal', async () => {
         // Intent: happy path de creación de show con campos mínimos.
         const payload = {
