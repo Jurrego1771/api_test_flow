@@ -1,0 +1,8 @@
+[19:10:59] info: 🎫 Iniciando tests completos de API Cupones
+[19:10:59] info: 📊 Obteniendo Group IDs existentes...
+[19:10:59] info: ✅ 32 Group IDs obtenidos para tests
+[19:10:59] info: 🎯 Ejemplo Group ID: 68fab02e88f606b4d677afe3
+[19:10:59] info: ✅ 71 cupones existentes obtenidos
+[19:10:59] info: 🧪 Test: Verificar respuesta básica de cupones
+[19:10:59] info: 📡 GET /api/coupon - Status: 200, Data Status: OK
+[19:10:59] info: ✅ Respuesta básica verificada

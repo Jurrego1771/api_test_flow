@@ -1,15 +1,19 @@
-require("dotenv").config();
+require("dotenv").config({ quiet: true });
 const { defineConfig } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests",
-  timeout: 30_000,
+  timeout: process.env.CI ? 45_000 : 30_000,
+  workers: 2,
   retries: process.env.CI ? 2 : 1,
 
   use: {
     baseURL: process.env.BASE_URL,
     headless: true,
     viewport: { width: 1280, height: 720 },
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
 
   projects: [

@@ -1,0 +1,1 @@
+Este archivo no es una imagen, es un archivo de texto para probar validaciones negativas de la API de logo.

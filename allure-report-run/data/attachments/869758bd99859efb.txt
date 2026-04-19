@@ -1,0 +1,1 @@
+[ad.fixture] DELETE 69cf059254938003127424a8 -> 200 {"status":"OK","data":null}

@@ -1,0 +1,17 @@
+Usando grupo existente: qa_cpngrp_luv0bdn6ke (ID: 69d01b7f461dd502cd6b1a0c)
+{
+  "coupon_total": 1,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 1,
+  "_id": "69d01b7f461dd502cd6b1a0c",
+  "name": "qa_cpngrp_luv0bdn6ke",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2026-04-03T19:56:47.699Z",
+  "_name": "qa_cpngrp_luv0bdn6ke",
+  "__v": 0
+}
+[15:59:52] info: 🧪 Test: Obtener cupón por ID
+[15:59:52] info: 🎯 Obteniendo cupón con ID: 69d02a48461dd502cd6be150
+[15:59:52] info: ✅ Cupón obtenido: test1775249992180
+[Fixture] Intentando eliminar cupón: 69d02a48461dd502cd6be150
+[Fixture] DELETE /api/coupon/69d02a48461dd502cd6be150 -> status=200 body={"status":"OK"}

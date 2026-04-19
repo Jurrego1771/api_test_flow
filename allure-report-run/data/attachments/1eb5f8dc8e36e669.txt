@@ -1,0 +1,1 @@
+[22:11:44] info: 📡 GET /api/coupon - Status: 200

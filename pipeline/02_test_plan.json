@@ -1,0 +1,99 @@
+{
+  "pipeline_version": "1.0",
+  "run_date": "2026-04-02",
+  "source": "audit_request.json",
+  "audit_focus": ["field_clear"],
+  "coverage_report": {
+    "modules_analyzed": ["ad", "media", "show", "category", "live-stream", "playlist", "article"],
+    "by_module": {
+      "live-stream": { "field_clear": "covered" },
+      "playlist":    { "field_clear": "covered" },
+      "ad":          { "field_clear": "missing", "gap": "no test verifica que tags o categories se borran al enviar []" },
+      "media":       { "field_clear": "missing", "gap": "no test verifica que description o categories se borran al enviar vacío" },
+      "show":        { "field_clear": "missing", "gap": "no test verifica que description se borra al enviar vacío" },
+      "category":    { "field_clear": "missing", "gap": "no test verifica que description se borra al enviar vacío" },
+      "article":     { "field_clear": "skipped", "reason": "ENV_ISSUE — 404 en este entorno" }
+    },
+    "total_gaps": 6
+  },
+  "test_cases": [
+    {
+      "id": "TC_AD_POST_update_clear_tags",
+      "module": "ad",
+      "file_target": "tests/ad/update_ad.test.js",
+      "type": "field_clear",
+      "method": "POST",
+      "path": "/api/ad/:id",
+      "payload_notes": "Crear ad con tags=['qa_tag_1'] → POST update con tags=[] → GET /api/ad/:id → verificar que tags es [] o vacío",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "Bug reportado: el campo no se borra al enviar vacío. Este test confirma o descarta el bug."
+    },
+    {
+      "id": "TC_AD_POST_update_clear_categories",
+      "module": "ad",
+      "file_target": "tests/ad/update_ad.test.js",
+      "type": "field_clear",
+      "method": "POST",
+      "path": "/api/ad/:id",
+      "payload_notes": "Crear ad con categories=['some_id'] → POST update con categories=[] → GET /api/ad/:id → verificar que categories es []",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "Mismo patrón que tags. Cubrir los dos campos de relación más probables de tener el bug."
+    },
+    {
+      "id": "TC_MED_POST_update_clear_description",
+      "module": "media",
+      "file_target": "tests/media/media.test.js",
+      "type": "field_clear",
+      "method": "POST",
+      "path": "/api/media/:id",
+      "payload_notes": "Crear media con description='original_desc' → POST update con description='' → GET /api/media/:id → verificar que description es '' o null o undefined",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "Usar el helper createMedia() ya existente en el archivo."
+    },
+    {
+      "id": "TC_MED_POST_update_clear_categories",
+      "module": "media",
+      "file_target": "tests/media/media.test.js",
+      "type": "field_clear",
+      "method": "POST",
+      "path": "/api/media/:id",
+      "payload_notes": "Crear media → POST update con categories=[] → GET /api/media/:id → verificar que categories es [] o null",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "Usar el helper createMedia() ya existente en el archivo."
+    },
+    {
+      "id": "TC_SHW_POST_update_clear_description",
+      "module": "show",
+      "file_target": "tests/show/show.test.js",
+      "type": "field_clear",
+      "method": "POST",
+      "path": "/api/show/:id",
+      "payload_notes": "Crear show con description='original' usando authRequest+form → POST update con description='' → GET /api/show/:id → verificar que description es '' o null",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "Usar authRequest.post con { form: } para crear y actualizar (L_V_20260402_2)."
+    },
+    {
+      "id": "TC_CAT_POST_update_clear_description",
+      "module": "category",
+      "file_target": "tests/category/post_category.test.js",
+      "type": "field_clear",
+      "method": "POST",
+      "path": "/api/category/:id",
+      "payload_notes": "Crear category con description='original' → POST update /api/category/:id con description='' → GET /api/category/:id → verificar que description es '' o null",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "notes": "No asertar campo 'visible' en GET — no lo devuelve (L_V_20260402_3)."
+    }
+  ]
+}

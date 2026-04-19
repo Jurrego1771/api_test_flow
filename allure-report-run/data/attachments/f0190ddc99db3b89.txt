@@ -1,0 +1,20 @@
+Usando grupo existente: qa_auto_1761259566997 (ID: 68fab02e88f606b4d677afe3)
+{
+  "coupon_total": 50,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 50,
+  "_id": "68fab02e88f606b4d677afe3",
+  "name": "qa_auto_1761259566997",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2025-10-23T22:46:06.174Z",
+  "_name": "qa_auto_1761259566997",
+  "__v": 0
+}
+[20:13:00] info: 🧪 Test: Crear cupón no reutilizable
+[20:13:00] info: 🎯 Creando cupón con Group ID: 68fab02e88f606b4d677afe3
+[20:13:01] info: 📡 Respuesta - Status: 200, Data Status: OK
+[20:13:01] info: ✅ Cupón no reutilizable creado: U-LW8-DH-QWU (ID: 69cf141c461dd502cd5c052e)
+[20:13:01] info: 🗑️ Eliminando cupón creado en TC-006: 69cf141c461dd502cd5c052e
+[20:13:01] info: DELETE TC-006 -> status=200 body={"status":"OK"}
+[Fixture] Intentando eliminar cupón: 69cf141b461dd502cd5c051c
+[Fixture] DELETE /api/coupon/69cf141b461dd502cd5c051c -> status=200 body={"status":"OK"}

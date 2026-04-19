@@ -1,0 +1,2 @@
+[20:45:57] info: 🧪 Test: Validar paginación de cupones
+[20:45:58] info: ✅ Paginación validada

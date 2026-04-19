@@ -1,0 +1,17 @@
+Usando grupo existente: qa_auto_1761259566997 (ID: 68fab02e88f606b4d677afe3)
+{
+  "coupon_total": 50,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 50,
+  "_id": "68fab02e88f606b4d677afe3",
+  "name": "qa_auto_1761259566997",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2025-10-23T22:46:06.174Z",
+  "_name": "qa_auto_1761259566997",
+  "__v": 0
+}
+[20:13:07] info: 🧪 Test: Buscar cupón por código
+[20:13:07] info: 🎯 Buscando cupón con código: test1775178787247
+[20:13:07] info: ✅ Cupón encontrado por código: test1775178787247
+[Fixture] Intentando eliminar cupón: 69cf1422461dd502cd5c05f8
+[Fixture] DELETE /api/coupon/69cf1422461dd502cd5c05f8 -> status=200 body={"status":"OK"}

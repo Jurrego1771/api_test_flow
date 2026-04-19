@@ -1,10 +1,12 @@
 const { z } = require('zod');
 
 const accessRuleItemSchema = z.object({
+    _id: z.string().optional(),
     context: z.string(),
-    access: z.boolean(),
+    access: z.boolean().optional(),
     type: z.string().optional(),
     exclusive: z.boolean().optional(),
+    client_validation: z.boolean().optional(),
     allow_unknown: z.boolean().optional(),
     rules: z.array(z.string()).optional(),
 }).passthrough();
@@ -14,24 +16,19 @@ const accessRestrictionSchema = z.object({
     name: z.string(),
     account: z.string().optional(),
     is_default: z.boolean().optional(),
-    date_created: z.string(),
-    closed_access: z.object({
-        enabled: z.boolean(),
-        allow: z.boolean(),
-    }),
-    aes: z.object({
-        enabled: z.boolean(),
-        allow: z.boolean(),
-    }),
+    default_type: z.string().optional().nullable(),
+    categories: z.array(z.any()).nullable().optional(),
+    apply_to_sub_categories: z.boolean().optional(),
+    date_created: z.string().optional(),
+    closed_access: z.object({ enabled: z.boolean(), allow: z.boolean() }).passthrough().optional(),
+    aes: z.object({ enabled: z.boolean(), allow: z.boolean() }).passthrough().optional(),
     drm: z.object({
         enabled: z.boolean(),
         allow: z.boolean(),
         allow_incompatible: z.boolean().optional(),
-    }),
+    }).passthrough().optional(),
     access_rules: z.array(accessRuleItemSchema).optional(),
-    apply_to_sub_categories: z.boolean().optional(),
-    categories: z.array(z.string()).nullable().optional(),
-    default_type: z.string().optional().nullable(),
+    __v: z.number().optional(),
 }).passthrough();
 
 const createAccessRestrictionResponseSchema = z.object({
@@ -50,6 +47,7 @@ const listAccessRestrictionResponseSchema = z.object({
 });
 
 module.exports = {
+    accessRuleItemSchema,
     accessRestrictionSchema,
     createAccessRestrictionResponseSchema,
     getAccessRestrictionResponseSchema,

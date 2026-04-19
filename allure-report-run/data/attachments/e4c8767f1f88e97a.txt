@@ -1,0 +1,4 @@
+✅ Creada categoría padre: qa_parent_1772766704325 69aa45f0feaa1115d00d2c39
+✅ Creada categoría hija: qa_child_1772766704432 69aa45f0feaa1115d00d2c5e
+🧹 DELETE childCategory -> status=200 body={"status":"OK","data":null}
+🧹 DELETE parentCategory -> status=200 body={"status":"OK","data":null}

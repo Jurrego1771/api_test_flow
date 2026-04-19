@@ -1,0 +1,3 @@
+Cleaning up 2 resources...
+Deleted Category: 69e517e31495a52c26071166
+Deleted Category: 69e517e31495a52c26071163

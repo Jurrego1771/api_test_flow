@@ -1,0 +1,3 @@
+Cleaning up 2 resources...
+Deleted Playlist: 69e5088f1495a52c2606252b
+Deleted Media: 69e5088f1495a52c260624f6

@@ -1,0 +1,7 @@
+[20:46:05] info: 🧪 Test: Error para cupón inexistente
+[20:46:05] info: 🎯 Buscando cupón inexistente con ID: 000000000000000000000000
+[20:46:05] info: ✅ Error esperado para cupón inexistente
+[20:46:05] info: 🎫 Tests completos de API Cupones completados
+[20:46:05] info: 📊 Grupos disponibles: 32
+[20:46:05] info: 📊 Cupones generados en tests: 2
+[20:46:05] info: 🎯 Códigos creados: FBA-UHK-EE-X, QA-REUSE-760597

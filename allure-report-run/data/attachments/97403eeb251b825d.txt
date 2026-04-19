@@ -1,0 +1,2 @@
+[22:11:46] info: 🧪 Test: Validar estructura de datos de cupones
+[22:11:46] info: ✅ Estructura de datos validada

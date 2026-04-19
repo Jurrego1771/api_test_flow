@@ -1,0 +1,7 @@
+[19:11:15] info: 🧪 Test: Error para cupón inexistente
+[19:11:15] info: 🎯 Buscando cupón inexistente con ID: 000000000000000000000000
+[19:11:16] info: ✅ Error esperado para cupón inexistente
+[19:11:16] info: 🎫 Tests completos de API Cupones completados
+[19:11:16] info: 📊 Grupos disponibles: 32
+[19:11:16] info: 📊 Cupones generados en tests: 2
+[19:11:16] info: 🎯 Códigos creados: AE-LG4-CVF-K, QA-REUSE-068965

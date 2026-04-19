@@ -1,0 +1,22 @@
+{
+  "agent": "auditor",
+  "status": "READY",
+  "summary": "6 gaps de field_clear en 4 módulos. Live y Playlist ya cubiertos. Article skipped por ENV_ISSUE.",
+  "coverage_report": {
+    "ad":       { "field_clear": "missing — tags, categories" },
+    "media":    { "field_clear": "missing — description, categories" },
+    "show":     { "field_clear": "missing — description" },
+    "category": { "field_clear": "missing — description" }
+  },
+  "decisions": [
+    "Ad: cubrir tags y categories — son campos de relación, más propensos al bug reportado",
+    "Media: cubrir description (texto) y categories (array) — dos patrones distintos",
+    "Show: usar authRequest+form por L_V_20260402_2",
+    "Category: no asertar 'visible' en GET por L_V_20260402_3",
+    "Article: skip hasta resolver ENV_ISSUE del token"
+  ],
+  "questions": [],
+  "new_learnings": [],
+  "test_count": 6,
+  "next_command": "/agent3-write"
+}

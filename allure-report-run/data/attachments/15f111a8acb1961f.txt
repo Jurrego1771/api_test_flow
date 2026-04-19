@@ -1,0 +1,20 @@
+Usando grupo existente: qa_auto_1761259566997 (ID: 68fab02e88f606b4d677afe3)
+{
+  "coupon_total": 50,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 50,
+  "_id": "68fab02e88f606b4d677afe3",
+  "name": "qa_auto_1761259566997",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2025-10-23T22:46:06.174Z",
+  "_name": "qa_auto_1761259566997",
+  "__v": 0
+}
+[20:46:04] info: 🧪 Test: Crear cupón temporal y eliminarlo
+[20:46:04] info: 🎯 Creando cupón temporal para eliminar: QA-DELETE-764337
+[20:46:04] info: ✅ Cupón temporal creado: E8-Y8-JJ84-6 (ID: 69cf1bdb461dd502cd5c6d09)
+[20:46:04] info: 🗑️ Eliminando cupón con ID: 69cf1bdb461dd502cd5c6d09
+[20:46:04] info: ✅ Cupón eliminado exitosamente: QA-DELETE-764337
+[20:46:05] info: ✅ Verificación exitosa: Cupón no encontrado después de eliminar
+[Fixture] Intentando eliminar cupón: 69cf1bdb549380031275bf80
+[Fixture] DELETE /api/coupon/69cf1bdb549380031275bf80 -> status=200 body={"status":"OK"}

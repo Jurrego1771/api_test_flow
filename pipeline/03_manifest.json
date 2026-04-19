@@ -1,0 +1,36 @@
+{
+  "pipeline_version": "1.0",
+  "run_date": "2026-04-02",
+  "source": "02_test_plan.json",
+  "generated_files": [
+    {
+      "path": "tests/ad/update_ad.test.js",
+      "module": "ad",
+      "test_ids": ["TC_AD_POST_update_clear_tags", "TC_AD_POST_update_clear_categories"],
+      "test_count": 2,
+      "is_new_file": false
+    },
+    {
+      "path": "tests/media/media.test.js",
+      "module": "media",
+      "test_ids": ["TC_MED_POST_update_clear_description", "TC_MED_POST_update_clear_categories"],
+      "test_count": 2,
+      "is_new_file": false
+    },
+    {
+      "path": "tests/show/show.test.js",
+      "module": "show",
+      "test_ids": ["TC_SHW_POST_update_clear_description"],
+      "test_count": 1,
+      "is_new_file": false
+    },
+    {
+      "path": "tests/category/post_category.test.js",
+      "module": "category",
+      "test_ids": ["TC_CAT_POST_update_clear_description"],
+      "test_count": 1,
+      "is_new_file": false
+    }
+  ],
+  "total_tests_written": 6
+}

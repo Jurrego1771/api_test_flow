@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const {faker}=require\\('@faker-js/faker'\\); console.log\\(Object.keys\\(faker\\).filter\\(k=>typeof faker[k]==='object'\\).join\\(', '\\)\\)\")",
+      "Bash(npx playwright *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(grep -n \"test\\\\\\\\.describe\\\\|test\\(\" tests/media/media.test.js)",
+      "Bash(grep -n \"test\\\\\\\\.describe\\\\|test\\(\" tests/playlist/playlist.test.js)",
+      "Bash(xargs grep *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "WebSearch",
+      "Bash(claude mcp *)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const z = require\\('zod'\\); console.log\\(z.version || 'unknown'\\);\")",
+      "Bash(grep -v \"//\")",
+      "Bash(git commit *)",
+      "Bash(node notify-slack.js)",
+      "Bash(SUITE_NAME=\"🚀 Push · Smoke + Contract\" REPORT_URL=\"https://jurrego1771.github.io/api_test_flow/smoke/\" NOTIFY_ON_FAIL_ONLY=\"false\" node *)",
+      "Bash(SUITE_NAME=\"🚀 Push · Smoke + Contract\" PLATFORM_NAME=\"sm2 · Mediastream Platform\" REPORT_URL=\"https://jurrego1771.github.io/api_test_flow/smoke/\" NOTIFY_ON_FAIL_ONLY=\"false\" node *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git rebase *)",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(git checkout *)",
+      "Bash(git rm *)"
+    ]
+  }
+}

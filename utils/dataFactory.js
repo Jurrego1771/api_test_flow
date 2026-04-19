@@ -247,6 +247,44 @@ class DataFactory {
     });
   }
 
+  // --- Schedule Job (Live Stream) ---
+  /**
+   * Genera un payload para crear/actualizar un schedule-job en un live stream.
+   * Basado en la estructura de campos separados: date_start, hour, minute, etc.
+   */
+  generateSchedulePayload(overrides = {}) {
+    const now = new Date();
+    const future = new Date(now.getTime() + 24 * 60 * 60 * 1000); // Mañana
+    
+    const year = future.getFullYear();
+    const month = String(future.getMonth() + 1).padStart(2, '0');
+    const day = String(future.getDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    return {
+      name: this.generateTitle("SchBox"),
+      geo_restriction: "allow",
+      geo_restriction_countries: ["co"],
+      tz_offset: -5,
+      type: "onetime",
+      date_start: dateStr,
+      date_end: dateStr,
+      date_start_hour: "10",
+      date_start_minute: "00",
+      date_end_hour: "11",
+      date_end_minute: "00",
+      ...overrides,
+    };
+  }
+
+  generateRecurringSchedulePayload(overrides = {}) {
+    return this.generateSchedulePayload({
+      type: "recurring",
+      days: ["monday", "wednesday", "friday"],
+      ...overrides,
+    });
+  }
+
   generateAccessRestrictionWithIPRule(ips = ["192.168.1.0/24"], overrides = {}) {
     return this.generateAccessRestrictionPayload({
       access_rules: [
@@ -261,6 +299,20 @@ class DataFactory {
       ],
       ...overrides,
     });
+  }
+
+  // --- Articles ---
+  generateArticlePayload(overrides = {}) {
+    const title = this.generateTitle("Article");
+    return {
+      title,
+      synopsis: faker.lorem.sentence(),
+      content: `<div>${faker.lorem.paragraphs(2)}</div>`,
+      is_published: false,
+      tags: [faker.word.adjective(), faker.word.noun()],
+      keywords: [faker.word.noun()],
+      ...overrides,
+    };
   }
 }
 

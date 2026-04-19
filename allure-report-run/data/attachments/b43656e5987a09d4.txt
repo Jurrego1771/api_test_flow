@@ -1,0 +1,3 @@
+Cleaning up 2 resources...
+Deleted Media: 69e504001495a52c2605d15f
+Deleted Media: 69e504001495a52c2605d08b

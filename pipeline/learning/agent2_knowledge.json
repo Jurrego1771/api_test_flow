@@ -1,0 +1,25 @@
+{
+  "agent": "planner",
+  "version": "1.0",
+  "last_updated": "2026-04-02",
+  "learnings": [
+    {
+      "id": "L_P_20260402_1",
+      "category": "pattern",
+      "description": "Los módulos con helpers reutilizables (ej: createMedia, createLiveStream) tienen mejor cobertura de persistencia que los que usan fixtures de Playwright. El patrón helper facilita el flujo POST→update→GET en un solo test.",
+      "scope": "global",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
+    {
+      "id": "L_P_20260402_2",
+      "category": "anti_pattern",
+      "description": "Verificar solo el body del UPDATE response no es suficiente como test de persistencia — el backend podría retornar los valores de la request sin haberlos guardado. Siempre hacer GET posterior para confirmar persistencia real en base de datos.",
+      "scope": "global",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    }
+  ]
+}

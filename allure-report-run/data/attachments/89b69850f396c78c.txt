@@ -1,0 +1,7 @@
+[15:59:54] info: 🧪 Test: Error para cupón inexistente
+[15:59:54] info: 🎯 Buscando cupón inexistente con ID: 000000000000000000000000
+[15:59:54] info: ✅ Error esperado para cupón inexistente
+[15:59:54] info: 🎫 Tests completos de API Cupones completados
+[15:59:54] info: 📊 Grupos disponibles: 40
+[15:59:54] info: 📊 Cupones generados en tests: 2
+[15:59:54] info: 🎯 Códigos creados: Z-QE8-VQU-W2, QA-REUSE-988220

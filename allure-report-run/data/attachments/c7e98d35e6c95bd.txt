@@ -1,0 +1,20 @@
+Usando grupo existente: qa_auto_1761259566997 (ID: 68fab02e88f606b4d677afe3)
+{
+  "coupon_total": 42,
+  "coupon_used_total": 0,
+  "coupon_valid_total": 42,
+  "_id": "68fab02e88f606b4d677afe3",
+  "name": "qa_auto_1761259566997",
+  "account": "6013fd44ab74b068d929c17d",
+  "date_created": "2025-10-23T22:46:06.174Z",
+  "_name": "qa_auto_1761259566997",
+  "__v": 0
+}
+[19:11:07] info: 🧪 Test: Crear cupón no reutilizable
+[19:11:07] info: 🎯 Creando cupón con Group ID: 68fab02e88f606b4d677afe3
+[19:11:08] info: 📡 Respuesta - Status: 200, Data Status: OK
+[19:11:08] info: ✅ Cupón no reutilizable creado: AE-LG4-CVF-K (ID: 69cf059b5493800312742598)
+[19:11:08] info: 🗑️ Eliminando cupón creado en TC-006: 69cf059b5493800312742598
+[19:11:08] info: DELETE TC-006 -> status=200 body={"status":"OK"}
+[Fixture] Intentando eliminar cupón: 69cf059a461dd502cd5b35ea
+[Fixture] DELETE /api/coupon/69cf059a461dd502cd5b35ea -> status=200 body={"status":"OK"}
