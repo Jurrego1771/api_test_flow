@@ -1,38 +1,28 @@
-/**
- * Esquemas Zod para validación de respuestas del módulo Show
- * Nota: La API retorna el objeto Show directamente, no envuelto en {status, data}
- */
+const { z } = require('zod');
 
-const { z } = require("zod");
-
-// -- Schema base para un Show --
-const showSchema = z
-  .object({
+// Show API returns object directly, NOT wrapped in {status, data}
+const showSchema = z.object({
     _id: z.string(),
-    account: z.string().optional(),
     title: z.string(),
-    version: z.string().optional(),
-    description: z.string().optional(),
-    type: z.enum(["tvshow", "radioshow", "podcast", "movie", "mixed"]),
-    genres: z.array(z.string()).optional(),
-    iab_genres: z.array(z.string()).optional(),
-    is_published: z.union([z.boolean(), z.string()]).optional(),
-    first_emision: z.string().optional(),
-    next_episode: z.union([z.number(), z.string()]).optional(),
-    status: z.string().optional(),
-    date_created: z.string().optional(),
-    date_updated: z.string().optional(),
-    distributors: z.array(z.unknown()).optional(),
-    producers: z.array(z.unknown()).optional(),
-    featuring: z.array(z.unknown()).optional(),
-    hosts: z.array(z.unknown()).optional(),
-    ads: z.array(z.unknown()).optional(),
-    ad_map_url: z.string().optional(),
-    rss: z.object({}).passthrough().optional(),
-    gracenote: z.object({}).passthrough().optional(),
-  })
-  .passthrough();
+    type: z.enum(['tvshow', 'radioshow', 'podcast', 'movie', 'mixed']),
+    account: z.string(),
+    is_published: z.boolean(),
+    status: z.enum(['OK', 'DELETE']).optional(),
+    date_created: z.string(),
+    date_updated: z.string(),
+    genres: z.array(z.string()),
+    iab_genres: z.array(z.string()),
+    distributors: z.array(z.unknown()),
+    producers: z.array(z.unknown()),
+    featuring: z.array(z.unknown()),
+    hosts: z.array(z.unknown()),
+    slug: z.string().optional(),
+    description: z.string().optional().nullable(),
+    short_title: z.string().optional().nullable(),
+    rating: z.number().optional(),
+    next_episode: z.number().optional(),
+    free_episodes_count: z.number().optional(),
+    is_vertical: z.boolean().optional(),
+}).passthrough();
 
-module.exports = {
-  showSchema,
-};
+module.exports = { showSchema };

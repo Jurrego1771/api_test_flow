@@ -49,6 +49,10 @@ class ResourceCleaner {
                     await this.apiClient.delete(`/api/live-stream/${resource.id}`);
                     console.log(`Deleted Live Stream: ${resource.id}`);
                 }
+                else if (resource.type === 'accessRestriction') {
+                    await this.apiClient.delete(`/api/settings/advanced-access-restrictions/${resource.id}`);
+                    console.log(`Deleted Access Restriction: ${resource.id}`);
+                }
             } catch (error) {
                 console.error(`Failed to cleanup ${resource.type} ${resource.id}`, error);
             }
