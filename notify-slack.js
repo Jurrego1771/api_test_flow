@@ -5,7 +5,7 @@ const axios = require("axios");
 const WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 const RESULTS_FILE = "test-results/results.json";
 const SUITE_NAME = process.env.SUITE_NAME || "API Tests";
-const PLATFORM  = process.env.PLATFORM_NAME || "sm2 · Mediastream Platform";
+const PLATFORM  = process.env.PLATFORM_NAME || "sm2 · Mediastream Platform API";
 const REPORT_URL = process.env.REPORT_URL || "https://jurrego1771.github.io/api_test_flow/";
 const NOTIFY_ON_FAIL_ONLY = process.env.NOTIFY_ON_FAIL_ONLY === "true";
 
