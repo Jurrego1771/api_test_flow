@@ -146,7 +146,7 @@ Tags funcionales (no redundar con nombre del proyecto):
 ### push.yml (cada push a main/develop)
 - Proyectos: `smoke` + `contract`, 4 workers
 - Slack: **solo si hay fallos**
-- Sin Allure deploy
+- Playwright HTML report → `https://jurrego1771.github.io/api_test_flow/smoke/` (via peaceiris/actions-gh-pages)
 
 ### nightly.yml (06:00 UTC diario + workflow_dispatch)
 - Proyectos: todos (smoke + regression + integration + contract)
