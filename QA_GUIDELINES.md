@@ -14,6 +14,53 @@ Cada prueba debe definirse bajo la estructura: **Entrada + Acción + Observables
 
 ---
 
+## 🚦 2. Política de Ejecución
+
+La suite debe seguir ejecutándose aunque un caso falle. El fallo de un test individual no debe detener toda la corrida salvo que el proceso esté roto a nivel de entorno.
+
+### Clasificación de fallos
+*   **Hard fail:** rompe el pipeline. Es un fallo nuevo, crítico o de seguridad.
+*   **Known bug:** bug aceptado temporalmente. No bloquea merge, pero debe seguir visible.
+*   **Flaky:** fallo intermitente. Va a cuarentena o se reescribe.
+*   **Setup fail:** entorno roto. Normalmente invalida la suite y debe bloquear.
+
+### Reglas operativas
+*   No usar `continue-on-error` para ocultar fallos de la suite principal.
+*   Dejar que Playwright termine la corrida completa y reportar el resultado real.
+*   Marcar bugs conocidos con `test.fail()` o `test.fixme()` cuando aplique.
+*   Mantener `@critical`, `@known-bug`, `@flaky` y `@quarantine` como tags explícitos.
+*   Si un caso está en cuarentena, no debe contaminar el gate principal.
+
+### Convención exacta
+*   `test.fail()` para un bug conocido reproducible que todavía queremos ejecutar en la suite principal.
+*   `test.fixme()` para un caso que todavía no está listo o depende de algo pendiente.
+*   `test.skip()` para un caso que no debe ejecutarse en este entorno.
+*   `@known-bug` para marcar casos esperados a fallar y facilitar filtrado en Allure.
+*   `@quarantine` para aislar casos que ya no deben entrar al gate principal.
+
+### Helper recomendado
+Usar `tests/api/helpers/annotations.js` para mantener consistencia:
+*   `markKnownBug({ issue, reason })`
+*   `markQuarantine({ issue, reason })`
+*   `markFixme({ issue, reason })`
+*   `annotateCase({ type, issue, reason })`
+*   `knownBugTest(title, fn)` para casos que deben quedar filtrables con `--grep @known-bug`
+*   `quarantineTest(title, fn)` para casos que deben quedar filtrables con `--grep @quarantine`
+
+### Uso recomendado
+*   `@critical`: flujos que bloquean negocio, dinero o seguridad.
+*   `@known-bug`: caso esperado a fallar mientras exista el bug documentado.
+*   `@flaky`: caso temporalmente inestable.
+*   `@quarantine`: caso excluido del gate principal hasta reescritura o estabilización.
+
+### Orden de decisión
+1. Si el caso todavía no debe correr, usar `markFixme()`.
+2. Si el caso corre pero el entorno no lo soporta, usar `test.skip()` o `markQuarantine()`.
+3. Si el caso corre y falla por un bug aceptado, usar `markKnownBug()`.
+4. Si el fallo es nuevo o crítico, dejarlo fallar normal y romper CI.
+
+---
+
 ## ✅ Qué HACER (Senior Mode)
 
 ### 1. Justificar cada Assert
@@ -49,7 +96,7 @@ Si tu test tiene un `if (status === 200)`, está mal diseñado. Un test debe ser
 
 ### 3. Selectores Frágiles
 Prohibido usar selectores que dependan de la estructura exacta del DOM.
-*   ❌ `page.locator('div > span > button').nth(2)`
+*   ❌ `div > span > button:nth-child(2)`
 *   ✅ `page.getByRole('button', { name: 'Guardar' })` o `page.getByTestId('save-btn')`
 
 ---

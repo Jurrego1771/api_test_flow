@@ -12,6 +12,11 @@ The `schedule` surface in `sm2` is not a simple CRUD module. It is split across 
 
 This module is high risk because it is exposed to concurrent edits, overlap validation, transaction boundaries, background refreshes, and one-way cleanup paths. A failure here can create duplicate events, overlapping windows, wrong recurrence expansion, missed webhook signals, or stale schedule data that the UI and downstream services trust.
 
+Current coverage note:
+- there is now a dedicated schedule test file in `tests/api/regression/schedule`
+- legacy indirect coverage remains in `tests/api/regression/live/live-advanced.regression.spec.js`
+- `tests/api/regression/schedule/schedule-advanced.regression.spec.js` adds direct regression checks for schedule-job create, update, list reads, repeat-read stability, invalid payload handling, and not-found handling
+
 ## 2. Risk Scoring Model
 
 Scale used for each dimension:
@@ -28,23 +33,23 @@ Priority bands:
 
 ## 3. Risk Register
 
-| ID | Area | Risk | Impact | Likelihood | Detectability | Score | Priority | Why it matters | Main QA focus |
-|---|---|---:|---:|---:|---:|---:|---|---|---|
-| SCHED-RISK-001 | Overlap validation | Two concurrent requests pass conflict checks and create overlapping schedule jobs | 5 | 4 | 5 | 100 | P0 | There is no database uniqueness guarantee and conflict detection is application-side | concurrent create tests, duplicate-window tests, transaction boundaries |
-| SCHED-RISK-002 | Update flow | Update recreates or mutates derived schedules while another writer is touching the same job | 5 | 4 | 5 | 100 | P0 | `updateScheduleJob` can delete and recreate schedule materialization | concurrent update tests, partial-update preservation, rollback behavior |
-| SCHED-RISK-003 | Bulk timezone fix | `fix-tz-offset` rewrites many jobs with `__dagerous_force_create__`, bypassing normal conflict protection | 5 | 4 | 5 | 100 | P0 | This is a deliberate bypass that can generate overlaps if the source data is dirty | bulk update tests, forced-create behavior, post-mutation verification |
-| SCHED-RISK-004 | EPG reconciliation | EPG sync inserts, updates, or deletes the wrong jobs when source data drifts | 5 | 4 | 5 | 100 | P0 | External EPG reconciliation can replace manual edits and create silent data drift | sync diff tests, insert/update/delete matching, idempotency |
-| SCHED-RISK-005 | Derived schedule materialization | `EventScheduleJob` and `EventSchedule` get out of sync after save/remove hooks | 5 | 4 | 5 | 100 | P0 | `postCommit('save')` propagates fields asynchronously to all derived schedules | propagation tests, save/remove hook behavior, stale read checks |
-| SCHED-RISK-006 | Background refresh | Internal schedule updater sends webhook flags, updates files, and restreams outside a transaction | 5 | 3 | 5 | 75 | P0 | Re-running it or overlapping it can double-send or partially update state | repeat-run tests, webhook flag tests, file update side effects |
-| SCHED-RISK-007 | Recurrence expansion | Recurrent schedules expand to the wrong set of dates around day and timezone boundaries | 5 | 4 | 4 | 80 | P0 | Recurrence is the main source of hidden scheduling bugs | day-of-week, DST-like boundary, duration, tz_offset tests |
-| SCHED-RISK-008 | Delete cleanup | Deleting a schedule job leaves orphaned `EventSchedule` rows or custom files behind | 4 | 4 | 4 | 64 | P0 | Cleanup is split between transactional remove and async filesystem cleanup | cascade deletion tests, filesystem cleanup verification |
-| SCHED-RISK-009 | Fast channel cleanup | Fast-channel schedule deletion can resolve before all cleanup promises finish | 5 | 3 | 5 | 75 | P0 | The delete path in `deleteFastScheduleJob` is easy to under-wait and can race | cleanup ordering tests, awaited promise tests, orphan verification |
-| SCHED-RISK-010 | Auth scope | Schedule queries or mutations leak across accounts or events | 5 | 3 | 4 | 60 | P0 | These routes guard by account and event, so scope regressions are security-relevant | cross-account negative tests, not-found vs forbidden behavior |
-| SCHED-RISK-011 | Validation gaps | Invalid name, date, recurrence, or recording duration slips through partial validation | 4 | 4 | 3 | 48 | P1 | The module accepts many branches and time calculations | boundary tests, null/empty cases, duration ceilings |
-| SCHED-RISK-012 | Search/list consistency | Search and list endpoints return stale or misleading data because they read different collections | 4 | 3 | 4 | 48 | P1 | `EventScheduleJob` and `EventSchedule` are both exposed in different routes | contract tests, collection consistency, query filters |
-| SCHED-RISK-013 | Custom attributes | Custom schedule attributes are saved or removed inconsistently during create, update, or EPG sync | 4 | 3 | 4 | 48 | P1 | Custom file processing is asynchronous and can fail independently | custom field round-trip, file cleanup, failure isolation |
-| SCHED-RISK-014 | Show linkage | Show/season/episode references are corrupted or partially updated during schedule changes | 4 | 3 | 4 | 48 | P1 | `show_info` is propagated across derived schedules and EPG reconciliation | linkage tests, nulling behavior, post-save propagation |
-| SCHED-RISK-015 | Idempotency | Repeated create/update/delete requests produce duplicate side effects | 4 | 3 | 4 | 48 | P1 | Several paths trigger create, delete, save, and webhook-like side effects | repeated-request tests, retry behavior, duplicate suppression |
+| ID | Area | Risk | Impact | Likelihood | Detectability | Score | Priority | Coverage | Evidence | Why it matters | Main QA focus |
+|---|---|---:|---:|---:|---:|---:|---|---|---|---|---|
+| SCHED-RISK-001 | Overlap validation | Two concurrent requests pass conflict checks and create overlapping schedule jobs | 5 | 4 | 5 | 100 | P0 | Missing | None found | There is no database uniqueness guarantee and conflict detection is application-side | concurrent create tests, duplicate-window tests, transaction boundaries |
+| SCHED-RISK-002 | Update flow | Update recreates or mutates derived schedules while another writer is touching the same job | 5 | 4 | 5 | 100 | P0 | Partial | `TC_SCH_007_POST_UpdateScheduleJob_HappyPath` in `tests/api/regression/schedule/schedule-advanced.regression.spec.js` | `updateScheduleJob` can delete and recreate schedule materialization | concurrent update tests, partial-update preservation, rollback behavior |
+| SCHED-RISK-003 | Bulk timezone fix | `fix-tz-offset` rewrites many jobs with `__dagerous_force_create__`, bypassing normal conflict protection | 5 | 4 | 5 | 100 | P0 | Missing | None found | This is a deliberate bypass that can generate overlaps if the source data is dirty | bulk update tests, forced-create behavior, post-mutation verification |
+| SCHED-RISK-004 | EPG reconciliation | EPG sync inserts, updates, or deletes the wrong jobs when source data drifts | 5 | 4 | 5 | 100 | P0 | Missing | None found | External EPG reconciliation can replace manual edits and create silent data drift | sync diff tests, insert/update/delete matching, idempotency |
+| SCHED-RISK-005 | Derived schedule materialization | `EventScheduleJob` and `EventSchedule` get out of sync after save/remove hooks | 5 | 4 | 5 | 100 | P0 | Partial | `TC_LIV_044_GET_Schedule` in `tests/api/regression/live/live-advanced.regression.spec.js`, `TC_SCH_001_GET_LiveStreamScheduleJobList`, `TC_SCH_002_GET_LiveStreamScheduleJobList_StableOnRepeat` in `tests/api/regression/schedule/schedule-advanced.regression.spec.js` | `postCommit('save')` propagates fields asynchronously to all derived schedules | propagation tests, save/remove hook behavior, stale read checks |
+| SCHED-RISK-006 | Background refresh | Internal schedule updater sends webhook flags, updates files, and restreams outside a transaction | 5 | 3 | 5 | 75 | P0 | Partial | `TC_LIV_045_GET_RestreamList` in `tests/api/regression/live/live-advanced.regression.spec.js`, `TC_SCH_003_GET_RestreamList_StableOnRepeat` in `tests/api/regression/schedule/schedule-advanced.regression.spec.js` | Re-running it or overlapping it can double-send or partially update state | repeat-run tests, webhook flag tests, file update side effects |
+| SCHED-RISK-007 | Recurrence expansion | Recurrent schedules expand to the wrong set of dates around day and timezone boundaries | 5 | 4 | 4 | 80 | P0 | Missing | None found | Recurrence is the main source of hidden scheduling bugs | day-of-week, DST-like boundary, duration, tz_offset tests |
+| SCHED-RISK-008 | Delete cleanup | Deleting a schedule job leaves orphaned `EventSchedule` rows or custom files behind | 4 | 4 | 4 | 64 | P0 | Missing | None found | Cleanup is split between transactional remove and async filesystem cleanup | cascade deletion tests, filesystem cleanup verification |
+| SCHED-RISK-009 | Fast channel cleanup | Fast-channel schedule deletion can resolve before all cleanup promises finish | 5 | 3 | 5 | 75 | P0 | Missing | None found | The delete path in `deleteFastScheduleJob` is easy to under-wait and can race | cleanup ordering tests, awaited promise tests, orphan verification |
+| SCHED-RISK-010 | Auth scope | Schedule queries or mutations leak across accounts or events | 5 | 3 | 4 | 60 | P0 | Missing | None found | These routes guard by account and event, so scope regressions are security-relevant | cross-account negative tests, not-found vs forbidden behavior |
+| SCHED-RISK-011 | Validation gaps | Invalid name, date, recurrence, or recording duration slips through partial validation | 4 | 4 | 3 | 48 | P1 | Partial | `TC_SCH_005_POST_CreateScheduleJob_HappyPath`, `TC_SCH_006_POST_CreateScheduleJob_InvalidPayload` in `tests/api/regression/schedule/schedule-advanced.regression.spec.js` | The module accepts many branches and time calculations | boundary tests, null/empty cases, duration ceilings |
+| SCHED-RISK-012 | Search/list consistency | Search and list endpoints return stale or misleading data because they read different collections | 4 | 3 | 4 | 48 | P1 | Missing | None found | `EventScheduleJob` and `EventSchedule` are both exposed in different routes | contract tests, collection consistency, query filters |
+| SCHED-RISK-013 | Custom attributes | Custom schedule attributes are saved or removed inconsistently during create, update, or EPG sync | 4 | 3 | 4 | 48 | P1 | Missing | None found | Custom file processing is asynchronous and can fail independently | custom field round-trip, file cleanup, failure isolation |
+| SCHED-RISK-014 | Show linkage | Show/season/episode references are corrupted or partially updated during schedule changes | 4 | 3 | 4 | 48 | P1 | Missing | None found | `show_info` is propagated across derived schedules and EPG reconciliation | linkage tests, nulling behavior, post-save propagation |
+| SCHED-RISK-015 | Idempotency | Repeated create/update/delete requests produce duplicate side effects | 4 | 3 | 4 | 48 | P1 | Missing | None found | Several paths trigger create, delete, save, and webhook-like side effects | repeated-request tests, retry behavior, duplicate suppression |
 
 ## 4. Endpoint Clusters to Cover First
 
@@ -88,6 +93,19 @@ Priority bands:
 - bulk timezone migration tests with forced-create paths
 - delete cleanup tests that assert both DB state and custom-file cleanup behavior
 - scope tests for account isolation and not-found behavior
+
+### Current evidence
+- `tests/api/regression/schedule/schedule-advanced.regression.spec.js`
+  - `TC_SCH_005_POST_CreateScheduleJob_HappyPath`
+  - `TC_SCH_006_POST_CreateScheduleJob_InvalidPayload`
+  - `TC_SCH_007_POST_UpdateScheduleJob_HappyPath`
+  - `TC_SCH_001_GET_LiveStreamScheduleJobList`
+  - `TC_SCH_002_GET_LiveStreamScheduleJobList_StableOnRepeat`
+  - `TC_SCH_003_GET_RestreamList_StableOnRepeat`
+  - `TC_SCH_004_GET_ScheduleJobList_NotFound`
+- `tests/api/regression/live/live-advanced.regression.spec.js`
+  - `TC_LIV_044_GET_Schedule`
+  - `TC_LIV_045_GET_RestreamList`
 
 ### Manual first
 - one recurrent schedule overlap reproduction with two parallel edits

@@ -49,15 +49,27 @@ Este proyecto automatiza las pruebas de una API utilizando Playwright, con integ
 # Ejecutar todas las pruebas
 npm test
 
-# Ejecutar pruebas específicas
-npm run test:media
+# Ejecutar solo casos críticos
+npm run test:critical
+
+# Ejecutar bugs conocidos en cuarentena
+npm run test:known-bug
+
+# Ejecutar casos en cuarentena
+npm run test:quarantine
 
 # Generar reporte HTML
-npm run test:report
+npm run allure:generate
 ```
 
 ### En GitHub Actions
 Las pruebas se ejecutan automáticamente en cada push y pull request.
+
+Política del runner:
+- la suite sigue ejecutándose aunque falle un caso
+- los bugs conocidos se marcan con `test.fail()` o `test.fixme()`
+- el reporte Allure se genera siempre
+- la publicación en GitHub Pages se hace solo en `push`
 
 ## 📊 Ver Resultados
 
@@ -125,4 +137,5 @@ Este proyecto está bajo la Licencia ISC.
 
 
 ---
+
 

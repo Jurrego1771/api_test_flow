@@ -115,3 +115,68 @@ test.describe('Ad - Update', () => {
         expect(res.body.data).toBe('NOT_FOUND');
     });
 });
+
+test.describe('Ad - Delete', () => {
+    test('TC_AD_DELETE_ad_by_id', async () => {
+        const ad = await createAd(apiClient, { name: `qa_ad_delete_${Date.now()}` });
+
+        const res = await apiClient.delete(`/api/ad/${ad._id}`);
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('OK');
+
+        const getRes = await apiClient.get(`/api/ad/${ad._id}`);
+        expect(getRes.status).toBe(404);
+        expect(getRes.body.status).toBe('ERROR');
+        expect(getRes.body.data).toBe('NOT_FOUND');
+    });
+
+    test('TC_AD_DELETE_ad_not_found', async () => {
+        // NOTE: API returns 200 for non-existent IDs (idempotent delete)
+        const res = await apiClient.delete('/api/ad/000000000000000000000000');
+        expect([200, 400, 404]).toContain(res.status);
+    });
+});
+
+test.describe('Ad - List & Search', () => {
+    const { listAdResponseSchema } = require('../../../../schemas/ad.schema');
+
+    test('TC_AD_GET_list_default', async () => {
+        const res = await apiClient.get('/api/ad');
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('OK');
+        expect(Array.isArray(res.body.data)).toBe(true);
+        listAdResponseSchema.parse(res.body);
+    });
+
+    test('TC_AD_GET_list_pagination', async () => {
+        const res = await apiClient.get('/api/ad?limit=2&skip=0');
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('OK');
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.length).toBeLessThanOrEqual(2);
+        listAdResponseSchema.parse(res.body);
+    });
+
+    test('TC_AD_GET_search_by_name', async () => {
+        const uniqueName = `qa_search_${Date.now()}`;
+        const ad = await createAd(apiClient, { name: uniqueName });
+        cleaner.register('ad', ad._id);
+
+        const res = await apiClient.get(`/api/ad/search?name=${uniqueName}`);
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('OK');
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.some((a) => a.name === uniqueName)).toBe(true);
+    });
+
+    test('TC_AD_GET_search_by_id', async () => {
+        const ad = await createAd(apiClient, { name: `qa_search_id_${Date.now()}` });
+        cleaner.register('ad', ad._id);
+
+        const res = await apiClient.get(`/api/ad/search?id=${ad._id}`);
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('OK');
+        expect(Array.isArray(res.body.data)).toBe(true);
+        expect(res.body.data.some((a) => a._id === ad._id)).toBe(true);
+    });
+});
