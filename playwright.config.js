@@ -4,6 +4,7 @@ const { defineConfig } = require("@playwright/test");
 module.exports = defineConfig({
   testDir: "./tests",
   timeout: 30_000,
+  retries: process.env.CI ? 2 : 1,
 
   use: {
     baseURL: process.env.BASE_URL,
@@ -44,6 +45,7 @@ module.exports = defineConfig({
         environmentInfo: {
           node_version: process.version,
           base_url: process.env.BASE_URL || "N/A",
+          ci: process.env.CI ? "true" : "false",
         },
       },
     ],
