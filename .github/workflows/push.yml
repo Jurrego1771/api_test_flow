@@ -10,7 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
+      pages: write
+      id-token: write
 
     steps:
     - name: 📥 Checkout repo
@@ -39,6 +41,16 @@ jobs:
         path: test-results/results.json
         if-no-files-found: warn
         retention-days: 3
+
+    - name: 🚀 Deploy a GitHub Pages (/smoke/)
+      if: always()
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./playwright-report
+        publish_branch: gh-pages
+        destination_dir: smoke
+        commit_message: "ci: smoke report [${{ github.run_number }}]"
 
     - name: 📢 Slack — solo si hay fallos
       if: always()
