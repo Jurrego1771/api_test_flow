@@ -1,12 +1,8 @@
-# CLAUDE.md — Contexto Persistente: API Test Flow
+# CLAUDE.md — API Test Flow · Mediastream Platform
 
 ## Rol del Proyecto
-Automatización de pruebas para la **API REST de Mediastream Platform**.
-Stack: **Playwright + Node.js (CommonJS)** | Faker v7 | Zod | Allure | Winston.
-
-## Identidad del Agente
-Eres un **QA Engineer Senior** especializado en pruebas de API REST.
-Tu objetivo es mantener cobertura exhaustiva, detectar regresiones y generar código de test mantenible.
+Automatización de pruebas para la **API REST de Mediastream (sm2)**.
+Stack: **Playwright + Node.js (CommonJS)** | Faker v7 | Zod v4 | Allure | Axios.
 
 ---
 
@@ -14,176 +10,202 @@ Tu objetivo es mantener cobertura exhaustiva, detectar regresiones y generar có
 
 ```
 api_test_flow/
-├── CLAUDE.md                    ← este archivo
-├── .agents/skills/              ← skills de Claude Code
-│   ├── mediastream-api/         ← referencia de endpoints
-│   ├── mediastream-embed/       ← referencia de embed
-│   ├── qa-test-planner/         ← planeación y casos de prueba manuales
-│   ├── playwright-generate-test/ ← generación de tests con MCP
-│   ├── review-test-suite/       ← revisión de baterías de prueba ← NUEVA
-│   └── create-test-suite/       ← creación de baterías de prueba ← NUEVA
-├── tests/                       ← tests organizados por módulo
-│   ├── media/                   ← media.test.js
-│   ├── live/                    ← live.test.js, logo.test.js, schedule.test.js
-│   ├── ad/                      ← ad_create, get_ad, update_ad
-│   ├── category/
-│   ├── playlist/
-│   ├── article/
-│   ├── show/
-│   ├── cupones/
-│   ├── access_restriction/
-│   └── embed/                   ← video-directo, live-stream, live-dvr, etc.
-├── fixtures/                    ← Playwright fixtures por módulo
-│   ├── authRequest.fixture.js   ← fixture base con X-API-Token
-│   └── index.js                 ← exporta todos los fixtures
-├── schemas/                     ← esquemas Zod para validación
-│   ├── media.schema.js
-│   ├── live.schema.js
-│   └── ...
-├── lib/
-│   └── apiClient.js             ← cliente HTTP wrapper
+├── tests/
+│   ├── api/
+│   │   ├── smoke/          ← happy path, cada endpoint responde (corre en cada push)
+│   │   ├── regression/     ← edge cases, negativos, validaciones (corre en nightly)
+│   │   ├── integration/    ← flujos multi-recurso (corre en nightly)
+│   │   ├── contract/       ← validación de schema Zod (corre en cada push)
+│   │   └── helpers/
+│   │       ├── index.js    ← ApiClient, ResourceCleaner, dataFactory, ensureEndpointAvailable
+│   │       └── annotations.js
+│   └── utils/              ← utilidades de test (no specs)
+├── schemas/                ← Zod schemas por módulo
+├── lib/apiClient.js        ← HTTP wrapper (maneja auth headers)
 ├── utils/
-│   ├── dataFactory.js           ← generación de datos con faker
-│   └── resourceCleaner.js       ← limpieza de recursos creados en tests
+│   ├── dataFactory.js      ← generación de payloads con faker
+│   └── resourceCleaner.js  ← limpieza de recursos post-test
+├── doc_api/risk-register/  ← registro de riesgos por módulo (prioriza qué cubrir)
+├── .agents/skills/         ← referencias de endpoints de la API
+├── fixtures/               ← fixtures legacy (no usar en tests nuevos)
+├── .github/workflows/
+│   ├── push.yml            ← smoke + contract en cada push (Slack solo si falla)
+│   └── nightly.yml         ← suite completa a las 06:00 UTC (Slack siempre)
+├── notify-slack.js         ← notificaciones Slack con SUITE_NAME/REPORT_URL env vars
 └── playwright.config.js
 ```
 
 ---
 
-## Convenciones de Código
+## Filosofía de Testing
+
+### Capas por riesgo, no por módulo
+- **Smoke**: ¿el endpoint responde? Create + GET + Delete básico. Sin lógica de negocio.
+- **Regression**: validaciones, negativos, edge cases, campos opcionales, concurrencia.
+- **Integration**: flujos reales de usuario que cruzan recursos (crear show → temporada → episodio).
+- **Contract**: schema Zod exacto. Detecta breaking changes silenciosos del backend.
+
+### Cuándo agregar a cada capa
+| Escenario | Capa |
+|---|---|
+| Endpoint nuevo responde 200 | Smoke |
+| Campo requerido ausente → 400 | Regression |
+| Payload inválido → error específico | Regression |
+| Flujo: crear A → asociar B → verificar C | Integration |
+| Schema de respuesta con tipos exactos | Contract |
+
+### Risk Register
+Antes de crear tests para un módulo, leer `doc_api/risk-register/<modulo>.md`.
+El register define qué riesgos son P0/P1 y qué cobertura ya existe.
+
+---
+
+## Estructura de un Test File
+
+```js
+const { test, expect } = require('@playwright/test');
+const { ApiClient, ResourceCleaner, dataFactory, ensureEndpointAvailable } = require('../../helpers');
+const { mySchema } = require('../../../../schemas/my.schema');
+
+let apiClient, cleaner;
+
+test.beforeEach(async ({ request, baseURL }) => {
+    apiClient = new ApiClient(request, baseURL);
+    cleaner = new ResourceCleaner(apiClient);
+});
+
+test.afterEach(async () => {
+    await cleaner.clean();
+});
+
+test.describe('Módulo — Grupo de tests', () => {
+    test('TC_MOD_001_POST_Create_HappyPath', async () => {
+        const payload = dataFactory.generateXPayload();
+        const res = await apiClient.post('/api/x', payload);
+        expect(res.ok).toBeTruthy();
+        const id = res.body.data._id;
+        cleaner.register('x', id);
+        expect(res.body.status).toBe('OK');
+    });
+});
+```
+
+**Paths de imports** (desde `tests/api/<capa>/<modulo>/`):
+- Helpers: `../../helpers`
+- Schemas: `../../../../schemas/X.schema`
+
+---
+
+## Convenciones
 
 ### Nomenclatura de Tests
 ```
-TC_<MOD>_<METHOD>_<resource>_<scenario>
+TC_<MOD>_<NUM>_<METHOD>_<Recurso>_<Escenario>
 ```
-- `<MOD>` — prefijo del módulo (MED, LIVE, AD…)
-- `<METHOD>` — método HTTP (GET, POST, PUT, DELETE)
-- `<resource>` — slug del recurso/path en snake_case (bulk_upload, list, by_id)
-- `<scenario>` — escenario concreto (valid, no_token, invalid_payload, not_found, empty_body…)
-
-La combinación es naturalmente única — no se usan números secuenciales.
-
 Ejemplos:
-- `TC_MED_POST_bulk_upload_valid`
-- `TC_MED_POST_bulk_upload_no_token`
-- `TC_LIVE_GET_list_with_dvr`
-- `TC_AD_DELETE_ad_not_found`
+- `TC_MED_001_POST_Create_HappyPath`
+- `TC_SCH_006_POST_CreateScheduleJob_InvalidPayload @negative`
+- `TC_SHW_GET_season_list_valid`
+
+Tags funcionales (no redundar con nombre del proyecto):
+- `@critical` — ruta crítica de negocio
+- `@negative` — casos de error esperados
+- `@contract` — validación de schema cross-suite
+
+**No usar** `@smoke`, `@regression`, `@integration`, `@contract` en `test.describe` — el proyecto Playwright ya identifica la capa.
 
 ### Módulos y prefijos
 | Módulo | Prefijo | Ruta base |
-|--------|---------|-----------|
+|---|---|---|
 | Media | `TC_MED` | `/api/media` |
-| Live Stream | `TC_LIVE` | `/api/live-stream` |
+| Live Stream | `TC_LIV` | `/api/live-stream` |
+| Schedule | `TC_SCH` | `/api/live-stream/:id/schedule-job` |
 | Ads | `TC_AD` | `/api/ad` |
 | Category | `TC_CAT` | `/api/category` |
 | Playlist | `TC_PLS` | `/api/playlist` |
 | Article | `TC_ART` | `/api/article` |
 | Show | `TC_SHW` | `/api/show` |
 | Coupon | `TC_CPN` | `/api/coupon` |
-| Access Restriction | `TC_AR` | `/api/auth` |
-| Embed | `TC_EMB` | embed URLs |
+| Access Restriction | `TC_AR` | `/api/settings/advanced-access-restrictions` |
+| Customer | `TC_CUS` | `/api/customer` |
 
-### Estructura de cada test file
-```js
-const { test, expect } = require("../../fixtures");
-const { SomeSchema } = require("../../schemas/module.schema");
-const { ApiClient } = require("../../lib/apiClient");
-const { ResourceCleaner } = require("../../utils/resourceCleaner");
-const dataFactory = require("../../utils/dataFactory");
-const { faker } = require("@faker-js/faker");
-require("dotenv").config();
+### ResourceCleaner — tipos soportados
+`media`, `playlist`, `ad`, `category`, `coupon`, `show`, `article`, `live-stream`, `accessRestriction`, `season` (id: `"showId/seasonId"`), `episode` (id: `"showId/seasonId/episodeId"`), `quiz` (id: `"liveId/quizId"`), `customer` (desactiva, no elimina)
 
-test.describe("Módulo — Descripción del grupo", () => {
-  let apiClient, cleaner;
-
-  test.beforeEach(async ({ authRequest }) => {
-    apiClient = new ApiClient(authRequest);
-    cleaner = new ResourceCleaner(apiClient);
-  });
-
-  test.afterEach(async () => {
-    await cleaner.cleanAll();
-  });
-
-  test("TC_XXX_001 — descripción", async () => {
-    // Arrange → Act → Assert
-  });
-});
-```
-
-### Reglas de Codificación
-- **Faker**: usar `faker.random.alphaNumeric()`, `faker.internet.email()`, `faker.lorem.words()` (API faker v7)
-- **Limpieza**: siempre registrar recursos en `cleaner.register(tipo, id)` y llamar `cleaner.cleanAll()` en `afterEach`
-- **Validación de esquema**: usar Zod para validar estructura de respuestas, no solo status code
-- **Nomenclatura de payloads de prueba**: prefijo `qa_` para identificar recursos creados por tests
-- **No hardcodear IDs**: siempre crear los recursos necesarios con `dataFactory` o helpers
-- **Errores**: verificar `body.status === "OK"` además del HTTP status code
+### Reglas de código
+- Siempre `cleaner.register(tipo, id)` para todo recurso creado
+- Payload names con prefijo `qa_` o `[QA-...]`
+- No hardcodear IDs — crear los recursos en el test
+- `ensureEndpointAvailable` para endpoints que pueden estar ausentes en algunos entornos
+- Faker v7: `faker.random.alphaNumeric()`, `faker.internet.email()`, `faker.lorem.words()`
 
 ---
 
-## Variables de Entorno (.env)
-```
-BASE_URL=https://platform.mediastre.am
-API_TOKEN=<token con permisos read+write>
-```
-Antes de cualquier tarea que requiera llamadas a la API, verificar que `.env` existe y tiene valores.
+## CI/CD
 
----
+### push.yml (cada push a main/develop)
+- Proyectos: `smoke` + `contract`, 4 workers
+- Slack: **solo si hay fallos**
+- Sin Allure deploy
 
-## Scripts de Ejecución
+### nightly.yml (06:00 UTC diario + workflow_dispatch)
+- Proyectos: todos (smoke + regression + integration + contract)
+- Slack: **siempre**
+- Allure deploy → `https://jurrego1771.github.io/api_test_flow/nightly/`
+- `workflow_dispatch` acepta inputs `project` y `workers`
+
+### Slack (notify-slack.js)
 ```bash
-npm test                          # todos los tests
-npm run test:media                # solo módulo media
-npm run test:live                 # solo módulo live
-playwright test tests/<modulo>/  # módulo específico
-npm run allure:serve              # abrir reporte Allure
+SUITE_NAME="🚀 Push · Smoke + Contract" \
+REPORT_URL="https://jurrego1771.github.io/api_test_flow/smoke/" \
+NOTIFY_ON_FAIL_ONLY="true" \
+node notify-slack.js
+```
+
+---
+
+## Variables de Entorno
+```
+BASE_URL=https://dev.platform.mediastre.am
+API_TOKEN=<token con permisos read+write>
+SLACK_WEBHOOK_URL=<webhook>
+```
+
+---
+
+## Scripts Útiles
+```bash
+npm test                              # todos los proyectos
+npm run test:smoke                    # solo smoke
+npm run test:regression               # solo regression
+npm run test:integration              # solo integration
+npm run test:contract                 # solo contract
+npx playwright test --project=smoke --project=contract --workers=4
+npx playwright test tests/api/regression/schedule/  # módulo específico
+npm run allure:serve                  # abrir reporte local
 ```
 
 ---
 
 ## Skills Disponibles
-
 | Skill | Cuándo usar |
-|-------|-------------|
-| `mediastream-api` | Consultar endpoints, parámetros, autenticación de la API |
-| `mediastream-embed` | Trabajar con embed players y query params |
-| `qa-test-planner` | Crear test plans manuales, casos de prueba, bug reports |
-| `playwright-generate-test` | Generar tests con Playwright MCP navegando la UI |
-| **`review-test-suite`** | **Revisar cobertura y calidad de una batería de tests existente** |
-| **`create-test-suite`** | **Crear una nueva batería de tests para un módulo** |
+|---|---|
+| `mediastream-api` | Consultar endpoints, parámetros, contratos de la API |
+| `qa-test-planner` | Crear test plans, casos de prueba, bug reports |
+| `review-test-suite` | Revisar cobertura y calidad de una batería existente |
+| `create-test-suite` | Crear nueva batería para un módulo |
 
-### Cuándo activar `review-test-suite`
-Palabras clave: "revisar tests", "review tests", "analizar cobertura", "qué falta en los tests", "mejorar batería", "auditar tests", "check test suite"
+### Activar `review-test-suite`
+Palabras clave: "revisar tests", "analizar cobertura", "qué falta", "auditar tests"
 
-### Cuándo activar `create-test-suite`
-Palabras clave: "crear tests", "nueva batería", "generar tests para", "implementar tests", "añadir tests", "escribir tests para el módulo", "create test suite"
-
----
-
-## API Mediastream — Quick Reference
-- **Base URL**: `https://platform.mediastre.am`
-- **Auth**: header `X-API-Token: <token>` o query param `?token=<token>`
-- **Respuesta estándar**: `{ "status": "OK"|"ERROR", "data": ... }`
-- **HTTP status relevantes**: 200 (OK), 400 (bad request), 401 (unauthorized), 404 (not found), 500 (server error)
-- **CRUD estándar**: GET list, GET by id, POST create, POST update by id, DELETE by id
-
----
-
-## Flujo de Trabajo Recomendado al Crear Tests
-
-1. Leer el skill `mediastream-api` + referencia del módulo en `.agents/skills/mediastream-api/references/`
-2. Revisar tests existentes del módulo si los hay
-3. Identificar casos: happy path, validación, autenticación, edge cases, cleanup
-4. Crear el test file siguiendo la estructura estándar
-5. Ejecutar `playwright test tests/<modulo>/` y verificar que pasan
-6. Si hay recursos nuevos, asegurarse de que `ResourceCleaner` los elimina
+### Activar `create-test-suite`
+Palabras clave: "crear tests", "nueva batería", "generar tests para", "implementar tests"
 
 ---
 
 ## Comportamiento Esperado del Agente
-
-- Responder siempre en **español** salvo que el usuario use inglés
-- Código de tests siempre en **inglés** (comentarios, nombres de variables, strings de test)
-- Ser conciso: no repetir contexto que ya está en este archivo
-- Ante duda sobre un endpoint, consultar primero `.agents/skills/mediastream-api/references/`
-- Antes de crear un test, verificar si ya existe uno similar en `tests/`
+- Responder en **español** salvo que el usuario use inglés
+- Código de tests en **inglés** (nombres de variables, strings, comentarios técnicos)
+- Ante duda sobre un endpoint → consultar `.agents/skills/mediastream-api/references/`
+- Antes de crear tests → leer `doc_api/risk-register/<modulo>.md` si existe
+- Antes de crear un test file → verificar si ya existe uno similar en `tests/api/`
