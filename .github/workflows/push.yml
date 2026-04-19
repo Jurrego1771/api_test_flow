@@ -1,0 +1,50 @@
+name: 🚀 Push — Smoke + Contract
+
+on:
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  smoke-contract:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+    - name: 📥 Checkout repo
+      uses: actions/checkout@v4
+
+    - name: ⚙️ Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+
+    - name: 📦 Install dependencies
+      run: npm ci
+
+    - name: 🧪 Run Smoke + Contract
+      run: npx playwright test --project=smoke --project=contract --workers=4
+      env:
+        BASE_URL: ${{ secrets.BASE_URL }}
+        API_TOKEN: ${{ secrets.API_TOKEN }}
+
+    - name: 📤 Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: push-results-${{ github.run_number }}
+        path: test-results/results.json
+        if-no-files-found: warn
+        retention-days: 3
+
+    - name: 📢 Slack — solo si hay fallos
+      if: always()
+      run: node notify-slack.js
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SUITE_NAME: "🚀 Push · Smoke + Contract"
+        REPORT_URL: "https://jurrego1771.github.io/api_test_flow/smoke/"
+        NOTIFY_ON_FAIL_ONLY: "true"
