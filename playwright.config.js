@@ -6,25 +6,42 @@ module.exports = defineConfig({
   timeout: 30_000,
 
   use: {
-    baseURL: process.env.BASE_URL, // solo API; sin fallback local a server
+    baseURL: process.env.BASE_URL,
     headless: true,
     viewport: { width: 1280, height: 720 },
   },
 
-  // Sin servidor web local; solo pruebas de API/endpoint
+  projects: [
+    {
+      name: "smoke",
+      testMatch: "**/api/smoke/**/*.spec.js",
+    },
+    {
+      name: "regression",
+      testMatch: "**/api/regression/**/*.spec.js",
+    },
+    {
+      name: "integration",
+      testMatch: "**/api/integration/**/*.spec.js",
+      timeout: 60_000,
+    },
+    {
+      name: "contract",
+      testMatch: "**/api/contract/**/*.spec.js",
+    },
+  ],
 
-  // 🔹 Configuración de reportes
   reporter: [
-    ["list"], // salida en consola
-    ["json", { outputFile: "test-results/results.json" }], // 🧾 útil para Slack o CI
-    ["html", { outputFolder: "playwright-report", open: "never" }], // 🌐 reporte Playwright (fallback)
+    ["list"],
+    ["json", { outputFile: "test-results/results.json" }],
+    ["html", { outputFolder: "playwright-report", open: "never" }],
     [
       "allure-playwright",
       {
-        detail: true,              // incluye steps internos de Playwright
-        outputFolder: "allure-results", // datos crudos; el HTML se genera en CI
-        suiteTitle: true,          // usa el nombre del describe como Suite
-        environmentInfo: {         // metadata visible en el panel Environment
+        detail: true,
+        outputFolder: "allure-results",
+        suiteTitle: true,
+        environmentInfo: {
           node_version: process.version,
           base_url: process.env.BASE_URL || "N/A",
         },

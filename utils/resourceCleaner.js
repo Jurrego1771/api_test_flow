@@ -26,9 +26,28 @@ class ResourceCleaner {
                     console.log(`Deleted Media: ${resource.id}`);
                 }
                 else if (resource.type === 'playlist') {
-                    // Nota: Swagger dice DELETE /api/playlist/{id}
                     await this.apiClient.delete(`/api/playlist/${resource.id}`);
                     console.log(`Deleted Playlist: ${resource.id}`);
+                }
+                else if (resource.type === 'ad') {
+                    await this.apiClient.delete(`/api/ad/${resource.id}`);
+                    console.log(`Deleted Ad: ${resource.id}`);
+                }
+                else if (resource.type === 'category') {
+                    await this.apiClient.delete(`/api/category/${resource.id}`);
+                    console.log(`Deleted Category: ${resource.id}`);
+                }
+                else if (resource.type === 'coupon') {
+                    await this.apiClient.delete(`/api/coupon/${resource.id}`);
+                    console.log(`Deleted Coupon: ${resource.id}`);
+                }
+                else if (resource.type === 'show') {
+                    await this.apiClient.delete(`/api/show/${resource.id}`);
+                    console.log(`Deleted Show: ${resource.id}`);
+                }
+                else if (resource.type === 'live-stream') {
+                    await this.apiClient.delete(`/api/live-stream/${resource.id}`);
+                    console.log(`Deleted Live Stream: ${resource.id}`);
                 }
             } catch (error) {
                 console.error(`Failed to cleanup ${resource.type} ${resource.id}`, error);
