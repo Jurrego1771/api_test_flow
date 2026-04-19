@@ -25,8 +25,8 @@ const { faker } = require("@faker-js/faker");
 require("dotenv").config();
 
 // ─── Media IDs obtenidos una sola vez ────────────────────────────────────────
-// NOTE: A media can only appear in one episode per season (MEDIA_ALREADY_IN_OTHER_EPISODE)
-// Tests that create 2 episodes in the same season must use different media IDs
+// NOTE: API constraint — a media can only appear in ONE episode globally.
+// We probe media IDs to find 2 that are not currently linked to any episode.
 let mediaId, mediaId2;
 
 test.beforeAll(async ({ playwright }) => {
@@ -34,11 +34,35 @@ test.beforeAll(async ({ playwright }) => {
     baseURL: process.env.BASE_URL,
     extraHTTPHeaders: { "X-API-Token": process.env.API_TOKEN },
   });
-  const res = await ctx.get("/api/media?limit=2");
-  const medias = (await res.json()).data;
-  mediaId = medias[0]._id;
-  mediaId2 = medias[1]?._id ?? medias[0]._id;
+
+  // Probe show/season to find free media IDs
+  const probeShowRes = await ctx.post("/api/show", { data: { title: `qa_probe_${Date.now()}`, type: "tvshow" } });
+  const probeShow = await probeShowRes.json();
+  const probeSeasonRes = await ctx.post(`/api/show/${probeShow._id}/season`, { data: { title: "qa_probe_season" } });
+  const probeSeason = await probeSeasonRes.json();
+
+  const mediaRes = await ctx.get("/api/media?limit=100&sort=-date_created");
+  const allMedia = (await mediaRes.json()).data || [];
+
+  const freeIds = [];
+  for (const m of allMedia) {
+    if (freeIds.length >= 2) break;
+    const epRes = await ctx.post(`/api/show/${probeShow._id}/season/${probeSeason._id}/episode`, {
+      data: { title: "qa_probe_ep", content: [{ content_type: "Media", type: "full", value: m._id }] },
+    });
+    if (epRes.status() === 200) {
+      const ep = await epRes.json();
+      freeIds.push(m._id);
+      await ctx.delete(`/api/show/${probeShow._id}/season/${probeSeason._id}/episode/${ep._id}`);
+    }
+  }
+
+  await ctx.delete(`/api/show/${probeShow._id}`);
   await ctx.dispose();
+
+  if (freeIds.length < 2) throw new Error(`Could not find 2 free media IDs (found ${freeIds.length})`);
+  mediaId = freeIds[0];
+  mediaId2 = freeIds[1];
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -77,8 +101,8 @@ test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/epis
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 
@@ -195,8 +219,8 @@ test.describe("Show Episode — List (GET /api/show/:id/season/:seasonId/episode
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 
@@ -267,8 +291,8 @@ test.describe("Show Episode — Get by ID (GET /api/show/:id/season/:seasonId/ep
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 
@@ -325,8 +349,8 @@ test.describe("Show Episode — Update (POST /api/show/:id/season/:seasonId/epis
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 
@@ -413,8 +437,8 @@ test.describe("Show Episode — Delete (DELETE /api/show/:id/season/:seasonId/ep
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 

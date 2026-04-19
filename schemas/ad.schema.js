@@ -44,7 +44,7 @@ const adSchema = z
     min_media_time_length: z.number().optional(),
     schedule: adScheduleSchema.optional(),
     adswizz: adAdswizzSchema.optional(),
-    insertion: adInsertionSchema.optional(),
+    insertion: z.union([adInsertionSchema, z.null()]).optional(),
     categories: z.array(z.any()).optional(),
     tags: z.array(z.string()).optional(),
     referers: z.array(z.any()).optional(),

@@ -26,9 +26,8 @@ test.describe("Show Season — Create (POST /api/show/:id/season)", () => {
       baseURL: process.env.BASE_URL,
       extraHTTPHeaders: { 'X-API-Token': process.env.API_TOKEN },
     });
-    const res = await ctx.post('/api/show', { data: { title: `qa_show_fixture_${Date.now()}`, type: 'series' } });
-    const body = await res.json();
-    show = body.data;
+    const res = await ctx.post('/api/show', { data: { title: `qa_show_fixture_${Date.now()}`, type: 'tvshow' } });
+    show = await res.json(); // Show API returns object directly (no {status,data} wrapper)
     await ctx.dispose();
   });
 

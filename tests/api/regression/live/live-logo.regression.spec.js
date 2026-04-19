@@ -12,7 +12,7 @@ const { ResourceCleaner } = require('../../helpers');
 const fs = require("fs");
 const path = require("path");
 
-const LIVE_ID = process.env.LIVE_STREAM_ID;
+const LIVE_ID = process.env.LIVE_STREAM_ID || "6971288e64b2477e2b935259";
 const API_BASE = `/api/live-stream/${LIVE_ID}`;
 
 // Helper para construir la URL con o sin token

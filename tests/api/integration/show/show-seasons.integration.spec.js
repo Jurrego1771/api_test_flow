@@ -38,8 +38,8 @@ test.describe("Show Season — List (GET /api/show/:id/season)", () => {
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 
@@ -97,8 +97,8 @@ test.describe("Show Season — Get by ID (GET /api/show/:id/season/:seasonId)", 
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 
@@ -157,8 +157,8 @@ test.describe("Show Season — Update (POST /api/show/:id/season/:seasonId)", ()
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 
@@ -240,8 +240,8 @@ test.describe("Show Season — Delete (DELETE /api/show/:id/season/:seasonId)", 
   test.beforeEach(async ({ request, baseURL }) => {
     apiClient = new ApiClient(request, baseURL);
     cleaner = new ResourceCleaner(apiClient);
-    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "series" });
-    show = showRes.body.data;
+    const showRes = await apiClient.post("/api/show", { title: `qa_show_${Date.now()}`, type: "tvshow" });
+    show = showRes.body; // Show API returns object at root (no wrapper)
     cleaner.register("show", show._id);
   });
 
