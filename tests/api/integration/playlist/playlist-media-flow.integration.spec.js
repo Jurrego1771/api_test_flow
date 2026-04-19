@@ -36,15 +36,16 @@ test.describe('Playlist - Flujo de asociación de medias', { tag: ['@integration
         const playlistId = plRes.body.data._id;
         cleaner.register('playlist', playlistId);
 
-        // 3. Asociar media vía rules.manual.medias
+        // 3. Asociar media: API lee req.body.medias dentro de switch(type) case 'manual'
         const addRes = await apiClient.post(`/api/playlist/${playlistId}`, {
-            rules: { manual: { medias: [mediaId] } },
+            type: 'manual',
+            medias: [mediaId],
         });
         expect(addRes.status).toBe(200);
         expect((addRes.body.data.rules?.manual?.medias ?? []).map(String)).toContain(mediaId);
 
         // 4. Verificar que aparece en GET?medias=true&all=true
-        const detailWithMedia = await apiClient.get(`/api/playlist/${playlistId}?medias=true&all=true`);
+        const detailWithMedia = await apiClient.get(`/api/playlist/${playlistId}?all=true`);
         expect(detailWithMedia.status).toBe(200);
         const mediaIds = (detailWithMedia.body.data.medias ?? []).map((m) =>
             typeof m === 'string' ? m : m._id
@@ -53,7 +54,8 @@ test.describe('Playlist - Flujo de asociación de medias', { tag: ['@integration
 
         // 5. Vaciar medias
         const clearRes = await apiClient.post(`/api/playlist/${playlistId}`, {
-            rules: { manual: { medias: [] } },
+            type: 'manual',
+            medias: [],
         });
         expect(clearRes.status).toBe(200);
         expect(clearRes.body.data.rules?.manual?.medias ?? []).toHaveLength(0);
