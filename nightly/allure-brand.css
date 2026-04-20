@@ -1,0 +1,328 @@
+:root {
+  color-scheme: dark;
+  --allure-brand-bg: #0b0d12;
+  --allure-brand-bg-alt: #101521;
+  --allure-brand-surface: rgba(16, 20, 30, 0.88);
+  --allure-brand-surface-strong: rgba(21, 26, 38, 0.96);
+  --allure-brand-border: rgba(255, 255, 255, 0.08);
+  --allure-brand-border-strong: rgba(124, 255, 107, 0.18);
+  --allure-brand-text: #e7edf7;
+  --allure-brand-muted: #97a0b3;
+  --allure-brand-accent: #7cff6b;
+  --allure-brand-accent-soft: #c8ffbf;
+  --allure-brand-purple: #a78bfa;
+  --allure-brand-purple-soft: #dccfff;
+  --allure-brand-danger: #ff6b8b;
+  --allure-brand-warning: #ffd166;
+  --allure-brand-info: #63d4ff;
+  --allure-brand-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  --allure-brand-radius: 18px;
+}
+
+html,
+body {
+  min-height: 100%;
+  background: var(--allure-brand-bg);
+}
+
+body {
+  margin: 0;
+  color: var(--allure-brand-text);
+  font-family: "Manrope", "Segoe UI Variable", "Segoe UI", Arial, sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(167, 139, 250, 0.18), transparent 28%),
+    radial-gradient(circle at top right, rgba(124, 255, 107, 0.12), transparent 25%),
+    radial-gradient(circle at 50% 0%, rgba(99, 212, 255, 0.08), transparent 26%),
+    linear-gradient(180deg, #0b0d12 0%, #0f121a 42%, #090b10 100%);
+  background-attachment: fixed;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(124, 255, 107, 0.08), transparent 0 24%),
+    radial-gradient(circle at 80% 0%, rgba(167, 139, 250, 0.12), transparent 0 20%),
+    radial-gradient(circle at 80% 80%, rgba(124, 255, 107, 0.05), transparent 0 18%);
+  filter: blur(10px);
+}
+
+body::after {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 90%);
+  opacity: 0.26;
+}
+
+#content,
+#popup,
+#alert {
+  position: relative;
+  z-index: 1;
+}
+
+#content {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--allure-brand-accent);
+  text-decoration-color: rgba(124, 255, 107, 0.35);
+}
+
+a:hover {
+  color: var(--allure-brand-accent-soft);
+  text-decoration-color: currentColor;
+}
+
+::selection {
+  background: rgba(124, 255, 107, 0.24);
+  color: #ffffff;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(124, 255, 107, 0.28), rgba(167, 139, 250, 0.34));
+  border: 3px solid rgba(11, 13, 18, 0.88);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(124, 255, 107, 0.44), rgba(167, 139, 250, 0.52));
+}
+
+body :is(
+  [class$="__section"],
+  [class$="__content"],
+  [class$="__header"],
+  [class$="__body"],
+  [class$="__footer"],
+  [class$="__panel"],
+  [class$="__card"],
+  [class$="__menu"],
+  [class$="__popup"],
+  [class$="__popover"],
+  [class$="__tooltip"],
+  [class*="pane"],
+  [class*="widget"],
+  [class*="summary"],
+  [class*="timeline"],
+  [class*="side"],
+  [class*="nav"],
+  [class*="tabs"],
+  [class*="menu"],
+  [class*="modal"],
+  [class*="popover"],
+  [class*="tooltip"],
+  [class*="table"]
+) {
+  color: var(--allure-brand-text);
+}
+
+body :is(
+  [class$="__section"],
+  [class$="__content"],
+  [class$="__header"],
+  [class$="__body"],
+  [class$="__footer"],
+  [class$="__panel"],
+  [class$="__card"],
+  [class$="__menu"],
+  [class$="__popup"],
+  [class*="pane"],
+  [class*="widget"],
+  [class*="summary"],
+  [class*="timeline"],
+  [class*="side"],
+  [class*="nav"],
+  [class*="tabs"],
+  [class*="menu"],
+  [class*="modal"],
+  [class*="popover"],
+  [class*="tooltip"]
+) {
+  background-color: var(--allure-brand-surface) !important;
+  border-color: var(--allure-brand-border) !important;
+  box-shadow: var(--allure-brand-shadow);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+body :is([class*="pane"], [class*="widget"], [class*="summary"], [class*="card"], [class*="panel"]) {
+  border: 1px solid var(--allure-brand-border);
+  border-radius: var(--allure-brand-radius);
+  overflow: hidden;
+}
+
+body :is([class*="header"], [class*="toolbar"], [class*="controls"], [class*="filters"], [class*="menu"]) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+}
+
+body :is(h1, h2, h3, h4, h5, h6) {
+  color: var(--allure-brand-text);
+  letter-spacing: -0.02em;
+}
+
+body :is(.page-header, .header, .app__header, .pane__header, .widget__header) {
+  border-bottom: 1px solid var(--allure-brand-border) !important;
+  background:
+    linear-gradient(135deg, rgba(124, 255, 107, 0.08), transparent 35%),
+    linear-gradient(180deg, rgba(167, 139, 250, 0.08), rgba(16, 20, 30, 0.98));
+}
+
+body :is(.pane__section, .widget__content, .summary-widget__chart, .chart, .chart__container, .tabs, .tab, .side-bar, .sidebar, .menu, .tree, .popover, .modal) {
+  border-radius: var(--allure-brand-radius);
+}
+
+body :is(.tab, .tabs__item, .menu__item, [role="tab"], [role="button"], button, .btn) {
+  color: var(--allure-brand-text);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 999px;
+}
+
+body :is(.tab:hover, .tabs__item:hover, .menu__item:hover, [role="tab"]:hover, [role="button"]:hover, button:hover, .btn:hover) {
+  border-color: rgba(124, 255, 107, 0.24);
+  background: rgba(124, 255, 107, 0.08);
+}
+
+body :is(.tab.active, .tabs__item.active, [aria-selected="true"]) {
+  color: #081107;
+  background: linear-gradient(135deg, var(--allure-brand-accent), #abff9d);
+  border-color: transparent;
+  box-shadow: 0 0 0 1px rgba(124, 255, 107, 0.35), 0 10px 30px rgba(124, 255, 107, 0.18);
+}
+
+body :is(input, select, textarea) {
+  color: var(--allure-brand-text);
+  background: rgba(7, 10, 16, 0.92);
+  border: 1px solid var(--allure-brand-border);
+  border-radius: 12px;
+}
+
+body :is(input, select, textarea)::placeholder {
+  color: rgba(151, 160, 179, 0.78);
+}
+
+body :is(input:focus, select:focus, textarea:focus) {
+  outline: none;
+  border-color: rgba(124, 255, 107, 0.36);
+  box-shadow: 0 0 0 4px rgba(124, 255, 107, 0.14);
+}
+
+table {
+  color: var(--allure-brand-text);
+  background: rgba(255, 255, 255, 0.02);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th,
+td {
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+th {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--allure-brand-muted);
+}
+
+tr:hover td {
+  background: rgba(124, 255, 107, 0.04);
+}
+
+code,
+pre,
+kbd,
+samp {
+  color: var(--allure-brand-accent-soft);
+  background: rgba(7, 10, 16, 0.94);
+  border: 1px solid rgba(124, 255, 107, 0.12);
+  border-radius: 12px;
+}
+
+pre {
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.08);
+}
+
+body :is(.text-muted, .muted, .description, .footer, .note, .secondary, .subtitle, .help, .label, .meta) {
+  color: var(--allure-brand-muted);
+}
+
+body :is(.tooltip, .popover, .modal, .alert, .notification, .toast) {
+  border: 1px solid rgba(124, 255, 107, 0.16);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.68);
+}
+
+body :is(.status-passed, [data-status="passed"]) {
+  color: var(--allure-brand-accent) !important;
+}
+
+body :is(.status-failed, [data-status="failed"]) {
+  color: var(--allure-brand-danger) !important;
+}
+
+body :is(.status-broken, [data-status="broken"]) {
+  color: var(--allure-brand-warning) !important;
+}
+
+body :is(.status-skipped, [data-status="skipped"]) {
+  color: var(--allure-brand-muted) !important;
+}
+
+svg text,
+svg tspan {
+  fill: currentColor;
+}
+
+svg .axis text,
+svg .tick text,
+svg .chart__caption,
+svg .chart__legend,
+svg .chart__legend-row,
+svg .popover {
+  color: var(--allure-brand-text);
+}
+
+svg .chart__arc,
+svg .chart__bar,
+svg .chart__fill_status_passed {
+  filter: drop-shadow(0 8px 18px rgba(124, 255, 107, 0.12));
+}
+
+body :is(.spinner__circle) {
+  border-color: rgba(124, 255, 107, 0.2) !important;
+  border-top-color: var(--allure-brand-accent) !important;
+}
+
+#alert:empty,
+#popup:empty {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  body::after {
+    background-size: 48px 48px;
+  }
+}
