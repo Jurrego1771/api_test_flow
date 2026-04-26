@@ -6,8 +6,8 @@
   --allure-brand-surface-strong: rgba(21, 26, 38, 0.96);
   --allure-brand-border: rgba(255, 255, 255, 0.08);
   --allure-brand-border-strong: rgba(124, 255, 107, 0.18);
-  --allure-brand-text: #e7edf7;
-  --allure-brand-muted: #97a0b3;
+  --allure-brand-text: #ffffff;
+  --allure-brand-muted: #b8bfc9;
   --allure-brand-accent: #7cff6b;
   --allure-brand-accent-soft: #c8ffbf;
   --allure-brand-purple: #a78bfa;
@@ -15,7 +15,7 @@
   --allure-brand-danger: #ff6b8b;
   --allure-brand-warning: #ffd166;
   --allure-brand-info: #63d4ff;
-  --allure-brand-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  --allure-brand-shadow: 0 24px 80px rgba(0, 0, 0, 0.65);
   --allure-brand-radius: 18px;
 }
 
@@ -176,7 +176,7 @@ body :is([class*="header"], [class*="toolbar"], [class*="controls"], [class*="fi
 }
 
 body :is(h1, h2, h3, h4, h5, h6) {
-  color: var(--allure-brand-text);
+  color: #ffffff;
   letter-spacing: -0.02em;
 }
 
@@ -194,42 +194,53 @@ body :is(.pane__section, .widget__content, .summary-widget__chart, .chart, .char
 body :is(.tab, .tabs__item, .menu__item, [role="tab"], [role="button"], button, .btn) {
   color: var(--allure-brand-text);
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
+  transition: all 0.2s ease;
 }
 
 body :is(.tab:hover, .tabs__item:hover, .menu__item:hover, [role="tab"]:hover, [role="button"]:hover, button:hover, .btn:hover) {
-  border-color: rgba(124, 255, 107, 0.24);
-  background: rgba(124, 255, 107, 0.08);
+  border-color: rgba(124, 255, 107, 0.4);
+  background: rgba(124, 255, 107, 0.12);
+  color: #ffffff;
+}
+
+/* Mejora del Focus State */
+body :is(.tab, .tabs__item, .menu__item, [role="tab"], [role="button"], button, .btn, input, select, textarea):focus-visible {
+  outline: 2px solid var(--allure-brand-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(124, 255, 107, 0.15);
 }
 
 body :is(.tab.active, .tabs__item.active, [aria-selected="true"]) {
-  color: #081107;
+  color: #050a04 !important;
+  font-weight: 600;
   background: linear-gradient(135deg, var(--allure-brand-accent), #abff9d);
   border-color: transparent;
-  box-shadow: 0 0 0 1px rgba(124, 255, 107, 0.35), 0 10px 30px rgba(124, 255, 107, 0.18);
+  box-shadow: 0 0 0 1px rgba(124, 255, 107, 0.35), 0 8px 24px rgba(124, 255, 107, 0.25);
 }
 
 body :is(input, select, textarea) {
-  color: var(--allure-brand-text);
-  background: rgba(7, 10, 16, 0.92);
-  border: 1px solid var(--allure-brand-border);
+  color: #ffffff;
+  background: rgba(7, 10, 16, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
 }
 
 body :is(input, select, textarea)::placeholder {
-  color: rgba(151, 160, 179, 0.78);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 body :is(input:focus, select:focus, textarea:focus) {
   outline: none;
-  border-color: rgba(124, 255, 107, 0.36);
-  box-shadow: 0 0 0 4px rgba(124, 255, 107, 0.14);
+  border-color: var(--allure-brand-accent);
+  background: rgba(7, 10, 16, 1);
+  box-shadow: 0 0 0 4px rgba(124, 255, 107, 0.12);
 }
 
 table {
   color: var(--allure-brand-text);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.015);
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -240,12 +251,36 @@ td {
 }
 
 th {
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--allure-brand-muted);
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85em;
+  letter-spacing: 0.05em;
 }
 
 tr:hover td {
-  background: rgba(124, 255, 107, 0.04);
+  background: rgba(124, 255, 107, 0.08) !important;
+}
+
+/* Fix para filas seleccionadas o activas en tablas de Allure */
+.node {
+  color: #fdfdfd !important;
+}
+
+body :is(.table__row_selected, [class*="table__row_selected"], .node_selected) {
+  background-color: rgba(124, 255, 107, 0.15) !important;
+  border-left: 4px solid var(--allure-brand-accent) !important;
+}
+
+body :is(.table__row_selected, [class*="table__row_selected"], .node_selected) :is(td, div, span, a) {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* Si la fila tiene un fondo muy claro (estilo por defecto de Allure), forzamos texto oscuro */
+body :is(.table__row_selected) {
+  box-shadow: inset 4px 0 0 var(--allure-brand-accent);
 }
 
 code,
@@ -253,22 +288,22 @@ pre,
 kbd,
 samp {
   color: var(--allure-brand-accent-soft);
-  background: rgba(7, 10, 16, 0.94);
-  border: 1px solid rgba(124, 255, 107, 0.12);
+  background: rgba(7, 10, 16, 0.96);
+  border: 1px solid rgba(124, 255, 107, 0.15);
   border-radius: 12px;
 }
 
 pre {
-  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.1);
 }
 
-body :is(.text-muted, .muted, .description, .footer, .note, .secondary, .subtitle, .help, .label, .meta) {
-  color: var(--allure-brand-muted);
+body :is(.text-muted, .muted, .description, .footer, .note, .secondary, .subtitle, .help, .label, .meta, .item-label, .parameter__name) {
+  color: var(--allure-brand-muted) !important;
 }
 
 body :is(.tooltip, .popover, .modal, .alert, .notification, .toast) {
-  border: 1px solid rgba(124, 255, 107, 0.16);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.68);
+  border: 1px solid rgba(124, 255, 107, 0.25);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.75);
 }
 
 body :is(.status-passed, [data-status="passed"]) {

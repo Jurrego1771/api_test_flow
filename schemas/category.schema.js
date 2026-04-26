@@ -15,7 +15,19 @@ const categorySchema = z
     _name: z.string().optional(),
     slug: z.string().optional(),
     description: z.string().optional(),
-    parent: z.string().nullable().optional(),
+    parent: z
+      .union([
+        z.string(),
+        z
+          .object({
+            _id: z.string(),
+            name: z.string().optional(),
+            date_created: z.string().optional(),
+          })
+          .passthrough(),
+      ])
+      .nullable()
+      .optional(),
     track: z.boolean().optional(),
     visible: z.boolean().optional(),
     drm: drmSchema.optional(),

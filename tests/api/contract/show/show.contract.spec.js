@@ -26,10 +26,9 @@ test.describe('Show - Contract', () => {
     test('TC_CON_SHW_001 POST /api/show response schema', async () => {
         const payload = {
             title: `[QA-CONTRACT] Show ${Date.now()}`,
-            account: ACCOUNT_ID,
             type: 'tvshow',
         };
-        const res = await apiClient.post('/api/show', payload, { form: true });
+        const res = await apiClient.post('/api/show/', payload, { form: true });
         expect(res.ok, `Create failed: ${res.status} ${JSON.stringify(res.body)}`).toBeTruthy();
 
         const show = extractShow(res.body);
@@ -40,9 +39,8 @@ test.describe('Show - Contract', () => {
     });
 
     test('TC_CON_SHW_002 GET /api/show/:id response schema', async () => {
-        const createRes = await apiClient.post('/api/show', {
+        const createRes = await apiClient.post('/api/show/', {
             title: `[QA-CONTRACT] Show ${Date.now()}`,
-            account: ACCOUNT_ID,
             type: 'podcast',
         }, { form: true });
         expect(createRes.ok).toBeTruthy();

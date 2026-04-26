@@ -37,6 +37,7 @@ tmp/
 logs
 *.log
 tests/**/*.txt
+!tests/resources/invalid_format.txt
 media/**/*.txt
 
 # Coverage

@@ -1,0 +1,2 @@
+This is an invalid format file for logo upload tests.
+It should be rejected by the server because it is not an image.
