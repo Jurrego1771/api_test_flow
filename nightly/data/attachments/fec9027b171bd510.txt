@@ -1,5 +1,0 @@
-Cleaning up 4 resources...
-Cleaned episode: 69ec6c6056d92e06b333bb2f/69ec6c6156d92e06b333bb35/69ec6c6156d92e06b333bb4e
-Cleaned episode: 69ec6c6056d92e06b333bb2f/69ec6c6156d92e06b333bb35/69ec6c6156d92e06b333bb3e
-Cleaned season: 69ec6c6056d92e06b333bb2f/69ec6c6156d92e06b333bb35
-Cleaned show: 69ec6c6056d92e06b333bb2f
