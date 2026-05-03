@@ -1,14 +1,41 @@
 {
-  "agent": "writer",
-  "version": "1.0",
-  "last_updated": "2026-04-02",
+  "agent": "test-designer",
+  "version": "2.0",
+  "last_updated": "2026-05-02",
   "learnings": [
+    {
+      "id": "L_P_20260402_1",
+      "category": "pattern",
+      "description": "Módulos con helpers reutilizables (ej: createMedia, createLiveStream) tienen mejor cobertura de persistencia que los que usan fixtures de Playwright. El patrón helper facilita el flujo POST→update→GET en un solo test.",
+      "scope": "global",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
+    {
+      "id": "L_P_20260402_2",
+      "category": "anti_pattern",
+      "description": "Verificar solo el body del UPDATE response no es suficiente como test de persistencia — el backend podría retornar los valores de la request sin haberlos guardado. Siempre diseñar flujo con GET posterior para confirmar persistencia real en base de datos.",
+      "scope": "global",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
     {
       "id": "L_W3_20260402_1",
       "category": "convention",
-      "description": "post_category.test.js mezcla dos patrones de cleanup: cleaner.register() en beforeEach/afterEach y delete manual con try/catch dentro del test. Usar siempre cleaner.register() al agregar tests nuevos a este archivo.",
+      "description": "post_category.test.js mezcla dos patrones de cleanup: cleaner.register() en beforeEach/afterEach y delete manual con try/catch dentro del test. Al agregar tests nuevos a este archivo, usar siempre cleaner.register() y nunca el patrón manual.",
       "scope": "module:category",
       "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
+    {
+      "id": "L_TD_20260502_1",
+      "category": "design",
+      "description": "Use cases que describen la misma acción + mismo assert (ej. UC_001 DELETE cascade + UC_004 GET /schedule empty) deben colapsarse en un solo test case. Separar sería redundancia sin valor de cobertura adicional y duplicaría setup costoso (createLiveStream + createScheduleJob).",
+      "scope": "global",
+      "discovered_on": "2026-05-02",
       "run_count": 1,
       "confirmed_by_user": true
     }

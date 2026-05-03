@@ -1,12 +1,12 @@
 {
-  "agent": "validator",
-  "version": "1.0",
+  "agent": "sdet",
+  "version": "2.0",
   "last_updated": "2026-04-02",
   "learnings": [
     {
       "id": "L_V_20260402_1",
       "category": "env_quirk",
-      "description": "El módulo article devuelve 404 en todos sus endpoints con el token actual. Verificar si requiere permisos adicionales o está deshabilitado en este entorno antes de correr tests de article.",
+      "description": "El módulo article devuelve 404 en todos sus endpoints con el token actual. Verificar con ensureEndpointAvailable antes de correr tests de article. Puede requerir permisos adicionales o estar deshabilitado en este entorno.",
       "scope": "module:article",
       "discovered_on": "2026-04-02",
       "run_count": 1,
@@ -15,7 +15,7 @@
     {
       "id": "L_V_20260402_2",
       "category": "api_quirk",
-      "description": "POST /api/show requiere form-encoded, no JSON. apiClient.post envía JSON y recibe 404. Usar authRequest.post con { form: } para crear y actualizar en este módulo.",
+      "description": "POST /api/show requiere form-encoded, NO JSON. Usar apiClient.post(path, payload, { form: true }) — el tercer argumento habilita form encoding en ApiClient. El módulo ad también requiere { form: true }. No existe 'authRequest' en este proyecto.",
       "scope": "module:show",
       "discovered_on": "2026-04-02",
       "run_count": 1,
@@ -24,7 +24,7 @@
     {
       "id": "L_V_20260402_3",
       "category": "api_quirk",
-      "description": "GET /api/category/:id no devuelve el campo 'visible' en la respuesta aunque POST create lo acepta. No asertar campos de escritura que no aparecen confirmados en GET.",
+      "description": "GET /api/category/:id no devuelve el campo 'visible' en la respuesta aunque POST create lo acepta. No asertar campos de escritura en GET si no están confirmados en la respuesta real.",
       "scope": "module:category",
       "discovered_on": "2026-04-02",
       "run_count": 1,
@@ -33,7 +33,7 @@
     {
       "id": "L_V_20260402_4",
       "category": "api_quirk",
-      "description": "POST /api/ad/:id con tags=[] no limpia el array. La API devuelve el valor anterior concatenado como string único. Bug confirmado con test TC_AD_POST_update_clear_tags.",
+      "description": "POST /api/ad/:id con tags=[] no limpia el array. La API devuelve el valor anterior concatenado como string único. Bug confirmado con test TC_AD_POST_update_clear_tags. Marcar tests de este caso como @known-bug.",
       "scope": "module:ad",
       "discovered_on": "2026-04-02",
       "run_count": 1,
@@ -42,7 +42,7 @@
     {
       "id": "L_V_20260402_5",
       "category": "api_quirk",
-      "description": "POST /api/category/:id con description='' no limpia el campo. GET devuelve el valor original sin cambios. Bug confirmado con test TC_CAT_POST_update_clear_description.",
+      "description": "POST /api/category/:id con description='' no limpia el campo. GET devuelve el valor original sin cambios. Bug confirmado con test TC_CAT_POST_update_clear_description. Marcar tests de este caso como @known-bug.",
       "scope": "module:category",
       "discovered_on": "2026-04-02",
       "run_count": 1,
@@ -51,8 +51,17 @@
     {
       "id": "L_V_20260402_6",
       "category": "test_pattern",
-      "description": "Para field_clear en módulos donde el campo no se acepta en create (ej. show.description): usar flujo 3 pasos — create (sin campo) → update (set value) → update (clear value) → GET verify. No mezclar set+clear en un solo POST.",
+      "description": "Para field_clear en módulos donde el campo no se acepta en create (ej: show.description): usar flujo 3 pasos — create (sin campo) → update (set value) → update (clear value) → GET verify. No intentar set+clear en un solo POST.",
       "scope": "pattern:field_clear",
+      "discovered_on": "2026-04-02",
+      "run_count": 1,
+      "confirmed_by_user": true
+    },
+    {
+      "id": "L_V_20260402_7",
+      "category": "api_quirk",
+      "description": "POST /api/ad/new requiere { form: true } y el endpoint de creación es /api/ad/new, NO /api/ad. La ruta /api/ad es solo para GET list. Respuesta: res.body.data puede ser array o objeto — usar Array.isArray(raw) ? raw[0] : raw.",
+      "scope": "module:ad",
       "discovered_on": "2026-04-02",
       "run_count": 1,
       "confirmed_by_user": true

@@ -1,0 +1,26 @@
+{
+  "pipeline_version": "2.0",
+  "run_date": "2026-05-02",
+  "source": "03_test_plan.json",
+  "generated_files": [
+    {
+      "path": "tests/api/regression/schedule/schedule-advanced.regression.spec.js",
+      "module": "schedule",
+      "action": "modified",
+      "test_ids": [
+        "TC_SCH_020_DELETE_ScheduleJob_CascadeCleansSchedule",
+        "TC_SCH_021_GET_DeletedScheduleJob_NotFound",
+        "TC_SCH_022_DELETE_ScheduleJob_Twice_Returns404",
+        "TC_SCH_023_GET_OrphanSchedule_NotFound",
+        "TC_SCH_024_Schedule_Count_Stable_After_Cascade_Delete"
+      ],
+      "test_count": 5
+    }
+  ],
+  "total_tests_written": 5,
+  "todos": [],
+  "questions": [
+    "Q_001: ¿DELETE /api/live-stream/:id/schedule/:schedId existe? Si sí, agregar TC_SCH_025.",
+    "Q_002: ¿Cascade delete síncrono o asíncrono? Si lag > 1.5s, aumentar polls a 5x1000ms en TC_SCH_020/023/024."
+  ]
+}

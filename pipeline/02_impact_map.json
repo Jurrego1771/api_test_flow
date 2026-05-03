@@ -1,0 +1,120 @@
+{
+  "pipeline_version": "2.0",
+  "run_date": "2026-05-02",
+  "source": "01_requirements.json",
+  "diff_analyzed": false,
+  "endpoints": [
+    {
+      "method": "DELETE",
+      "path": "/api/live-stream/:liveId/schedule-job/:jobId",
+      "module": "schedule",
+      "change_type": "modified",
+      "risk": "high",
+      "risk_reason": "Fix de bug crítico: cascade delete de derived schedule. TC_SCH_017 solo verifica que el job desaparece de /schedule-job — no verifica que el EventSchedule derivado en /schedule también se elimine. Gap directo del bug reportado.",
+      "coverage": {
+        "smoke": "partial",
+        "regression": "missing",
+        "contract": "missing",
+        "integration": "missing"
+      },
+      "existing_test_files": [
+        "tests/api/smoke/schedule/schedule.smoke.spec.js (TC_SCH_017)"
+      ],
+      "coverage_gap": "TC_SCH_017 no verifica GET /schedule post-delete. El test pasaría incluso si el schedule huérfano persiste."
+    },
+    {
+      "method": "GET",
+      "path": "/api/live-stream/:liveId/schedule",
+      "module": "schedule",
+      "change_type": "modified",
+      "risk": "high",
+      "risk_reason": "Endpoint central del bug: con el fix, no debe retornar EventSchedules huérfanos. TC_SCH_013/014 solo verifican presencia tras creación — ninguno verifica ausencia post-delete ni comportamiento de orphan.",
+      "coverage": {
+        "smoke": "partial",
+        "regression": "missing",
+        "contract": "missing",
+        "integration": "missing"
+      },
+      "existing_test_files": [
+        "tests/api/smoke/schedule/schedule.smoke.spec.js (TC_SCH_013, TC_SCH_014)"
+      ],
+      "coverage_gap": "Ningún test verifica: (1) lista vacía tras delete job, (2) count estable post-delete, (3) schedule huérfano no aparece."
+    },
+    {
+      "method": "GET",
+      "path": "/api/live-stream/:liveId/schedule/:schedId",
+      "module": "schedule",
+      "change_type": "modified",
+      "risk": "medium",
+      "risk_reason": "Post-fix: GET de schedule huérfano (job borrado) debe retornar 404 en vez de datos stale o error 500. TC_SCH_014 solo cubre happy path con schedule válido.",
+      "coverage": {
+        "smoke": "partial",
+        "regression": "missing",
+        "contract": "missing",
+        "integration": "missing"
+      },
+      "existing_test_files": [
+        "tests/api/smoke/schedule/schedule.smoke.spec.js (TC_SCH_014)"
+      ],
+      "coverage_gap": "Sin test de GET schedule con ID de schedule cuyo job fue borrado."
+    },
+    {
+      "method": "GET",
+      "path": "/api/live-stream/:liveId/schedule-job/:jobId",
+      "module": "schedule",
+      "change_type": "unchanged",
+      "risk": "medium",
+      "risk_reason": "No cambia con el fix, pero UC_002 requiere verificar 404 después de delete — gap en cobertura negativa. TC_SCH_012 solo cubre happy path.",
+      "coverage": {
+        "smoke": "partial",
+        "regression": "missing",
+        "contract": "missing",
+        "integration": "missing"
+      },
+      "existing_test_files": [
+        "tests/api/smoke/schedule/schedule.smoke.spec.js (TC_SCH_012)"
+      ],
+      "coverage_gap": "Sin test de GET job con ID borrado. Comportamiento esperado (404) nunca verificado."
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/live-stream/:liveId/schedule-job/:jobId (second call)",
+      "module": "schedule",
+      "change_type": "modified",
+      "risk": "medium",
+      "risk_reason": "Double-delete es vector del bug original: si primera llamada falla silenciosamente, schedule queda huérfano. Fix debe garantizar idempotencia con 404 en segundo DELETE.",
+      "coverage": {
+        "smoke": "missing",
+        "regression": "missing",
+        "contract": "missing",
+        "integration": "missing"
+      },
+      "existing_test_files": [],
+      "coverage_gap": "Ningún test verifica double-delete. Comportamiento pre-fix desconocido (puede ser 500 o 200 silencioso)."
+    }
+  ],
+  "regressions_at_risk": [
+    {
+      "file": "tests/api/smoke/schedule/schedule.smoke.spec.js (TC_SCH_017)",
+      "reason": "Test verifica delete básico + job ausente en /schedule-job. No romperá, pero no detectaría regresión si cascade delete deja de funcionar en un deploy futuro. Candidato a extensión post-fix.",
+      "severity": "low"
+    },
+    {
+      "file": "tests/api/smoke/schedule/schedule.smoke.spec.js (TC_SCH_013, TC_SCH_014)",
+      "reason": "TC_SCH_013 usa `test.skip` si /schedule retorna vacío. Post-fix, el cascade delete podría limpiar schedules más rápido de lo esperado en tests paralelos — race condition baja probabilidad pero posible.",
+      "severity": "low"
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q_001",
+      "question": "¿Existe DELETE /api/live-stream/:id/schedule/:schedId? No encontrado en tests ni en CONTRACTS.md.",
+      "impact": "Si existe, es endpoint adicional de riesgo alto — permitiría borrar orphans directamente."
+    },
+    {
+      "id": "Q_002",
+      "question": "¿El cascade delete es síncrono o asíncrono? Determina si tests post-delete necesitan retry loop.",
+      "impact": "Si asíncrono: tests necesitan polling. Si síncrono: assert inmediato válido."
+    }
+  ]
+}

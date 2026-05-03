@@ -1,0 +1,4 @@
+# Pega aquí el output de: git diff main...feature-branch
+# O el diff del PR de GitHub
+#
+# Si no tienes diff, déjalo vacío — el Agent 1 lo detectará y continuará sin él.

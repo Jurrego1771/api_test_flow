@@ -1,6 +1,6 @@
 {
-  "agent": "watcher",
-  "version": "1.0",
+  "agent": "requirements-analyst",
+  "version": "2.0",
   "last_updated": null,
   "learnings": []
 }

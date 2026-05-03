@@ -1,24 +1,12 @@
 {
-  "agent": "planner",
-  "version": "1.0",
-  "last_updated": "2026-04-02",
+  "agent": "impact-analyst",
+  "version": "2.0",
+  "last_updated": "2026-05-02",
   "learnings": [
     {
-      "id": "L_P_20260402_1",
-      "category": "pattern",
-      "description": "Los módulos con helpers reutilizables (ej: createMedia, createLiveStream) tienen mejor cobertura de persistencia que los que usan fixtures de Playwright. El patrón helper facilita el flujo POST→update→GET en un solo test.",
-      "scope": "global",
-      "discovered_on": "2026-04-02",
-      "run_count": 1,
-      "confirmed_by_user": true
-    },
-    {
-      "id": "L_P_20260402_2",
-      "category": "anti_pattern",
-      "description": "Verificar solo el body del UPDATE response no es suficiente como test de persistencia — el backend podría retornar los valores de la request sin haberlos guardado. Siempre hacer GET posterior para confirmar persistencia real en base de datos.",
-      "scope": "global",
-      "discovered_on": "2026-04-02",
-      "run_count": 1,
+      "id": "L_IMP_20260502_1",
+      "category": "cobertura",
+      "description": "TC_SCH_017 verifica que el job desaparece de /schedule-job post-delete, pero NO verifica GET /schedule. Este gap es permanente: el test pasaría incluso si el cascade delete falla y el EventSchedule derivado persiste como huérfano. Patrón a detectar en futuros delete tests: siempre verificar la entidad derivada/relacionada, no solo la entidad directamente borrada.",
       "confirmed_by_user": true
     }
   ]

@@ -1,4 +1,4 @@
-# Agent Contracts — Mediastream QA Pipeline
+# Agent Contracts — Mediastream QA Pipeline v2.0
 
 Cada contrato define el límite exacto de responsabilidad de un agente:
 qué consume, qué produce, qué nunca hace, y el formato del gate de salida.
@@ -14,19 +14,19 @@ qué consume, qué produce, qué nunca hace, y el formato del gate de salida.
 - Si hay ambigüedad → exponerla en `questions`, no inventar
 
 ### Ciclo de aprendizaje (obligatorio en todos los agentes)
-1. Al inicio de sesión: leer `pipeline/learning/<agentN>_knowledge.json` y aplicar learnings
+1. Al inicio: leer `pipeline/learning/<agentN>_knowledge.json` y aplicar learnings con `"confirmed_by_user": true`
 2. Durante la sesión: detectar observaciones no obvias y acumularlas internamente
 3. Al escribir el gate: incluir `new_learnings` con las observaciones del paso 2
-4. Presentar cada learning al usuario con: `[ID] categoría — descripción → ¿Guardar? (sí / no / modificar)`
-5. Solo persistir los que el usuario confirme — agregar a `knowledge.json` con `"confirmed_by_user": true`
+4. Presentar cada learning al usuario: `[ID] categoría — descripción → ¿Guardar? (sí / no / modificar)`
+5. Solo persistir los confirmados — agregar a `knowledge.json` con `"confirmed_by_user": true`
 
-### Schema de learning (compartido por todos los agentes)
+### Schema de learning (compartido)
 ```json
 {
   "id": "L_<AGENT>_<YYYYMMDD>_<N>",
   "category": "api_quirk | pattern | convention | anti_pattern | env_quirk | classification",
-  "description": "string — observación concreta y accionable",
-  "scope": "global | module:<name> | endpoint:<path>",
+  "description": "observación concreta y accionable",
+  "scope": "global | module:<name> | endpoint:<path> | pattern:<name>",
   "discovered_on": "YYYY-MM-DD",
   "run_count": 1,
   "confirmed_by_user": true
@@ -36,309 +36,291 @@ qué consume, qué produce, qué nunca hace, y el formato del gate de salida.
 ### Prefijos de ID por agente
 | Agente | Prefijo |
 |--------|---------|
-| Watcher | `L_W_` |
-| Planner | `L_P_` |
-| Writer | `L_W3_` |
-| Validator | `L_V_` |
+| Requirements Analyst | `L_REQ_` |
+| Impact Analyst | `L_IMP_` |
+| Test Designer | `L_TD_` |
+| SDET | `L_SDET_` |
 
 ---
 
-## Agente 1 — API Watcher
+## Agente 1 — Requirements Analyst
 
 ### Trigger
-```
-/agent1-watch
-```
+`/agent1-requirements`
 
 ### Reads
 | Archivo | Tipo | Descripción |
 |---------|------|-------------|
-| `pipeline/input/diff.patch` | PATCH | Diff git provisto manualmente por el usuario |
-| `pipeline/snapshots/last_commit.txt` | TXT | SHA baseline del último run |
+| Conversación | TEXT | Descripción del usuario (input principal) |
+| `pipeline/input/description.txt` | TXT | Alternativa escrita al input de conversación |
+| `pipeline/input/diff.patch` | PATCH | Diff git (opcional) |
 | `pipeline/learning/agent1_knowledge.json` | JSON | Aprendizajes previos |
 
 ### Writes
 | Archivo | Acción |
 |---------|--------|
-| `pipeline/snapshots/last_commit.txt` | Actualiza SHA al commit actual |
-| `pipeline/01_changes.json` | Output principal |
+| `pipeline/01_requirements.json` | Output principal |
 | `pipeline/01_gate.json` | Gate estructurado |
-| `.agents/skills/mediastream-api/references/<module>.md` | Actualiza solo módulos afectados |
 
-### Schema: `01_changes.json`
+### Schema: `01_requirements.json`
 ```json
 {
-  "pipeline_version": "1.0",
+  "pipeline_version": "2.0",
   "run_date": "YYYY-MM-DD",
-  "swagger_version": "string",
-  "affected_modules": ["media"],
-  "unchanged_modules": ["ad", "category"],
-  "changes": {
-    "new": [
-      {
-        "method": "POST",
-        "path": "/api/media/bulk-upload",
-        "module": "media",
-        "params": ["files", "title"]
-      }
-    ],
-    "modified": [
-      {
-        "method": "GET",
-        "path": "/api/live-stream",
-        "module": "live",
-        "added_params": ["include_dvr"],
-        "removed_params": [],
-        "response_changed": false
-      }
-    ],
-    "deleted": [
-      {
-        "method": "DELETE",
-        "path": "/api/legacy/video",
-        "module": "media"
-      }
-    ]
-  }
-}
-```
-
-### Forbidden
-- No generar casos de prueba
-- No opinar sobre cobertura
-- No modificar archivos fuera de `pipeline/` y `references/`
-
-### Gate: `pipeline/01_gate.json`
-```json
-{
-  "agent": "watcher",
-  "status": "READY | BLOCKED",
-  "summary": "string — 1 línea con conteo de cambios",
-  "decisions": ["decisión no obvia tomada"],
-  "questions": ["pregunta concreta que necesita respuesta del usuario"],
-  "next_command": "/agent2-plan"
-}
-```
-
----
-
-## Agente 2 — Test Planner
-
-### Trigger
-```
-/agent2-plan
-```
-
-### Reads
-| Archivo | Tipo | Descripción |
-|---------|------|-------------|
-| `pipeline/01_changes.json` | JSON | Output del Agente 1 |
-| `.agents/skills/mediastream-api/references/<module>.md` | MD | Solo módulos en `affected_modules` |
-
-### Writes
-| Archivo | Acción |
-|---------|--------|
-| `pipeline/02_test_plan.json` | Output principal |
-
-### Schema: `02_test_plan.json`
-```json
-{
-  "pipeline_version": "1.0",
-  "run_date": "YYYY-MM-DD",
-  "source": "01_changes.json",
-  "test_cases": [
+  "input_source": "conversation | file | both",
+  "diff_included": false,
+  "description_summary": "string",
+  "affected_modules": ["ad"],
+  "use_cases": [
     {
-      "id": "TC_MED_015_POST_bulk_upload_valid",
-      "module": "media",
-      "file_target": "tests/media/bulk_upload.spec.js",
-      "type": "happy_path | error | auth | edge",
-      "method": "POST",
-      "path": "/api/media/bulk-upload",
-      "payload_notes": "descripción del payload, no el payload real",
-      "expected_status": 200,
-      "expected_body": { "status": "OK" },
-      "requires_cleanup": true,
-      "notes": "string opcional"
+      "id": "UC_001",
+      "title": "string",
+      "endpoint": "POST /api/ad",
+      "module": "ad",
+      "type": "happy_path | auth | negative | edge",
+      "priority": "P0 | P1 | P2",
+      "given": "string",
+      "when": "string",
+      "then": "string",
+      "notes": "string"
     }
-  ]
+  ],
+  "edge_cases": [],
+  "questions": []
 }
 ```
-
-### Tipos de caso obligatorios por endpoint nuevo
-| Tipo | Descripción |
-|------|-------------|
-| `happy_path` | Llamada válida con token correcto |
-| `auth` | Llamada sin token → 401 |
-| `error` | Payload inválido o incompleto → 400 |
-| `edge` | Caso límite específico del endpoint (opcional si no aplica) |
 
 ### Forbidden
 - No escribir código Playwright
 - No leer archivos de `tests/`
-- No leer referencias de módulos no afectados
+- No inventar endpoints fuera de los mencionados
+
+### Gate: `pipeline/01_gate.json`
+```json
+{
+  "agent": "requirements-analyst",
+  "status": "READY | BLOCKED",
+  "summary": "X use cases for Y modules",
+  "decisions": [],
+  "questions": [],
+  "new_learnings": [],
+  "next_command": "/agent2-impact"
+}
+```
+
+---
+
+## Agente 2 — Impact Analyst
+
+### Trigger
+`/agent2-impact`
+
+### Reads
+| Archivo | Tipo | Descripción |
+|---------|------|-------------|
+| `pipeline/01_requirements.json` | JSON | Output del Agente 1 |
+| `pipeline/input/diff.patch` | PATCH | Diff git (opcional) |
+| `tests/api/` | JS | Solo lectura para mapear cobertura existente |
+| `pipeline/learning/agent2_knowledge.json` | JSON | Aprendizajes previos |
+
+### Writes
+| Archivo | Acción |
+|---------|--------|
+| `pipeline/02_impact_map.json` | Output principal |
+| `pipeline/02_gate.json` | Gate estructurado |
+
+### Schema: `02_impact_map.json`
+```json
+{
+  "pipeline_version": "2.0",
+  "run_date": "YYYY-MM-DD",
+  "source": "01_requirements.json",
+  "diff_analyzed": false,
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/ad",
+      "module": "ad",
+      "change_type": "new | modified | unchanged",
+      "risk": "high | medium | low",
+      "risk_reason": "string",
+      "coverage": {
+        "smoke": "covered | partial | missing",
+        "regression": "covered | partial | missing",
+        "contract": "covered | partial | missing"
+      },
+      "existing_test_files": []
+    }
+  ],
+  "regressions_at_risk": [],
+  "questions": []
+}
+```
+
+### Forbidden
+- No escribir código de tests
+- No modificar `01_requirements.json`
+- Solo LEER `tests/api/`, nunca modificar
 
 ### Gate: `pipeline/02_gate.json`
 ```json
 {
-  "agent": "planner",
+  "agent": "impact-analyst",
   "status": "READY | BLOCKED",
-  "summary": "string — conteo de casos por módulo",
-  "decisions": ["decisión no obvia tomada"],
-  "questions": ["pregunta concreta para el usuario"],
-  "test_count": 12,
-  "next_command": "/agent3-write"
+  "summary": "X endpoints analyzed, Y at risk",
+  "decisions": [],
+  "questions": [],
+  "new_learnings": [],
+  "next_command": "/agent3-design"
 }
 ```
 
 ---
 
-## Agente 3 — Test Writer
+## Agente 3 — Test Designer
 
 ### Trigger
-```
-/agent3-write
-```
+`/agent3-design`
 
 ### Reads
 | Archivo | Tipo | Descripción |
 |---------|------|-------------|
-| `pipeline/02_test_plan.json` | JSON | Output del Agente 2 |
-| `tests/<module>/` | JS | Tests existentes del módulo (referencia de patrones) |
-| `fixtures/`, `schemas/`, `utils/`, `lib/` | JS | Infraestructura del proyecto |
+| `pipeline/01_requirements.json` | JSON | Use cases |
+| `pipeline/02_impact_map.json` | JSON | Mapa de impacto y cobertura |
+| `schemas/` | JS | Para verificar schemas Zod disponibles |
+| `pipeline/learning/agent3_knowledge.json` | JSON | Aprendizajes previos |
 
 ### Writes
 | Archivo | Acción |
 |---------|--------|
-| `tests/<module>/<name>.spec.js` | Archivos de test generados |
-| `pipeline/03_manifest.json` | Índice de lo generado |
+| `pipeline/03_test_plan.json` | Output principal |
+| `pipeline/03_gate.json` | Gate estructurado |
 
-### Schema: `03_manifest.json`
+### Schema: `03_test_plan.json`
 ```json
 {
-  "pipeline_version": "1.0",
+  "pipeline_version": "2.0",
   "run_date": "YYYY-MM-DD",
-  "source": "02_test_plan.json",
-  "generated_files": [
+  "source": ["01_requirements.json", "02_impact_map.json"],
+  "test_cases": [
     {
-      "path": "tests/media/bulk_upload.spec.js",
-      "module": "media",
-      "test_ids": ["TC_MED_015_POST_bulk_upload_valid", "TC_MED_016_POST_bulk_upload_unauthorized"],
-      "test_count": 3,
-      "is_new_file": true
+      "id": "TC_AD_001_POST_Create_HappyPath",
+      "use_case_ref": "UC_001",
+      "module": "ad",
+      "layer": "smoke | regression | integration | contract",
+      "file_target": "tests/api/smoke/ad/ad-crud.smoke.spec.js",
+      "action": "append | create",
+      "method": "POST",
+      "path": "/api/ad",
+      "payload_notes": "string",
+      "expected_status": 200,
+      "expected_body": { "status": "OK" },
+      "requires_cleanup": true,
+      "zod_validation": true,
+      "schema_ref": "adSchema | TODO",
+      "tags": [],
+      "notes": ""
     }
   ],
-  "total_tests_written": 12
+  "manual_tests": [],
+  "questions": []
 }
 ```
 
-### Reglas de generación (no negociables)
-- Estructura estándar: `beforeEach` con `ApiClient` + `ResourceCleaner`, `afterEach` con `cleanAll()`
-- Prefijo `qa_` en todos los recursos creados
-- Validación Zod en happy paths
-- Faker v7 API: `faker.random.alphaNumeric()`, no `faker.string.*`
-- Verificar `body.status === "OK"` además del HTTP status
-
 ### Forbidden
-- No ejecutar tests
-- No modificar `02_test_plan.json`
-- No crear schemas Zod nuevos (usar los existentes o dejar un `// TODO: schema`)
-- No modificar archivos fuera de `tests/` y `pipeline/`
+- No escribir código Playwright
+- No modificar inputs
+- No crear schemas Zod
+- No duplicar tests con cobertura completa existente
 
 ### Gate: `pipeline/03_gate.json`
 ```json
 {
-  "agent": "writer",
+  "agent": "test-designer",
   "status": "READY | BLOCKED",
-  "summary": "string — archivos creados y total de tests",
-  "decisions": ["decisión de implementación no obvia"],
-  "questions": ["ambigüedad encontrada en el plan"],
-  "todos": ["TC_MED_020 necesita schema Zod nuevo — pendiente"],
-  "next_command": "/agent4-validate"
+  "summary": "X test cases across Y layers",
+  "by_layer": { "smoke": 0, "regression": 0, "integration": 0, "contract": 0 },
+  "decisions": [],
+  "questions": [],
+  "new_learnings": [],
+  "next_command": "/agent4-code"
 }
 ```
 
 ---
 
-## Agente 4 — Test Validator
+## Agente 4 — SDET
 
 ### Trigger
-```
-/agent4-validate
-```
+`/agent4-code`
 
 ### Reads
 | Archivo | Tipo | Descripción |
 |---------|------|-------------|
-| `pipeline/03_manifest.json` | JSON | Lista de archivos a ejecutar |
+| `pipeline/03_test_plan.json` | JSON | Test cases a implementar |
+| `tests/api/<layer>/<module>/` | JS | Archivos existentes donde `action: "append"` |
+| `tests/api/helpers/` | JS | Referencia de helpers disponibles |
+| `schemas/` | JS | Schemas Zod existentes |
+| `pipeline/learning/agent4_knowledge.json` | JSON | Aprendizajes previos |
 
 ### Writes
 | Archivo | Acción |
 |---------|--------|
-| `pipeline/04_results.json` | Output principal |
+| `tests/api/<layer>/<module>/*.spec.js` | Tests generados/modificados |
+| `pipeline/04_manifest.json` | Índice de lo generado |
+| `pipeline/04_gate.json` | Gate estructurado |
 
-### Schema: `04_results.json`
+### Schema: `04_manifest.json`
 ```json
 {
-  "pipeline_version": "1.0",
+  "pipeline_version": "2.0",
   "run_date": "YYYY-MM-DD",
-  "source": "03_manifest.json",
-  "summary": {
-    "total": 12,
-    "pass": 10,
-    "fail": 2
-  },
-  "failures": [
+  "source": "03_test_plan.json",
+  "generated_files": [
     {
-      "test_id": "TC_MED_016_POST_bulk_upload_unauthorized",
-      "file": "tests/media/bulk_upload.spec.js",
-      "line": 45,
-      "failure_type": "BUG_REAL | TEST_ISSUE | ENV_ISSUE",
-      "expected": "401",
-      "received": "200",
-      "error_message": "string del error de Playwright",
-      "recommendation": "agent3 | agent2 | report_backend | check_env"
+      "path": "tests/api/smoke/ad/ad-crud.smoke.spec.js",
+      "module": "ad",
+      "action": "created | modified",
+      "test_ids": [],
+      "test_count": 0
     }
   ],
-  "pipeline_status": "COMPLETE | NEEDS_ITERATION",
-  "next_action": "commit | fix_agent3 | fix_agent2 | report_bug | check_env"
+  "total_tests_written": 0,
+  "todos": [],
+  "questions": []
 }
 ```
 
-### Clasificación de fallos
-| Tipo | Criterio | Acción |
-|------|----------|--------|
-| `BUG_REAL` | API responde distinto a lo documentado | Reportar al equipo backend |
-| `TEST_ISSUE` | Assertion incorrecta, payload mal formado | Volver a Agente 3 |
-| `ENV_ISSUE` | Error de red, `.env` mal configurado, permisos | Resolver localmente |
-
 ### Forbidden
-- No modificar código de tests
-- No modificar `03_manifest.json`
-- No re-ejecutar tests automáticamente — reportar y esperar instrucción
+- No ejecutar tests
+- No modificar inputs anteriores (01, 02, 03)
+- No crear schemas Zod en `schemas/`
+- No modificar archivos fuera de `tests/api/` y `pipeline/`
+- No usar `faker.string.*` (Faker v7 usa `faker.random.*`)
 
 ### Gate: `pipeline/04_gate.json`
 ```json
 {
-  "agent": "validator",
-  "status": "COMPLETE | NEEDS_ITERATION",
-  "summary": "10/12 tests passing",
-  "failures_by_type": {
-    "BUG_REAL": 1,
-    "TEST_ISSUE": 1,
-    "ENV_ISSUE": 0
-  },
+  "agent": "sdet",
+  "status": "READY | BLOCKED",
+  "summary": "X tests written across Y files",
+  "decisions": [],
   "questions": [],
-  "next_action": "fix_agent3"
+  "todos": [],
+  "new_learnings": [],
+  "next_command": "npx playwright test <file_targets>"
 }
 ```
 
 ---
 
-## Resumen de Contratos
+## Resumen de Contratos v2.0
 
 | | Agente 1 | Agente 2 | Agente 3 | Agente 4 |
 |---|---|---|---|---|
-| **Lee** | Swagger + snapshot | `01_changes.json` + refs | `02_test_plan.json` + tests/ | `03_manifest.json` |
-| **Escribe** | `01_changes.json` + refs | `02_test_plan.json` | `*.spec.js` + `03_manifest.json` | `04_results.json` |
-| **Gate** | `01_gate.json` | `02_gate.json` | `03_gate.json` | `04_gate.json` |
-| **Bloqueante** | Swagger inaccesible | `01_changes.json` faltante | `02_test_plan.json` faltante o ambiguo | `03_manifest.json` faltante |
+| **Nombre** | Requirements Analyst | Impact Analyst | Test Designer | SDET |
+| **Input** | Texto conversación + diff.patch | 01_requirements.json + tests/ | 01 + 02 | 03_test_plan.json |
+| **Output** | 01_requirements.json | 02_impact_map.json | 03_test_plan.json | *.spec.js + 04_manifest.json |
+| **Gate** | 01_gate.json | 02_gate.json | 03_gate.json | 04_gate.json |
+| **Bloqueante** | Sin descripción del usuario | 01_requirements.json faltante | 01 o 02 faltantes | 03_test_plan.json faltante |
+| **Comando** | `/agent1-requirements` | `/agent2-impact` | `/agent3-design` | `/agent4-code` |

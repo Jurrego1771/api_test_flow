@@ -30,7 +30,9 @@
       "Bash(sed -i 's/cleaner = new ResourceCleaner\\(apiClient\\);$/cleaner = new ResourceCleaner\\(apiClient\\);\\\\n    const showRes = await apiClient.post\\(\"\\\\/api\\\\/show\", { title: `qa_show_${Date.now\\(\\)}`, type: \"series\" }\\);\\\\n    show = showRes.body.data;\\\\n    cleaner.register\\(\"show\", show._id\\);/g' tests/api/integration/show/show-seasons.integration.spec.js tests/api/integration/show/show-episodes.integration.spec.js)",
       "Bash(sed -n '35,50p' tests/api/integration/show/show-seasons.integration.spec.js)",
       "Bash(sed -n '55,80p' tests/api/integration/show/show-episodes.integration.spec.js)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Dev\\\\Repos\\\\jurrego1771\\\\api_test_flow\\\\.agents\" -Force | ForEach-Object { if \\($_.PSIsContainer\\) { \"$\\($_.FullName\\)\\\\\" } else { $_.FullName } })",
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Dev\\\\Repos\\\\jurrego1771\\\\api_test_flow\" -Force | Select-Object Name, @{Name='Type'; Expression={if\\($_.PSIsContainer\\){'DIR'} else {'FILE'}}} | Format-Table -AutoSize)"
     ]
   }
 }

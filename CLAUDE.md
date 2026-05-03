@@ -187,25 +187,48 @@ npm run allure:serve                  # abrir reporte local
 
 ---
 
+## QA Pipeline — Equipo de Agentes
+
+Pipeline de 4 agentes especializados para generar tests desde una descripción de cambio.
+Contratos completos: `pipeline/CONTRACTS.md`
+Skill files: `.agents/skills/pipeline/`
+
+### Flujo
+```
+Usuario describe cambio → Agent 1 → Agent 2 → Agent 3 → Agent 4 → tests/*.spec.js
+```
+
+### Comandos
+| Comando | Agente | Input | Output |
+|---------|--------|-------|--------|
+| `/agent1-requirements` | Requirements Analyst | Descripción en conversación + diff.patch (opcional) | `pipeline/01_requirements.json` |
+| `/agent2-impact` | Impact Analyst | 01_requirements.json + tests existentes | `pipeline/02_impact_map.json` |
+| `/agent3-design` | Test Designer | 01 + 02 | `pipeline/03_test_plan.json` |
+| `/agent4-code` | SDET | 03_test_plan.json | `tests/api/**/*.spec.js` |
+
+### Inputs del usuario
+- **Descripción**: texto libre en la conversación (qué cambió, qué debe probarse)
+- **Diff (opcional)**: pegar en `pipeline/input/diff.patch` antes de invocar Agent 1
+
+### Cómo activar cada agente
+Al escribir el comando, Claude lee el skill file correspondiente y sigue las instrucciones.
+Cada agente termina con un gate JSON y sugiere el siguiente comando.
+
+---
+
 ## Skills Disponibles
 | Skill | Cuándo usar |
 |---|---|
-| `mediastream-api` | Consultar endpoints, parámetros, contratos de la API |
 | `qa-test-planner` | Crear test plans, casos de prueba, bug reports |
-| `review-test-suite` | Revisar cobertura y calidad de una batería existente |
-| `create-test-suite` | Crear nueva batería para un módulo |
-
-### Activar `review-test-suite`
-Palabras clave: "revisar tests", "analizar cobertura", "qué falta", "auditar tests"
-
-### Activar `create-test-suite`
-Palabras clave: "crear tests", "nueva batería", "generar tests para", "implementar tests"
 
 ---
 
 ## Comportamiento Esperado del Agente
 - Responder en **español** salvo que el usuario use inglés
 - Código de tests en **inglés** (nombres de variables, strings, comentarios técnicos)
-- Ante duda sobre un endpoint → consultar `.agents/skills/mediastream-api/references/`
 - Antes de crear tests → leer `doc_api/risk-register/<modulo>.md` si existe
 - Antes de crear un test file → verificar si ya existe uno similar en `tests/api/`
+- Al invocar `/agent1-requirements` → leer `.agents/skills/pipeline/agent1-requirements.md` y seguir instrucciones
+- Al invocar `/agent2-impact` → leer `.agents/skills/pipeline/agent2-impact.md` y seguir instrucciones
+- Al invocar `/agent3-design` → leer `.agents/skills/pipeline/agent3-design.md` y seguir instrucciones
+- Al invocar `/agent4-code` → leer `.agents/skills/pipeline/agent4-code.md` y seguir instrucciones

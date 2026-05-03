@@ -28,12 +28,13 @@ test.describe('Ad - Contract', () => {
             type: 'schedule',
         };
         const res = await apiClient.post('/api/ad/new', payload, { form: true });
+        const adId = res.body?.data?._id;
+        if (adId) cleaner.register('ad', adId);
+
         expect(res.ok, `Create failed: ${res.status} ${JSON.stringify(res.body)}`).toBeTruthy();
 
         const parsed = createAdResponseSchema.safeParse(res.body);
         expect(parsed.success, `Schema mismatch: ${JSON.stringify(parsed.error?.issues)}`).toBe(true);
-
-        cleaner.register('ad', parsed.data.data._id);
     });
 
     test('TC_CON_AD_002 GET /api/ad/:id response schema', async () => {

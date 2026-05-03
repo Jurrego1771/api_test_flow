@@ -1,15 +1,19 @@
 {
-  "agent": "writer",
+  "agent": "test-designer",
   "status": "READY",
-  "summary": "4 archivos modificados, 6 tests de field_clear agregados",
+  "summary": "5 test cases, all regression layer, all append to existing file",
+  "by_layer": { "smoke": 0, "regression": 5, "integration": 0, "contract": 0 },
   "decisions": [
-    "Media: los tests van en un nuevo describe '4b. Field Clear' para separar semánticamente del describe de update existente",
-    "Ad: tags se pasa como array vacío [] via form — si la API lo ignora el test fallará y confirmará el bug",
-    "Show/Category: aplicado L_V_20260402_2 (authRequest+form) y L_W3_20260402_1 (cleaner.register) automáticamente",
-    "Assertions de descripción: usan !desc || desc === '' para aceptar tanto string vacío como null/undefined — la API puede manejar el borrado de cualquier forma"
+    "TC_SCH_020 y TC_SCH_024 usan Zod solo donde hay response body con schema no-trivial (getScheduleResponseSchema). DELETE/404 tests usan zod_validation:false.",
+    "UC_007 (webhook proxy, P2) omitido del plan: la verificación proxy es idéntica a TC_SCH_020 (schedule gone = webhook sin superficie). No agrega valor de test independiente.",
+    "TC_SCH_020 combina UC_001 y UC_004 — son la misma acción y mismo assert, separarlos sería redundancia.",
+    "Numeración desde TC_SCH_020 para evitar colisión con rangos futuros de smoke (010-019).",
+    "Todos append a schedule-advanced.regression.spec.js — reusar helpers existentes: createLiveStream, createScheduleJob, unwrapCollection."
   ],
-  "questions": [],
-  "todos": [],
+  "questions": [
+    "Q_001: ¿DELETE /api/live-stream/:id/schedule/:schedId existe?",
+    "Q_002: ¿Cascade delete es síncrono? Ajustar timeouts de poll si lag > 1s."
+  ],
   "new_learnings": [],
-  "next_command": "/agent4-validate"
+  "next_command": "/agent4-code"
 }

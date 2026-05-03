@@ -1,0 +1,128 @@
+{
+  "pipeline_version": "2.0",
+  "run_date": "2026-05-02",
+  "input_source": "conversation",
+  "diff_included": false,
+  "description_summary": "Schedules quedan huérfanos al borrar el job asociado: el documento EventSchedule persiste en BD, la API no puede borrarlo, y el webhook no se gatilla porque la asociación job→schedule está rota.",
+  "affected_modules": ["schedule"],
+  "use_cases": [
+    {
+      "id": "UC_001",
+      "title": "DELETE schedule-job cascades removal of derived schedule",
+      "endpoint": "DELETE /api/live-stream/:liveId/schedule-job/:jobId",
+      "module": "schedule",
+      "type": "happy_path",
+      "priority": "P0",
+      "given": "Authenticated. Live stream exists. Schedule job created. Derived schedule materialized in GET /api/live-stream/:id/schedule.",
+      "when": "DELETE /api/live-stream/:liveId/schedule-job/:jobId",
+      "then": "Response 200/204. GET /api/live-stream/:liveId/schedule returns empty list — no orphan EventSchedule remains.",
+      "notes": "Core fix validation. Derived schedule materialization may be async; allow retry loop before asserting empty."
+    },
+    {
+      "id": "UC_002",
+      "title": "GET deleted schedule-job returns 404",
+      "endpoint": "GET /api/live-stream/:liveId/schedule-job/:jobId",
+      "module": "schedule",
+      "type": "negative",
+      "priority": "P1",
+      "given": "Authenticated. Schedule job was created and then deleted.",
+      "when": "GET /api/live-stream/:liveId/schedule-job/:deletedJobId",
+      "then": "Response 404. body.status = 'ERROR'.",
+      "notes": "Confirms job is truly gone, not just unlinked."
+    },
+    {
+      "id": "UC_003",
+      "title": "DELETE schedule-job twice returns 404 on second attempt",
+      "endpoint": "DELETE /api/live-stream/:liveId/schedule-job/:jobId",
+      "module": "schedule",
+      "type": "negative",
+      "priority": "P1",
+      "given": "Authenticated. Schedule job created and already deleted.",
+      "when": "DELETE /api/live-stream/:liveId/schedule-job/:jobId (second call)",
+      "then": "Response 404. body.status = 'ERROR'. No 500 or silent success.",
+      "notes": "Idempotency guard. Previous behavior may have silently failed, leaving schedule in DB."
+    },
+    {
+      "id": "UC_004",
+      "title": "GET /schedule list contains no orphan after job delete",
+      "endpoint": "GET /api/live-stream/:liveId/schedule",
+      "module": "schedule",
+      "type": "edge",
+      "priority": "P0",
+      "given": "Authenticated. Live stream exists. Job created. Derived schedule visible in GET /schedule. Job then deleted.",
+      "when": "GET /api/live-stream/:liveId/schedule",
+      "then": "Response 200. Collection does not contain the previously derived schedule ID.",
+      "notes": "Directly validates the orphan-prevention fix. If materialization is async, use retry loop (max 3s)."
+    },
+    {
+      "id": "UC_005",
+      "title": "GET /schedule/:schedId after orphan state returns 404 or error",
+      "endpoint": "GET /api/live-stream/:liveId/schedule/:schedId",
+      "module": "schedule",
+      "type": "negative",
+      "priority": "P1",
+      "given": "Authenticated. Schedule ID obtained before job deletion. Job then deleted (orphaning the schedule).",
+      "when": "GET /api/live-stream/:liveId/schedule/:schedId",
+      "then": "Response 404. body.status = 'ERROR'. API does not return stale/broken schedule data.",
+      "notes": "Validates API-level orphan detection — schedule should not be readable once job is gone."
+    },
+    {
+      "id": "UC_006",
+      "title": "Schedule list count stable after cascade delete",
+      "endpoint": "GET /api/live-stream/:liveId/schedule",
+      "module": "schedule",
+      "type": "edge",
+      "priority": "P1",
+      "given": "Authenticated. Live stream with 2 schedule jobs, both with derived schedules. One job deleted.",
+      "when": "GET /api/live-stream/:liveId/schedule twice in sequence",
+      "then": "Both calls return same count. Count = 1 (only schedule for surviving job). No orphan increases count between reads.",
+      "notes": "Extends existing SCHED-RISK-006 stability coverage to post-delete state."
+    },
+    {
+      "id": "UC_007",
+      "title": "Webhook not triggered after schedule becomes orphaned",
+      "endpoint": "DELETE /api/live-stream/:liveId/schedule-job/:jobId",
+      "module": "schedule",
+      "type": "edge",
+      "priority": "P2",
+      "given": "Authenticated. Schedule job with webhook_url configured exists. Derived schedule materialized.",
+      "when": "DELETE job → schedule becomes orphan (pre-fix behavior) or is cascade-deleted (post-fix)",
+      "then": "POST-fix: no orphan remains → webhook has no trigger surface. API confirms schedule gone.",
+      "notes": "Webhook execution itself is not directly testable via API. Observable proxy: schedule must not exist in GET /schedule after delete. If schedule is gone, webhook cannot fire."
+    }
+  ],
+  "edge_cases": [
+    {
+      "id": "EC_001",
+      "description": "Derived schedule materialization is async — GET /schedule may briefly return empty before populating. Use retry loop (3 attempts, 500ms apart) in tests that assert schedule presence.",
+      "source": "existing smoke test pattern (TC_SCH_013)"
+    },
+    {
+      "id": "EC_002",
+      "description": "DELETE job and GET /schedule may race — cascade delete may be async. Tests asserting empty /schedule after delete should allow brief wait.",
+      "source": "description: 'schedule queda en BD' implies eventual consistency risk"
+    },
+    {
+      "id": "EC_003",
+      "description": "Live stream deletion should also clean schedules — if live stream deleted with orphan schedules, those orphans should also be gone.",
+      "source": "inferred from cascade pattern"
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q_001",
+      "question": "¿Existe endpoint DELETE /api/live-stream/:id/schedule/:schedId para borrar schedules derivados directamente? No encontrado en tests existentes.",
+      "impact": "Si existe, agregar UC para testear delete directo de orphan pre-fix."
+    },
+    {
+      "id": "Q_002",
+      "question": "¿El webhook_url en schedule-job es un campo configurable vía API en el entorno dev? ¿O solo via config interna?",
+      "impact": "Determina si UC_007 puede configurarse en test o debe marcarse como skip."
+    },
+    {
+      "id": "Q_003",
+      "question": "¿La corrección es un cascade delete (fix en DELETE job) o un cleanup job/endpoint separado?",
+      "impact": "Si es cleanup endpoint separado, Agent 2 necesita identificarlo como endpoint adicional a cubrir."
+    }
+  ]
+}

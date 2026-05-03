@@ -1,5 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const { ApiClient, ResourceCleaner, dataFactory, ensureEndpointAvailable } = require('../../helpers');
+const { getScheduleResponseSchema } = require('../../../../schemas/schedule.schema');
 
 const LIVE_API_BASE = '/api/live-stream';
 
@@ -290,5 +291,162 @@ test.describe('Schedule - Regression', () => {
         if (res.status === 404) {
             expect(res.body.status).toBe('ERROR');
         }
+    });
+
+    test('TC_SCH_020_DELETE_ScheduleJob_CascadeCleansSchedule @critical', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        const { res: createRes } = await createScheduleJob(stream, 'cascade');
+        const created = extractCreatedScheduleJob(createRes.body);
+        const jobId = created?._id || created?.id
+            || await findCreatedScheduleJobId(stream, created?.name || created?.title);
+        expect(jobId).toBeTruthy();
+
+        for (let i = 0; i < 3; i++) {
+            const listRes = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule`);
+            if (unwrapCollection(listRes.body).length > 0) break;
+            await sleep(500);
+        }
+
+        const delRes = await apiClient.delete(`${LIVE_API_BASE}/${stream._id}/schedule-job/${jobId}`);
+        expect([200, 204]).toContain(delRes.status);
+
+        let remaining = [1];
+        for (let i = 0; i < 3; i++) {
+            const listRes = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule`);
+            remaining = unwrapCollection(listRes.body);
+            if (remaining.length === 0) break;
+            await sleep(500);
+        }
+        expect(remaining).toHaveLength(0);
+    });
+
+    test('TC_SCH_021_GET_DeletedScheduleJob_NotFound @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        const { res: createRes } = await createScheduleJob(stream, 'del-notfound');
+        const created = extractCreatedScheduleJob(createRes.body);
+        const jobId = created?._id || created?.id
+            || await findCreatedScheduleJobId(stream, created?.name || created?.title);
+        expect(jobId).toBeTruthy();
+
+        const delRes = await apiClient.delete(`${LIVE_API_BASE}/${stream._id}/schedule-job/${jobId}`);
+        expect([200, 204]).toContain(delRes.status);
+
+        const res = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule-job/${jobId}`);
+        expect(res.status).toBe(404);
+        expect(res.body.status).toBe('ERROR');
+    });
+
+    test('TC_SCH_022_DELETE_ScheduleJob_Twice_Returns404 @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        const { res: createRes } = await createScheduleJob(stream, 'double-del');
+        const created = extractCreatedScheduleJob(createRes.body);
+        const jobId = created?._id || created?.id
+            || await findCreatedScheduleJobId(stream, created?.name || created?.title);
+        expect(jobId).toBeTruthy();
+
+        const firstDel = await apiClient.delete(`${LIVE_API_BASE}/${stream._id}/schedule-job/${jobId}`);
+        expect([200, 204]).toContain(firstDel.status);
+
+        const secondDel = await apiClient.delete(`${LIVE_API_BASE}/${stream._id}/schedule-job/${jobId}`);
+        expect(secondDel.status).toBe(404);
+        expect(secondDel.body.status).toBe('ERROR');
+    });
+
+    test('TC_SCH_023_GET_OrphanSchedule_NotFound @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        const { res: createRes } = await createScheduleJob(stream, 'orphan');
+        const created = extractCreatedScheduleJob(createRes.body);
+        const jobId = created?._id || created?.id
+            || await findCreatedScheduleJobId(stream, created?.name || created?.title);
+        expect(jobId).toBeTruthy();
+
+        let schedId = null;
+        for (let i = 0; i < 3; i++) {
+            const listRes = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule`);
+            const items = unwrapCollection(listRes.body);
+            if (items.length > 0) {
+                schedId = items[0]._id || items[0].id;
+                break;
+            }
+            await sleep(500);
+        }
+
+        if (!schedId) {
+            test.skip(true, 'Derived schedule not materialized — cannot test orphan GET');
+            return;
+        }
+
+        const delRes = await apiClient.delete(`${LIVE_API_BASE}/${stream._id}/schedule-job/${jobId}`);
+        expect([200, 204]).toContain(delRes.status);
+
+        const res = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule/${schedId}`);
+        expect(res.status).toBe(404);
+        expect(res.body.status).toBe('ERROR');
+    });
+
+    test('TC_SCH_024_Schedule_Count_Stable_After_Cascade_Delete', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        const { res: resA } = await createScheduleJob(stream, 'stable-A');
+        const createdA = extractCreatedScheduleJob(resA.body);
+        const jobIdA = createdA?._id || createdA?.id
+            || await findCreatedScheduleJobId(stream, createdA?.name || createdA?.title);
+        expect(jobIdA).toBeTruthy();
+
+        await createScheduleJob(stream, 'stable-B');
+
+        let schedules = [];
+        for (let i = 0; i < 6; i++) {
+            const listRes = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule`);
+            schedules = unwrapCollection(listRes.body);
+            if (schedules.length >= 2) break;
+            await sleep(500);
+        }
+
+        if (schedules.length < 2) {
+            test.skip(true, 'Two derived schedules did not materialize — skipping cascade stability check');
+            return;
+        }
+
+        const delRes = await apiClient.delete(`${LIVE_API_BASE}/${stream._id}/schedule-job/${jobIdA}`);
+        expect([200, 204]).toContain(delRes.status);
+
+        for (let i = 0; i < 3; i++) {
+            const listRes = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule`);
+            const current = unwrapCollection(listRes.body);
+            if (current.length < schedules.length) break;
+            await sleep(500);
+        }
+
+        const firstRes = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule`);
+        expect(firstRes.ok).toBeTruthy();
+        getScheduleResponseSchema.parse(firstRes.body);
+        const firstCount = unwrapCollection(firstRes.body).length;
+
+        const secondRes = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule`);
+        expect(secondRes.ok).toBeTruthy();
+        const secondCount = unwrapCollection(secondRes.body).length;
+
+        expect(secondCount).toBe(firstCount);
+        expect(firstCount).toBeLessThan(2);
     });
 });

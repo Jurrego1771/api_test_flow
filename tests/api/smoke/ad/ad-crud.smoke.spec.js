@@ -119,6 +119,7 @@ test.describe('Ad - Update', () => {
 test.describe('Ad - Delete', () => {
     test('TC_AD_DELETE_ad_by_id', async () => {
         const ad = await createAd(apiClient, { name: `qa_ad_delete_${Date.now()}` });
+        cleaner.register('ad', ad._id);
 
         const res = await apiClient.delete(`/api/ad/${ad._id}`);
         expect(res.status).toBe(200);

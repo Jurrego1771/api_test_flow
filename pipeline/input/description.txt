@@ -1,0 +1,12 @@
+# Input para Agent 1 — Requirements Analyst
+#
+# Escribe aquí la descripción del cambio o funcionalidad a probar.
+# Puedes también pasarla directamente en la conversación.
+#
+# Ejemplos de qué incluir:
+#   - Qué endpoint cambió y cómo
+#   - Qué comportamiento nuevo debe tener la API
+#   - Qué bug se corrigió y cómo debería responder ahora
+#   - Qué flujo de datos debe funcionar (crear X → actualizar Y → verificar Z)
+#
+# El diff git va en pipeline/input/diff.patch (opcional)

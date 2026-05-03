@@ -1,0 +1,166 @@
+{
+  "pipeline_version": "2.0",
+  "run_date": "2026-05-02",
+  "source": ["01_requirements.json", "02_impact_map.json"],
+  "test_cases": [
+    {
+      "id": "TC_SCH_020_DELETE_ScheduleJob_CascadeCleansSchedule",
+      "use_case_ref": "UC_001 + UC_004",
+      "module": "schedule",
+      "layer": "regression",
+      "file_target": "tests/api/regression/schedule/schedule-advanced.regression.spec.js",
+      "action": "append",
+      "method": "DELETE",
+      "path": "/api/live-stream/:liveId/schedule-job/:jobId",
+      "setup": [
+        "createLiveStream → cleaner.register('live-stream', id)",
+        "createScheduleJob(stream) → job",
+        "GET /api/live-stream/:liveId/schedule → poll max 3x/500ms until schedule list non-empty, capture schedId"
+      ],
+      "steps": [
+        "DELETE /api/live-stream/:liveId/schedule-job/:jobId",
+        "Assert response status 200 or 204",
+        "GET /api/live-stream/:liveId/schedule → poll max 3x/500ms",
+        "Assert schedule list empty (length === 0)"
+      ],
+      "expected_status": [200, 204],
+      "expected_body": null,
+      "post_assertions": [
+        "GET /api/live-stream/:liveId/schedule → body.data array length === 0"
+      ],
+      "requires_cleanup": true,
+      "cleanup_note": "live-stream cleanup sufficient — job and schedule should be gone by fix",
+      "zod_validation": false,
+      "schema_ref": null,
+      "tags": ["@critical"],
+      "notes": "Core regression para issue-8083. Si cascade es async, el poll post-delete puede tomar hasta 3x500ms. Si schedule persiste tras 1500ms, test falla — comportamiento pre-fix exacto."
+    },
+    {
+      "id": "TC_SCH_021_GET_DeletedScheduleJob_NotFound",
+      "use_case_ref": "UC_002",
+      "module": "schedule",
+      "layer": "regression",
+      "file_target": "tests/api/regression/schedule/schedule-advanced.regression.spec.js",
+      "action": "append",
+      "method": "GET",
+      "path": "/api/live-stream/:liveId/schedule-job/:deletedJobId",
+      "setup": [
+        "createLiveStream → cleaner.register('live-stream', id)",
+        "createScheduleJob(stream) → capture jobId",
+        "DELETE /api/live-stream/:liveId/schedule-job/:jobId → assert ok"
+      ],
+      "steps": [
+        "GET /api/live-stream/:liveId/schedule-job/:deletedJobId"
+      ],
+      "expected_status": 404,
+      "expected_body": { "status": "ERROR" },
+      "post_assertions": [],
+      "requires_cleanup": true,
+      "zod_validation": false,
+      "schema_ref": null,
+      "tags": ["@negative"],
+      "notes": "Confirma que GET de job borrado retorna 404 limpio, no datos stale ni 500."
+    },
+    {
+      "id": "TC_SCH_022_DELETE_ScheduleJob_Twice_Returns404",
+      "use_case_ref": "UC_003",
+      "module": "schedule",
+      "layer": "regression",
+      "file_target": "tests/api/regression/schedule/schedule-advanced.regression.spec.js",
+      "action": "append",
+      "method": "DELETE",
+      "path": "/api/live-stream/:liveId/schedule-job/:jobId",
+      "setup": [
+        "createLiveStream → cleaner.register('live-stream', id)",
+        "createScheduleJob(stream) → capture jobId",
+        "DELETE primera vez → assert status 200 or 204"
+      ],
+      "steps": [
+        "DELETE /api/live-stream/:liveId/schedule-job/:jobId (segunda vez)"
+      ],
+      "expected_status": 404,
+      "expected_body": { "status": "ERROR" },
+      "post_assertions": [],
+      "requires_cleanup": true,
+      "zod_validation": false,
+      "schema_ref": null,
+      "tags": ["@negative"],
+      "notes": "Idempotencia: segunda llamada debe ser 404 explícito, no 200 silencioso ni 500. Pre-fix podía retornar success falso dejando schedule huérfano."
+    },
+    {
+      "id": "TC_SCH_023_GET_OrphanSchedule_NotFound",
+      "use_case_ref": "UC_005",
+      "module": "schedule",
+      "layer": "regression",
+      "file_target": "tests/api/regression/schedule/schedule-advanced.regression.spec.js",
+      "action": "append",
+      "method": "GET",
+      "path": "/api/live-stream/:liveId/schedule/:schedId",
+      "setup": [
+        "createLiveStream → cleaner.register('live-stream', id)",
+        "createScheduleJob(stream)",
+        "GET /api/live-stream/:liveId/schedule → poll hasta non-empty → capture schedId",
+        "DELETE job → assert ok"
+      ],
+      "steps": [
+        "GET /api/live-stream/:liveId/schedule/:schedId (schedule cuyo job fue borrado)"
+      ],
+      "expected_status": 404,
+      "expected_body": { "status": "ERROR" },
+      "post_assertions": [],
+      "requires_cleanup": true,
+      "zod_validation": false,
+      "schema_ref": null,
+      "tags": ["@negative"],
+      "notes": "Valida que la API no retorna datos stale de un schedule huérfano. Depende de que cascade sea efectivo (UC_001 debe pasar primero para que este test sea determinista). Si cascade es async y schedId ya no existe en GET /schedule list, test.skip con mensaje explicativo.",
+      "dependency_note": "Si TC_SCH_020 falla (cascade no implementado), este test puede retornar 200 con datos stale — ambos fallos son síntomas del mismo bug."
+    },
+    {
+      "id": "TC_SCH_024_Schedule_Count_Stable_After_Cascade_Delete",
+      "use_case_ref": "UC_006",
+      "module": "schedule",
+      "layer": "regression",
+      "file_target": "tests/api/regression/schedule/schedule-advanced.regression.spec.js",
+      "action": "append",
+      "method": "GET",
+      "path": "/api/live-stream/:liveId/schedule",
+      "setup": [
+        "createLiveStream → cleaner.register('live-stream', id)",
+        "createScheduleJob(stream, 'job-A') → jobIdA",
+        "createScheduleJob(stream, 'job-B') → jobIdB",
+        "GET /api/live-stream/:liveId/schedule → poll hasta length >= 2",
+        "DELETE job-A → assert ok",
+        "Poll GET /api/live-stream/:liveId/schedule hasta length === 1 (max 3x/500ms)"
+      ],
+      "steps": [
+        "GET /api/live-stream/:liveId/schedule (primera lectura post-delete)",
+        "GET /api/live-stream/:liveId/schedule (segunda lectura inmediata)"
+      ],
+      "expected_status": 200,
+      "expected_body": null,
+      "post_assertions": [
+        "firstCount === 1",
+        "secondCount === firstCount (estabilidad)",
+        "surviving schedule NOT associated with deleted jobIdA"
+      ],
+      "requires_cleanup": true,
+      "zod_validation": true,
+      "schema_ref": "getScheduleResponseSchema",
+      "tags": [],
+      "notes": "Extiende SCHED-RISK-006 (estabilidad de lista) a estado post-delete. Zod valida schema de la respuesta con 1 schedule restante."
+    }
+  ],
+  "manual_tests": [],
+  "questions": [
+    {
+      "id": "Q_001",
+      "question": "¿Existe DELETE /api/live-stream/:id/schedule/:schedId? Si existe, agregar TC_SCH_025 para delete directo de schedule huérfano.",
+      "impact": "Un endpoint de limpieza directa cambiaría la estrategia de UC_005."
+    },
+    {
+      "id": "Q_002",
+      "question": "¿Cascade delete es síncrono o asíncrono? Los polls de 3x500ms deberían ser suficientes si es eventual-consistente con lag < 1s. Si el lag es mayor, ajustar a 5x1000ms.",
+      "impact": "Afecta TC_SCH_020, TC_SCH_023, TC_SCH_024."
+    }
+  ]
+}
