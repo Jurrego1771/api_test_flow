@@ -32,7 +32,8 @@
       "Bash(sed -n '55,80p' tests/api/integration/show/show-episodes.integration.spec.js)",
       "Bash(node *)",
       "PowerShell(Get-ChildItem -Path \"D:\\\\Dev\\\\Repos\\\\jurrego1771\\\\api_test_flow\\\\.agents\" -Force | ForEach-Object { if \\($_.PSIsContainer\\) { \"$\\($_.FullName\\)\\\\\" } else { $_.FullName } })",
-      "PowerShell(Get-ChildItem -Path \"D:\\\\Dev\\\\Repos\\\\jurrego1771\\\\api_test_flow\" -Force | Select-Object Name, @{Name='Type'; Expression={if\\($_.PSIsContainer\\){'DIR'} else {'FILE'}}} | Format-Table -AutoSize)"
+      "PowerShell(Get-ChildItem -Path \"D:\\\\Dev\\\\Repos\\\\jurrego1771\\\\api_test_flow\" -Force | Select-Object Name, @{Name='Type'; Expression={if\\($_.PSIsContainer\\){'DIR'} else {'FILE'}}} | Format-Table -AutoSize)",
+      "Bash(git restore *)"
     ]
   }
 }

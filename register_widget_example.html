@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ejemplo de Register Widget</title>
+  
+  <!-- 1. SDK de Federación (Debe ir en el <head>) -->
+  <!-- IMPORTANTE: Reemplaza "TU_FEDERATION_ID" con el ID real de tu configuración de federación -->
+  <script
+    src="https://platform-static.cdn.mdstrm.com/client/embed-federation/sdk.js"
+    data-config-id="TU_FEDERATION_ID"
+    async
+  ></script>
+
+  <!-- Estilos básicos para la página y los templates -->
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      margin: 0;
+    }
+    
+    .page-title {
+      color: #333;
+      margin-bottom: 30px;
+    }
+
+    /* Contenedor principal donde vivirá el widget */
+    .widget-container {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 450px;
+    }
+
+    /* Estilos para el template de sesión iniciada */
+    .logged-in-state {
+      background-color: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      color: #2e7d32;
+    }
+    
+    .logged-in-state p {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+
+    .logged-in-state a {
+      color: #1565c0;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-block;
+      margin-top: 10px;
+    }
+
+    .logged-in-state a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="page-title">Página de Registro / Login</h1>
+
+  <!-- Contenedor del Widget -->
+  <div class="widget-container">
+    
+    <!-- 2. Widget de Registro (Va en el <body>) -->
+    <!-- IMPORTANTE: Reemplaza "TU_WIDGET_ID" con el ID real de tu widget -->
+    <div
+      data-config-id="TU_WIDGET_ID"
+      data-role="widget"
+      data-session-template="miTemplateSesionIniciada"
+      data-texts="misTextosPersonalizados"
+    >
+      <script
+        src="https://platform-static.cdn.mdstrm.com/client/embed-widget/api.js"
+        async
+      ></script>
+    </div>
+    
+  </div>
+
+  <!-- ========================================== -->
+  <!-- DEFINICIÓN DE TEMPLATES (Al final del body) -->
+  <!-- ========================================== -->
+
+  <!-- A) Template que se muestra cuando el usuario YA está logueado -->
+  <!-- Utiliza las macros {first_name}, {last_name}, {email} -->
+  <script type="text/template" name="miTemplateSesionIniciada">
+    <div class="logged-in-state">
+      <p>¡Hola, <strong>{first_name} {last_name}</strong>!</p>
+      <p>Has iniciado sesión correctamente con el correo: <em>{email}</em></p>
+      <a href="#logout">Cerrar sesión</a>
+    </div>
+  </script>
+
+  <!-- B) Textos personalizados para sobreescribir los valores por defecto del widget -->
+  <script type="text/template" name="misTextosPersonalizados">
+    title.login: Iniciar sesión o Registrarse
+    button.register: Crear mi cuenta ahora
+    label.metadata.acceptTOS: He leído y acepto los <a href="/terminos-y-condiciones" target="_blank">Términos y Condiciones</a>
+    message.confirm_email_sent: ¡Casi listo! Revisa tu bandeja de entrada para completar el registro.
+    error.required: Este campo es obligatorio, por favor llénalo.
+  </script>
+
+</body>
+</html>
