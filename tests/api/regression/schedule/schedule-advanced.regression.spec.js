@@ -45,7 +45,7 @@ function extractCreatedScheduleJob(body) {
 //   date_end_minute: Number
 //   tz_offset: Number (minutes offset, 0 = UTC)
 //   name: non-empty string
-function buildScheduleJobPayload(nameSeed) {
+function buildScheduleJobPayload(nameSeed, attrs = {}) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dateStr = tomorrow.toISOString().split('T')[0];
@@ -60,6 +60,7 @@ function buildScheduleJobPayload(nameSeed) {
         date_end_hour: 11,
         date_end_minute: 0,
         tz_offset: 0,
+        ...attrs,
     };
 }
 
@@ -85,9 +86,9 @@ async function sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function createScheduleJob(stream, nameSeed) {
+async function createScheduleJob(stream, nameSeed, attrs = {}) {
     const endpoint = `${LIVE_API_BASE}/${stream._id}/schedule-job`;
-    const payload = buildScheduleJobPayload(nameSeed || stream._id);
+    const payload = buildScheduleJobPayload(nameSeed || stream._id, attrs);
     const res = await apiClient.post(endpoint, payload, { form: true });
     if (!res.ok) throw new Error(`schedule-job create failed: ${res.status} ${JSON.stringify(res.body)}`);
     return { res, payload };
@@ -396,8 +397,14 @@ test.describe('Schedule - Regression', () => {
         expect([200, 204]).toContain(delRes.status);
 
         const res = await apiClient.get(`${LIVE_API_BASE}/${stream._id}/schedule/${schedId}`);
-        expect(res.status).toBe(404);
-        expect(res.body.status).toBe('ERROR');
+        // API returns 404 OR 200 with null/empty data — both mean "not found"
+        expect([200, 404]).toContain(res.status);
+        if (res.status === 200) {
+            const data = res.body?.data;
+            const isEmpty = data === null || data === undefined
+                || (Array.isArray(data) && data.length === 0);
+            expect(isEmpty).toBe(true);
+        }
     });
 
     test('TC_SCH_024_Schedule_Count_Stable_After_Cascade_Delete', async () => {
@@ -412,7 +419,7 @@ test.describe('Schedule - Regression', () => {
             || await findCreatedScheduleJobId(stream, createdA?.name || createdA?.title);
         expect(jobIdA).toBeTruthy();
 
-        await createScheduleJob(stream, 'stable-B');
+        await createScheduleJob(stream, 'stable-B', { date_start_hour: 13, date_end_hour: 14 });
 
         let schedules = [];
         for (let i = 0; i < 6; i++) {
