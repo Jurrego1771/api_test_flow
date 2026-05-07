@@ -187,48 +187,73 @@ npm run allure:serve                  # abrir reporte local
 
 ---
 
-## QA Pipeline — Equipo de Agentes
+## QA Pipeline — Arquitectura de Agentes
 
-Pipeline de 4 agentes especializados para generar tests desde una descripción de cambio.
-Contratos completos: `pipeline/CONTRACTS.md`
-Skill files: `.agents/skills/pipeline/`
+El proyecto implementa dos pipelines complementarios y un sistema de memoria persistente.
+Fuente de verdad: `.claude/commands/` (slash commands) y `.claude/agents/` (sub-agentes).
+Contratos del pipeline de generación: `pipeline/CONTRACTS.md`
+Memoria del proyecto: `.claude/memory/`
 
-### Flujo
+### Pipeline A — /generate-tests (proactivo)
+Generar tests para un cambio nuevo en el backend sm2.
+
 ```
-Usuario describe cambio → Agent 1 → Agent 2 → Agent 3 → Agent 4 → tests/*.spec.js
+/generate-tests
+  → /agent1-requirements  → pipeline/01_requirements.json
+  → /agent2-impact        → pipeline/02_impact_map.json
+  → /agent3-design        → pipeline/03_test_plan.json
+  → /agent4-code          → tests/api/**/*.spec.js
 ```
 
-### Comandos
-| Comando | Agente | Input | Output |
-|---------|--------|-------|--------|
-| `/agent1-requirements` | Requirements Analyst | Descripción en conversación + diff.patch (opcional) | `pipeline/01_requirements.json` |
-| `/agent2-impact` | Impact Analyst | 01_requirements.json + tests existentes | `pipeline/02_impact_map.json` |
-| `/agent3-design` | Test Designer | 01 + 02 | `pipeline/03_test_plan.json` |
-| `/agent4-code` | SDET | 03_test_plan.json | `tests/api/**/*.spec.js` |
+### Pipeline B — /review-diff (reactivo)
+Evaluar riesgo de un PR/rama y correr la suite óptima.
 
-### Inputs del usuario
-- **Descripción**: texto libre en la conversación (qué cambió, qué debe probarse)
-- **Diff (opcional)**: pegar en `pipeline/input/diff.patch` antes de invocar Agent 1
+```
+/review-diff <rama>
+  → diff-analyzer   → tmp/pipeline/risk-map.json
+  → coverage-checker → tmp/pipeline/coverage-report.json
+  → test-selector   → tmp/pipeline/test-plan.json
+  → Ejecución Playwright
+  → results-analyzer → tmp/pipeline/results-report.json
+```
 
-### Cómo activar cada agente
-Al escribir el comando, Claude lee el skill file correspondiente y sigue las instrucciones.
-Cada agente termina con un gate JSON y sugiere el siguiente comando.
+### Comandos disponibles
+| Comando | Propósito |
+|---------|-----------|
+| `/generate-tests` | Orquestador — genera tests desde descripción de cambio |
+| `/agent1-requirements` | Analiza requisitos → use cases Given/When/Then |
+| `/agent2-impact` | Mapea use cases a cobertura existente |
+| `/agent3-design` | Diseña test cases por capa |
+| `/agent4-code` | Escribe código Playwright |
+| `/review-diff` | Analiza riesgo de cambio + ejecuta suite óptima |
+| `/session-review` | Cierre de sesión — guarda learnings en memoria |
+| `/sync-knowledge` | Sincroniza conocimiento con el backend sm2 |
 
----
+### Agentes especializados (sub-agentes)
+| Agente | Cuándo usar |
+|--------|-------------|
+| `diff-analyzer` | Mapea diff del backend a módulos de API y riesgo |
+| `coverage-checker` | Evalúa cobertura existente por capa |
+| `test-selector` | Selecciona suite óptima de tests a correr |
+| `results-analyzer` | Clasifica fallos y emite veredicto |
+| `test-triage-agent` | Triage de fallos — bug real vs test defectuoso |
+| `test-defect-corrector` | Corrige tests defectuosos desde triage/test-corrections/ |
+| `qa-report-generator` | Genera reporte profesional para cliente/stakeholders |
 
-## Skills Disponibles
-| Skill | Cuándo usar |
+### Cuándo usar cada pipeline
+| Situación | Comando |
 |---|---|
-| `qa-test-planner` | Crear test plans, casos de prueba, bug reports |
+| "Se agregó el endpoint GET /api/media/:id/analytics" | `/generate-tests` |
+| "Hay un PR de backend, ¿es seguro hacer merge?" | `/review-diff <rama>` |
+| "Fallaron N tests en CI, ¿qué pasó?" | `test-triage-agent` |
+| "Genera el reporte QA para el cliente" | `qa-report-generator` |
+| "El backend sm2 hizo un release" | `/sync-knowledge` |
 
 ---
 
 ## Comportamiento Esperado del Agente
 - Responder en **español** salvo que el usuario use inglés
 - Código de tests en **inglés** (nombres de variables, strings, comentarios técnicos)
-- Antes de crear tests → leer `doc_api/risk-register/<modulo>.md` si existe
+- Antes de crear tests → leer `.claude/memory/api_system.md` y `doc/risk-register/<modulo>.md`
 - Antes de crear un test file → verificar si ya existe uno similar en `tests/api/`
-- Al invocar `/agent1-requirements` → leer `.agents/skills/pipeline/agent1-requirements.md` y seguir instrucciones
-- Al invocar `/agent2-impact` → leer `.agents/skills/pipeline/agent2-impact.md` y seguir instrucciones
-- Al invocar `/agent3-design` → leer `.agents/skills/pipeline/agent3-design.md` y seguir instrucciones
-- Al invocar `/agent4-code` → leer `.agents/skills/pipeline/agent4-code.md` y seguir instrucciones
+- Leer `.claude/memory/MEMORY.md` al inicio de cada sesión para recordar el estado del proyecto

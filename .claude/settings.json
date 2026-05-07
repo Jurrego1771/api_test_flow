@@ -1,0 +1,40 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"\n════════════════════════════════════════════════\n  SESSION REVIEW — API TEST FLOW\n════════════════════════════════════════════════\n\n  Antes de cerrar, ejecuta: /session-review\n\n  O responde manualmente:\n  1. ¿Descubriste un quirk nuevo de la API sm2?\n     → Actualizar api_system.md + agent4_knowledge.json\n  2. ¿Hay un módulo sin cobertura o con gap en una capa?\n     → Agregar a testing_gaps.md\n  3. ¿Resolviste un gap pendiente?\n     → Marcar ✅ en testing_gaps.md\n  4. ¿Tomaste decisiones técnicas importantes?\n     → Agregar a decisions.md\n  5. ¿Quedó trabajo pendiente?\n     → Crear sessions/YYYY-MM-DD_tema.md\n  6. ¿Actualizar MEMORY.md con nuevos punteros?\n\n  Si el backend sm2 hizo un release → ejecutar /sync-knowledge\n════════════════════════════════════════════════\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"const p=process.env.CLAUDE_TOOL_INPUT_FILE_PATH||''; const testFiles=['tests/api/','schemas/']; const memFiles=['.claude/memory/']; const isTest=testFiles.some(f=>p.includes(f)); const isMem=memFiles.some(f=>p.includes(f)); if(isTest && !isMem){ console.log('\\n[QA] Archivo de test/schema modificado: '+p+'\\n  → Considerar si hay gaps en testing_gaps.md que actualizar\\n  → Considerar si hay learnings para api_system.md o decisions.md\\n'); }\""
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npx playwright *)",
+      "Bash(node *)",
+      "Bash(node pipeline/gen-diff.js *)",
+      "Bash(git *)",
+      "Bash(ls *)",
+      "Bash(mkdir *)",
+      "Bash(mkdir -p *)",
+      "Bash(echo *)",
+      "Bash(cat *)"
+    ]
+  }
+}
