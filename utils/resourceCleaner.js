@@ -49,6 +49,8 @@ class ResourceCleaner {
                 } else if (resource.type === 'customer') {
                     // No DELETE endpoint — deactivate instead
                     await this.apiClient.post(`/api/customer/${resource.id}`, { status: 'INACTIVE' });
+                } else if (resource.type === 'epg-origin') {
+                    await this.apiClient.delete(`/api/settings/epg-mask/input/${resource.id}`);
                 }
                 console.log(`Cleaned ${resource.type}: ${resource.id}`);
             } catch (error) {
