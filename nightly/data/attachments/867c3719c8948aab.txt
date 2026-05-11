@@ -1,3 +1,0 @@
-Cleaning up 2 resources...
-Cleaned live-stream: 6a003e2843caa773548a1cdc
-Cleaned epg-origin: 6a003e2843caa773548a1cda
