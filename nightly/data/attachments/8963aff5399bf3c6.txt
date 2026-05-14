@@ -1,0 +1,3 @@
+Cleaning up 2 resources...
+Cleaned season: 6a058b7aa3dacd6087dd48e6/6a058b7ba3dacd6087dd48ec
+Cleaned show: 6a058b7aa3dacd6087dd48e6
