@@ -169,10 +169,17 @@ Agrupar todos los test_cases del plan por su `file_target`.
 ### Paso 4 — Schema TODO
 Si `schema_ref: "TODO"` → agregar comentario `// TODO: add Zod schema validation` en lugar del parse
 
-### Paso 5 — Escribir manifest y ciclo de aprendizaje
-Detectar quirks de implementación no obvios.
-Presentar: `[L_SDET_YYYYMMDD_N] categoría — descripción → ¿Guardar? (sí / no / modificar)`
-Solo persistir confirmadas en `pipeline/learning/agent4_knowledge.json`.
+### Paso 5 — Escribir manifest y outputs
+Escribir el manifest y los archivos listados abajo.
+
+### Ciclo de aprendizaje — Al finalizar (después de los outputs)
+Durante la implementación, acumular internamente quirks de implementación no obvios (API behavior, encoding, patrones de cleanup). NO presentarlos durante el proceso.
+Una vez escritos todos los outputs, presentar TODAS las observaciones acumuladas en un solo bloque:
+```
+[L_SDET_YYYYMMDD_1] categoría — descripción → ¿Guardar? (sí / no / modificar)
+[L_SDET_YYYYMMDD_2] ...
+```
+Solo persistir las confirmadas en `pipeline/learning/agent4_knowledge.json`.
 
 ---
 

@@ -25,17 +25,29 @@ Orquestador del pipeline de 4 agentes para el proyecto `api_test_flow`.
 
 ---
 
-## Paso 0 — Preparar entorno
+## Paso 0 — Preparar entorno y diff
 
 ```bash
 mkdir -p pipeline/input
 ```
 
+Si NO se usó `--skip-diff` y `--from-diff` no fue indicado:
+- Preguntar al usuario: **¿cuál es el nombre de la rama a analizar?** (o si quiere solo descripción textual)
+- Si proporciona rama → ejecutar `node pipeline/gen-diff.js <branch> --fetch` y guardar en `pipeline/input/diff.patch`
+- Si prefiere solo descripción → continuar sin diff
+
+Si `--from-diff` fue indicado o el usuario ya dejó el diff en `pipeline/input/diff.patch`:
+- Confirmar que el archivo existe antes de continuar
+
 Confirmar al usuario:
 ```
 🚀 /generate-tests — Pipeline de 4 agentes
-Describe el cambio en el backend o deja que el agente analice la rama.
+Diff: [disponible en pipeline/input/diff.patch | no disponible]
+Describe el cambio en el backend.
 ```
+
+> **Nota para Agent 1:** El orquestador ya gestionó el diff en este Paso 0.
+> Agent 1 debe detectar que `pipeline/input/diff.patch` ya existe y NO volver a pedir la rama.
 
 ---
 

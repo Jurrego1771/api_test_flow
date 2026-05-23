@@ -8,6 +8,12 @@ type: project
 
 Última actualización: 2026-05-06
 
+> **Importante — actualización manual requerida.**
+> Este archivo NO se actualiza automáticamente cuando se generan tests nuevos.
+> Al finalizar cada sesión donde se crearon o modificaron tests, correr `/session-review`
+> para sincronizar este registro. Sin ese paso, `qa-report-generator` y `coverage-checker`
+> trabajarán con datos desactualizados.
+
 ## Cobertura por Módulo y Capa
 
 | Módulo | Smoke | Regression | Integration | Contract |

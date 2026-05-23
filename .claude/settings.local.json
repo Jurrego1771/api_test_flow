@@ -33,7 +33,17 @@
       "Bash(node *)",
       "PowerShell(Get-ChildItem -Path \"D:\\\\Dev\\\\Repos\\\\jurrego1771\\\\api_test_flow\\\\.agents\" -Force | ForEach-Object { if \\($_.PSIsContainer\\) { \"$\\($_.FullName\\)\\\\\" } else { $_.FullName } })",
       "PowerShell(Get-ChildItem -Path \"D:\\\\Dev\\\\Repos\\\\jurrego1771\\\\api_test_flow\" -Force | Select-Object Name, @{Name='Type'; Expression={if\\($_.PSIsContainer\\){'DIR'} else {'FILE'}}} | Format-Table -AutoSize)",
-      "Bash(git restore *)"
+      "Bash(git restore *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\repos\\\\mediastream\\\\sm2\" -Recurse -Directory)",
+      "Bash(Select-Object -First 20 FullName)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)",
+      "Bash(python3 *)",
+      "Bash(mkdir -p /tmp/riskgen)",
+      "Read(//tmp/**)",
+      "Bash(powershell *)",
+      "Bash(python -c \"import json; json.load\\(open\\('D:/repos/jurrego1771/api_test_flow/tmp/pipeline/results-report.json'\\)\\); print\\('JSON valido'\\)\")"
     ]
   }
 }

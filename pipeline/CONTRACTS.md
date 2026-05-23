@@ -12,12 +12,17 @@ qué consume, qué produce, qué nunca hace, y el formato del gate de salida.
 - Terminar **siempre** con un gate estructurado
 - Si falta un input requerido → `status: "BLOCKED"` en el gate, no asumir
 - Si hay ambigüedad → exponerla en `questions`, no inventar
+- **`risk-map.json` es inmutable** — solo `diff-analyzer` lo escribe. `coverage-checker` NO lo modifica.
 
 ### Ciclo de aprendizaje (obligatorio en todos los agentes)
 1. Al inicio: leer `pipeline/learning/<agentN>_knowledge.json` y aplicar learnings con `"confirmed_by_user": true`
-2. Durante la sesión: detectar observaciones no obvias y acumularlas internamente
-3. Al escribir el gate: incluir `new_learnings` con las observaciones del paso 2
-4. Presentar cada learning al usuario: `[ID] categoría — descripción → ¿Guardar? (sí / no / modificar)`
+2. Durante la sesión: acumular observaciones no obvias **internamente** — NO interrumpir el flujo para presentarlas
+3. Al escribir el gate: incluir `new_learnings` con las observaciones acumuladas
+4. **Al finalizar** (después de escribir todos los outputs): presentar TODAS las observaciones acumuladas en un único bloque al usuario:
+   ```
+   [ID_1] categoría — descripción → ¿Guardar? (sí / no / modificar)
+   [ID_2] ...
+   ```
 5. Solo persistir los confirmados — agregar a `knowledge.json` con `"confirmed_by_user": true`
 
 ### Schema de learning (compartido)
@@ -314,13 +319,26 @@ qué consume, qué produce, qué nunca hace, y el formato del gate de salida.
 
 ---
 
-## Resumen de Contratos v2.0
+## Resumen de Contratos v2.1
+
+### Pipeline A — /generate-tests
 
 | | Agente 1 | Agente 2 | Agente 3 | Agente 4 |
 |---|---|---|---|---|
 | **Nombre** | Requirements Analyst | Impact Analyst | Test Designer | SDET |
-| **Input** | Texto conversación + diff.patch | 01_requirements.json + tests/ | 01 + 02 | 03_test_plan.json |
+| **Input** | Texto + diff.patch (si existe) | 01_requirements.json + tests/ | 01 + 02 | 03_test_plan.json |
 | **Output** | 01_requirements.json | 02_impact_map.json | 03_test_plan.json | *.spec.js + 04_manifest.json |
 | **Gate** | 01_gate.json | 02_gate.json | 03_gate.json | 04_gate.json |
 | **Bloqueante** | Sin descripción del usuario | 01_requirements.json faltante | 01 o 02 faltantes | 03_test_plan.json faltante |
 | **Comando** | `/agent1-requirements` | `/agent2-impact` | `/agent3-design` | `/agent4-code` |
+
+> **Agent 1 — detección de diff**: verifica si `pipeline/input/diff.patch` ya existe antes de pedir la rama al usuario. El orquestador genera el diff en Paso 0; Agent 1 lo reutiliza sin duplicar la operación.
+
+### Pipeline B — /review-diff
+
+| Agente | Input | Output | Notas |
+|--------|-------|--------|-------|
+| `diff-analyzer` | diff.patch | risk-map.json | Inmutable — ningún otro agente lo modifica |
+| `coverage-checker` | risk-map.json + tests/api/ | coverage-report.json **+ test-plan.json** | Integra la selección de suite (antes en test-selector) |
+| `results-analyzer` | risk-map + test-plan + playwright-report/ | results-report.json + triage files | Auto-crea triage/test-corrections/ para TEST_DESACTUALIZADO |
+| `test-selector` | risk-map + coverage-report | test-plan.json | **DEPRECADO** — integrado en coverage-checker. Solo invocar aisladamente. |

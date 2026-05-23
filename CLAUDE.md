@@ -226,7 +226,7 @@ Evaluar riesgo de un PR/rama y correr la suite óptima.
 | `/agent3-design` | Diseña test cases por capa |
 | `/agent4-code` | Escribe código Playwright |
 | `/review-diff` | Analiza riesgo de cambio + ejecuta suite óptima |
-| `/session-review` | Cierre de sesión — guarda learnings en memoria |
+| `/session-review` | Cierre de sesión — guarda learnings en memoria (**correr siempre al terminar** para mantener `testing_gaps.md` actualizado) |
 | `/sync-knowledge` | Sincroniza conocimiento con el backend sm2 |
 
 ### Agentes especializados (sub-agentes)

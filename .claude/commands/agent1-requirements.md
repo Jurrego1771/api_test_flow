@@ -13,16 +13,20 @@ Conviertes una descripción en lenguaje natural (+ diff git opcional) en casos d
 
 ## Inputs
 
-### Paso 0 — Generar diff automáticamente (ANTES de todo)
-Preguntar al usuario: **¿cuál es el nombre de la rama a analizar?**
-Con la rama, ejecutar inmediatamente:
+### Paso 0 — Obtener diff (ANTES de todo)
+Verificar primero si `pipeline/input/diff.patch` ya existe y tiene contenido:
 ```bash
-node pipeline/gen-diff.js <branch> --fetch
+# Verificar existencia y tamaño
+cat pipeline/input/diff.patch
 ```
-El script usa `SM2_REPO_PATH` y `SM2_BASE_BRANCH` del `.env` automáticamente.
-- Si el comando falla → reportar el error al usuario y detenerse
-- Si el diff queda vacío → continuar, indicar `"diff_included": false`
-- Si exitoso → `pipeline/input/diff.patch` estará listo para el siguiente paso
+- **Si existe y no está vacío** → usarlo directamente (`"diff_included": true`). NO pedir la rama al usuario — el orquestador ya lo generó.
+- **Si no existe o está vacío** → preguntar al usuario: **¿cuál es el nombre de la rama a analizar?** y ejecutar:
+  ```bash
+  node pipeline/gen-diff.js <branch> --fetch
+  ```
+  El script usa `SM2_REPO_PATH` y `SM2_BASE_BRANCH` del `.env` automáticamente.
+  - Si el comando falla → reportar el error al usuario y detenerse
+  - Si el diff queda vacío → continuar, indicar `"diff_included": false`
 
 ### Primario — Descripción (requerido)
 El usuario proporciona la descripción de una de estas formas:
@@ -81,12 +85,15 @@ Del diff (si existe) y de la descripción:
 
 ### Paso 4 — Escribir outputs
 
-### Paso 5 — Ciclo de aprendizaje
-Detectar observaciones no obvias durante el análisis (quirks del dominio, patrones de naming, comportamientos esperados infrecuentes).
+### Paso 5 — Escribir outputs
+Escribir los outputs listados abajo.
 
-Presentar cada observación al usuario:
+### Ciclo de aprendizaje — Al finalizar (después de los outputs)
+Durante el análisis, acumular internamente observaciones no obvias (quirks del dominio, patrones de naming, comportamientos infrecuentes). NO presentarlas durante el proceso.
+Una vez escritos todos los outputs, presentar TODAS las observaciones acumuladas en un solo bloque:
 ```
-[L_REQ_YYYYMMDD_N] categoría — descripción → ¿Guardar? (sí / no / modificar)
+[L_REQ_YYYYMMDD_1] categoría — descripción → ¿Guardar? (sí / no / modificar)
+[L_REQ_YYYYMMDD_2] ...
 ```
 Solo persistir las confirmadas en `pipeline/learning/agent1_knowledge.json`.
 
@@ -139,4 +146,4 @@ Solo persistir las confirmadas en `pipeline/learning/agent1_knowledge.json`.
 - NO inventar endpoints fuera de los mencionados por el usuario
 - NO asumir módulos no mencionados
 - Si hay ambigüedad → exponerla en `questions`, no asumir
-- Si el input describe un flujo de UI → ignorar la parte visual, extraer solo las llamadas API implícitas
+- Si el input describe un flujo de UI → notificar al usuario que la parte visual será ignorada e indicar qué llamada API se inferirá; luego extraer solo las llamadas API implícitas. Ejemplo: *"Noto que describes un flujo de UI. Este repo prueba solo API REST — extraeré la llamada `POST /api/media` implícita."*

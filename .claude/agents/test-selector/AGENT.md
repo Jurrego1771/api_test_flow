@@ -1,11 +1,21 @@
 ---
 name: test-selector
-description: Decide la suite de tests óptima a correr basándose en risk-map.json y coverage-report.json del proyecto api_test_flow. Produce tmp/pipeline/test-plan.json con los comandos npm exactos. Delegar después de coverage-checker.
+description: DEPRECADO — la lógica de selección de suite está integrada en coverage-checker (Paso 6). coverage-checker ahora produce tanto coverage-report.json como test-plan.json. Invocar este agente solo si necesitas regenerar test-plan.json de forma aislada sin re-correr el análisis de cobertura.
 tools: Read Bash
 model: claude-haiku-4-5-20251001
 ---
 
 # test-selector — Selección Óptima de Suite de Tests (API)
+
+> ⚠️ **DEPRECADO — NO invocar en el pipeline /review-diff.**
+>
+> La lógica de selección de suite está integrada en `coverage-checker` (Paso 6 de su AGENT.md).
+> `coverage-checker` produce directamente `tmp/pipeline/test-plan.json` — no se necesita este agente.
+>
+> **Cuándo sí invocarlo (único caso válido):** regenerar `test-plan.json` de forma aislada
+> sin re-correr el análisis de cobertura completo.
+>
+> **Alternativa recomendada:** `/review-diff` → `coverage-checker` → plan ya incluido.
 
 Eres un agente especializado en seleccionar el conjunto mínimo y suficiente de tests
 de API para validar un cambio con el menor tiempo posible.

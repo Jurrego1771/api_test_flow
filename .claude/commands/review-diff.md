@@ -67,29 +67,33 @@ Mostrar el risk map al usuario.
 
 Si `risk_level = LOW` y todos los cambios son docs/comments → informar y preguntar si continuar.
 
-### Paso 2 — Verificación de cobertura
+### Paso 2 — Verificación de cobertura + selección de suite
 
 Delegar a agente `coverage-checker`:
 
 > Lee `tmp/pipeline/risk-map.json` y evalúa cobertura en `tests/api/`.
 > Busca por módulo en las 4 capas (smoke/regression/integration/contract).
-> Produce `tmp/pipeline/coverage-report.json`.
+> Produce `tmp/pipeline/coverage-report.json` con gaps por capa.
+> Produce `tmp/pipeline/test-plan.json` con los comandos exactos de Playwright.
 > Incluir campo `should_generate_tests: boolean`.
+> **NO modificar** `tmp/pipeline/risk-map.json`.
 
-Mostrar el coverage report al usuario.
+Mostrar el coverage report y el test plan al usuario.
 
 ---
 
 **— Fin Fase 1 —**
 
+`coverage-checker` ya produjo el `test-plan.json` — no es necesario invocar `test-selector`.
+
 Si NO se pasó `--run` ni `--dry-run`, preguntar:
 
 ```
 📋 Análisis completado.
-   Gaps MUST: N  |  Tests existentes relevantes: N
+   Gaps MUST: N  |  Tests existentes relevantes: N  |  ~X minutos
 
    ¿Qué hacemos?
-   [S] Ejecutar suite óptima
+   [S] Ejecutar suite óptima (test-plan.json listo)
    [n] Terminar aquí
    [m] Modificar plan antes de ejecutar
 ```
@@ -114,14 +118,11 @@ Preguntar al usuario:
 Si sí → invocar `/generate-tests --from-diff` con contexto del risk-map.
 Si no → continuar con tests existentes.
 
-### Paso 4 — Selección de suite
+### Paso 4 — Revisar test-plan (ya disponible)
 
-Delegar a agente `test-selector`:
+`tmp/pipeline/test-plan.json` fue generado por `coverage-checker` en FASE 1 — no se necesita `test-selector`.
 
-> Lee `tmp/pipeline/risk-map.json` y `tmp/pipeline/coverage-report.json`.
-> Produce `tmp/pipeline/test-plan.json` con comandos npm exactos.
-
-Si el usuario eligió `[m]odificar` → mostrar el plan y preguntar qué agregar/quitar.
+Si el usuario eligió `[m]odificar` → leer el test-plan.json existente, mostrarlo al usuario y preguntar qué agregar/quitar. Editar el archivo directamente.
 
 ### Paso 5 — Ejecución
 

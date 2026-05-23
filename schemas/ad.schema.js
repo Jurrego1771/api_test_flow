@@ -45,9 +45,9 @@ const adSchema = z
     schedule: adScheduleSchema.optional(),
     adswizz: adAdswizzSchema.optional(),
     insertion: z.union([adInsertionSchema, z.null()]).optional(),
-    categories: z.array(z.any()).optional(),
-    tags: z.array(z.string()).optional(),
-    referers: z.array(z.any()).optional(),
+    categories: z.union([z.array(z.any()), z.null()]).optional(),
+    tags: z.union([z.array(z.string()), z.null()]).optional(),
+    referers: z.union([z.array(z.any()), z.null()]).optional(),
     date_created: z.string().optional(),
     account: z.string().optional(),
   })

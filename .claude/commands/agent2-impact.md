@@ -45,10 +45,17 @@ Del `diff.patch`:
 | `medium` | Endpoint nuevo, o cambio de validación sin cambio de schema |
 | `low` | Endpoint sin cambios directos pero con dependencia de uno modificado |
 
-### Paso 5 — Escribir outputs y ciclo de aprendizaje
-Detectar observaciones sobre cobertura o riesgos no obvios.
-Presentar al usuario: `[L_IMP_YYYYMMDD_N] categoría — descripción → ¿Guardar? (sí / no / modificar)`
-Solo persistir confirmadas en `pipeline/learning/agent2_knowledge.json`.
+### Paso 5 — Escribir outputs
+Escribir los outputs listados abajo.
+
+### Ciclo de aprendizaje — Al finalizar (después de los outputs)
+Durante el análisis, acumular internamente observaciones no obvias sobre cobertura, riesgos o quirks del dominio. NO presentarlas durante el proceso.
+Una vez escritos todos los outputs, presentar TODAS las observaciones acumuladas en un solo bloque:
+```
+[L_IMP_YYYYMMDD_1] categoría — descripción → ¿Guardar? (sí / no / modificar)
+[L_IMP_YYYYMMDD_2] ...
+```
+Solo persistir las confirmadas en `pipeline/learning/agent2_knowledge.json`.
 
 ## Output
 
