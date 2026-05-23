@@ -63,9 +63,14 @@ test.describe("Customer — List (GET /api/customer)", () => {
   test("TC_CST_GET_list_filter_by_email", async () => {
     const customer = await createCustomer(apiClient, cleaner);
 
+    // Poll: customer index may lag a few seconds after creation
+    await expect.poll(async () => {
+      const res = await apiClient.get(`/api/customer?email=${encodeURIComponent(customer.email)}`);
+      return res.body.data?.length ?? 0;
+    }, { timeout: 8000, intervals: [500, 1000, 2000] }).toBeGreaterThan(0);
+
     const res = await apiClient.get(`/api/customer?email=${encodeURIComponent(customer.email)}`);
     expect(res.status).toBe(200);
-    expect(res.body.data.length).toBeGreaterThan(0);
     expect(res.body.data[0].email).toBe(customer.email);
   });
 

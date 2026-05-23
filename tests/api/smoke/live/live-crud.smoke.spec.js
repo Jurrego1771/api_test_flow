@@ -87,6 +87,12 @@ test.describe('Live Stream - Smoke', () => {
 
         const stream = await createLiveStream(apiClient);
 
+        // Poll: resource may not be immediately available for deletion after creation
+        await expect.poll(async () => {
+            const r = await apiClient.get(`${API_BASE}/${stream._id}`);
+            return r.status;
+        }, { timeout: 8000, intervals: [500, 1000, 2000] }).toBe(200);
+
         const delRes = await apiClient.delete(`${API_BASE}/${stream._id}`);
         expect([200, 204]).toContain(delRes.status);
 

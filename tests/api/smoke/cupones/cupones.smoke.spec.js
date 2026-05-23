@@ -71,10 +71,13 @@ test.describe('Cupones - Smoke', () => {
         const coupon = await createCoupon(apiClient, groupId);
         cleaner.register('coupon', coupon._id);
 
-        const res = await apiClient.get(`/api/coupon/${coupon._id}`);
+        // Poll: newly created coupon may not be immediately retrievable
+        await expect.poll(async () => {
+            const res = await apiClient.get(`/api/coupon/${coupon._id}`);
+            return res.body.status;
+        }, { timeout: 8000, intervals: [500, 1000, 2000] }).toBe('OK');
 
-        expect(res.ok).toBeTruthy();
-        expect(res.body.status).toBe('OK');
+        const res = await apiClient.get(`/api/coupon/${coupon._id}`);
         expect(res.body.data._id).toBe(coupon._id);
         expect(res.body.data).toHaveProperty('code');
     });

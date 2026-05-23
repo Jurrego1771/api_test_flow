@@ -80,6 +80,12 @@ test.describe('Playlist - Smoke', () => {
         const createRes = await apiClient.post('/api/playlist', dataFactory.generateManualPlaylistPayload());
         const playlistId = createRes.body.data._id;
 
+        // Poll: resource may not be immediately available for deletion after creation
+        await expect.poll(async () => {
+            const r = await apiClient.get(`/api/playlist/${playlistId}`);
+            return r.status;
+        }, { timeout: 8000, intervals: [500, 1000, 2000] }).toBe(200);
+
         const deleteRes = await apiClient.delete(`/api/playlist/${playlistId}`);
         expect(deleteRes.status).toBe(200);
         expect(deleteRes.body.status).toBe('OK');

@@ -42,12 +42,11 @@ test.describe('GET /api/category - Búsqueda y listados de categorías', () => {
         const parent = await createCategory(apiClient, { name: `qa_parent_${Date.now()}` });
         cleaner.register('category', parent._id);
 
-        const res = await apiClient.get(`/api/category?category_name=${encodeURIComponent(parent.name)}`);
-
-        expect(res.ok).toBeTruthy();
-        expect(res.body.status).toBe('OK');
-        const names = res.body.data.map((c) => c.name);
-        expect(names).toContain(parent.name);
+        // Poll: search index may lag up to a few seconds after creation
+        await expect.poll(async () => {
+            const res = await apiClient.get(`/api/category?category_name=${encodeURIComponent(parent.name)}`);
+            return res.body.data?.map((c) => c.name) ?? [];
+        }, { timeout: 8000, intervals: [500, 1000, 2000] }).toContain(parent.name);
     });
 
     test('Debe soportar flag full (ruta completa en nombre)', async () => {

@@ -5,10 +5,6 @@ require('dotenv').config();
 
 const BASE_URL = process.env.BASE_URL;
 const API_TOKEN = process.env.API_TOKEN;
-const LIVE_ID = process.env.LIVE_THUMBNAIL_ID || "6971288e64b2477e2b935259";
-
-const API_BASE = `/api/live-stream/${LIVE_ID}`;
-const THUMB_URI = `${API_BASE}/thumb`;
 
 // Recursos estáticos
 const THUMB_VALID = path.resolve('tests/resources/logo.png');
@@ -18,16 +14,35 @@ test.describe.configure({ mode: 'serial' });
 test.describe("Live Stream Thumbnail API - Batería de Pruebas", () => {
   let authRequest;
   let thumbId;
+  let liveId;
 
   test.beforeAll(async ({ playwright }) => {
     authRequest = await playwright.request.newContext({
       baseURL: BASE_URL,
     });
+
+    // Create a dedicated live stream so thumbnail writes don't hit a corrupted document
+    const createRes = await authRequest.post(`/api/live-stream?token=${API_TOKEN}`, {
+      form: { name: `[QA] Thumbnail Suite ${Date.now()}`, type: 'video', online: 'false' },
+    });
+    const body = await createRes.json();
+    const data = body?.data ?? body;
+    const created = Array.isArray(data) ? data[0] : data;
+    if (!created?._id) throw new Error(`beforeAll: failed to create live stream: ${JSON.stringify(body)}`);
+    liveId = created._id;
   });
 
-  // Helper para construir URLs con token
-  const getThumbUri = (id = '', token = API_TOKEN) => {
-    const base = id ? `${THUMB_URI}/${id}` : THUMB_URI;
+  test.afterAll(async () => {
+    if (liveId) {
+      await authRequest.delete(`/api/live-stream/${liveId}?token=${API_TOKEN}`);
+    }
+    await authRequest.dispose();
+  });
+
+  // Helper para construir URLs con token (usa liveId dinámico)
+  const getThumbUri = (thumbIdParam = '', token = API_TOKEN) => {
+    const thumbBase = `/api/live-stream/${liveId}/thumb`;
+    const base = thumbIdParam ? `${thumbBase}/${thumbIdParam}` : thumbBase;
     return token ? `${base}?token=${token}` : base;
   };
 
