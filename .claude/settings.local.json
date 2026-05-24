@@ -43,7 +43,21 @@
       "Bash(mkdir -p /tmp/riskgen)",
       "Read(//tmp/**)",
       "Bash(powershell *)",
-      "Bash(python -c \"import json; json.load\\(open\\('D:/repos/jurrego1771/api_test_flow/tmp/pipeline/results-report.json'\\)\\); print\\('JSON valido'\\)\")"
+      "Bash(python -c \"import json; json.load\\(open\\('D:/repos/jurrego1771/api_test_flow/tmp/pipeline/results-report.json'\\)\\); print\\('JSON valido'\\)\")",
+      "Read(//d/Downloads/**)",
+      "Bash(powershell -Command \"Expand-Archive -Path 'data_attachments_c0cb1ad5cd7954ef.zip' -DestinationPath 'data_attachments_c0cb1ad5cd7954ef' -Force\")",
+      "Bash(tar -xf \"data_attachments_c0cb1ad5cd7954ef.zip\" -C \"data_attachments_c0cb1ad5cd7954ef\")",
+      "Bash(mkdir -p \"data_attachments_c0cb1ad5cd7954ef\")",
+      "Bash(python -c \"import zipfile, os; z = zipfile.ZipFile\\('data_attachments_c0cb1ad5cd7954ef.zip'\\); print\\(z.namelist\\(\\)\\); z.extractall\\('data_attachments_c0cb1ad5cd7954ef'\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(Get-ChildItem -Path \"D:\\\\Dev\\\\Repos\\\\jurrego1771\\\\api_test_flow\" -Recurse -Force)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "Bash(tasklist)",
+      "Bash([ -s \"$f\" ])",
+      "Bash(python3 -c ' *)",
+      "Bash(gh run *)",
+      "Bash(git ls-tree *)"
     ]
   }
 }

@@ -163,7 +163,13 @@ test.describe('Ad - List & Search', () => {
         const ad = await createAd(apiClient, { name: uniqueName });
         cleaner.register('ad', ad._id);
 
-        const res = await apiClient.get(`/api/ad/search?name=${uniqueName}`);
+        // Search index has eventual consistency — poll until the new ad appears
+        let res;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            res = await apiClient.get(`/api/ad/search?name=${uniqueName}`);
+            if (res.ok && Array.isArray(res.body.data) && res.body.data.some((a) => a.name === uniqueName)) break;
+            await new Promise((r) => setTimeout(r, 1000));
+        }
         expect(res.status).toBe(200);
         expect(res.body.status).toBe('OK');
         expect(Array.isArray(res.body.data)).toBe(true);

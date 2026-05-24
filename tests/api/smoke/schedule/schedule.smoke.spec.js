@@ -60,11 +60,19 @@ async function createLiveStream(client) {
 
 async function createScheduleJob(client, streamId, seed) {
     const payload = buildScheduleJobPayload(seed || streamId);
-    const res = await client.post(`${LIVE_BASE}/${streamId}/schedule-job`, payload, { form: true });
-    if (!res.ok) throw new Error(`createScheduleJob failed: ${res.status} ${JSON.stringify(res.body)}`);
-    const raw = res.body;
-    // schedule-job create returns the job directly or inside data
-    return Array.isArray(raw?.data) ? raw.data[0] : (raw?.data ?? raw);
+    // Retry up to 3 times — stream may not be indexed immediately after creation
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await client.post(`${LIVE_BASE}/${streamId}/schedule-job`, payload, { form: true });
+        if (res.ok) {
+            const raw = res.body;
+            return Array.isArray(raw?.data) ? raw.data[0] : (raw?.data ?? raw);
+        }
+        if (res.status === 404 && attempt < 2) {
+            await new Promise((r) => setTimeout(r, 1500));
+            continue;
+        }
+        throw new Error(`createScheduleJob failed: ${res.status} ${JSON.stringify(res.body)}`);
+    }
 }
 
 test.describe('Schedule - Smoke', () => {

@@ -301,6 +301,57 @@ class DataFactory {
     });
   }
 
+  // --- Ads ---
+  generateAdPayload(overrides = {}) {
+    return {
+      name: this.generateTitle('Ad'),
+      type: 'vast',
+      is_enabled: 'false',
+      preroll_skip_at: 0,
+      min_media_time_length: 0,
+      ...overrides,
+    };
+  }
+
+  // --- Categories ---
+  generateCategoryPayload(overrides = {}) {
+    return {
+      name: this.generateTitle('Category'),
+      track: true,
+      visible: true,
+      ...overrides,
+    };
+  }
+
+  // --- Coupons (requires existing groupId) ---
+  generateCouponPayload(groupId, overrides = {}) {
+    return {
+      group: groupId,
+      name: 'unico',
+      is_reusable: 'true',
+      custom_code: `qa_${faker.random.alphaNumeric(8)}_${Date.now()}`,
+      discount_type: 'percent',
+      max_use: '10',
+      customer_max_use: '2',
+      detail: this.generateTitle('Coupon'),
+      quantity: '100',
+      percent: '4',
+      payment_required: 'false',
+      ...overrides,
+    };
+  }
+
+  // --- Customers ---
+  generateCustomerPayload(overrides = {}) {
+    return {
+      email: `qa_${faker.random.alphaNumeric(10)}@example.com`,
+      password: `Qa!${faker.random.alphaNumeric(10)}1`,
+      first_name: `qa_${faker.random.alphaNumeric(6)}`,
+      last_name: `qa_${faker.random.alphaNumeric(6)}`,
+      ...overrides,
+    };
+  }
+
   // --- Articles ---
   generateArticlePayload(overrides = {}) {
     const title = this.generateTitle("Article");

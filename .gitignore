@@ -47,3 +47,12 @@ docs/
 
 # Project under test (SM2 / StreamManager)
 sm2/
+
+# Pipeline artifacts (generated per run — not source)
+pipeline/01_requirements.json
+pipeline/02_impact_map.json
+pipeline/03_test_plan.json
+pipeline/04_manifest.json
+pipeline/0*_gate.json
+pipeline/input/diff.patch
+pipeline/learning/
