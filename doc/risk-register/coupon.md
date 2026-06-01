@@ -118,3 +118,10 @@ This module should be treated as a pricing control module, not a simple CRUD sur
 ## 10. Next Update Needed
 
 Revisit this register if coupon generation becomes fully synchronous, if group/subgroup counters are moved out of hooks, or if new gateway-specific coupon rules are added.
+
+## 11. Known API Quirks
+
+- `POST /api/coupon` requires `{ multipart: true }` (NOT form or JSON)
+- Requires existing `group` — use `GET /api/coupon-group` to obtain ID
+- `GET /api/coupon/:id` for non-existent ID returns `{ status: 'ERROR', data: null }` with HTTP 200 (NOT 404)
+- `custom_code` must be unique per account

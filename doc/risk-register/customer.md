@@ -138,3 +138,10 @@ The module can be considered covered enough for the first pass when:
 ## 9. Next Update Needed
 
 This register should be revisited when customer auth flows change, when new nested sub-resources are added, or when identity federation logic is refactored.
+
+## 10. Known API Quirks
+
+- No `DELETE /api/customer/:id` endpoint — deactivate with `POST /api/customer/:id { status: 'INACTIVE' }`
+- GET individual uses `GET /api/customer?id=:id` (returns array, not object)
+- GET not found returns `{ status: 'OK', data: [] }` with HTTP 200 (NOT 404)
+- ResourceCleaner type `customer` runs POST deactivate, not DELETE

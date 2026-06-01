@@ -8,9 +8,8 @@
  *  - Fixture authRequest (X-API-Token via .env)
  *  - DataFactory para payloads estandarizados
  *  - Validación Zod en respuestas clave
- *  - afterAll para cleanup de recursos creados
+ *  - beforeAll crea live stream dedicado; afterAll lo elimina junto con jobs
  *  - ensureApiAvailable guard en cada suite
- *  - Live fixture: 68dd426831f7bd5b6561e59e (live pre-existente)
  *
  * Suites:
  *  1. GET  – Consulta de schedule-job
@@ -26,36 +25,35 @@ const dataFactory       = require('../../helpers').dataFactory;
 const { faker }         = require("@faker-js/faker");
 const {
   getScheduleResponseSchema,
-  createScheduleResponseSchema,
 } = require('../../../../schemas/schedule.schema');
 
 // ─── Constantes ──────────────────────────────────────────────────────────────
 const LIVE_BASE = "/api/live-stream";
-const LIVE_ID   = process.env.LIVE_SCHEDULE_ID || "68dd426831f7bd5b6561e59e";
-const SCH_BASE  = (liveId) => `${LIVE_BASE}/${liveId}/schedule-job`;
+const SCH_BASE  = (id) => `${LIVE_BASE}/${id}/schedule-job`;
+
+let liveId; // set in beforeAll — dedicated live stream for this suite
 
 // IDs de jobs creados durante los tests (para cleanup)
 const createdJobIds = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Verifica que el endpoint esté disponible; skips el test si no lo está */
-async function ensureScheduleApiAvailable(authRequest, liveId = LIVE_ID) {
-  const res = await authRequest.get(SCH_BASE(liveId));
+async function ensureScheduleApiAvailable(authRequest, streamId = liveId) {
+  if (!streamId) {
+    test.skip(true, 'No live stream available for schedule tests');
+    return false;
+  }
+  const res = await authRequest.get(SCH_BASE(streamId));
   if (res.status() === 401 || res.status() === 403 || res.status() === 404) {
-    test.skip(true, `Schedule API no disponible (${res.status()}) para live ${liveId}`);
+    test.skip(true, `Schedule API no disponible (${res.status()}) para live ${streamId}`);
     return false;
   }
   return true;
 }
 
-/**
- * Crea un schedule-job en el live indicado y registra su id para cleanup.
- * Retorna el objeto data del body.
- */
-async function createScheduleJob(authRequest, liveId = LIVE_ID, attrs = {}) {
+async function createScheduleJob(authRequest, streamId = liveId, attrs = {}) {
   const payload = dataFactory.generateSchedulePayload(attrs);
-  const res = await authRequest.post(SCH_BASE(liveId), { form: payload });
+  const res = await authRequest.post(SCH_BASE(streamId), { form: payload });
 
   if (!res.ok()) {
     const txt = await res.text().catch(() => "");
@@ -63,17 +61,17 @@ async function createScheduleJob(authRequest, liveId = LIVE_ID, attrs = {}) {
   }
   const body = await res.json();
   const data = Array.isArray(body.data) ? body.data[0] : body.data;
-  if (data?._id) createdJobIds.push({ liveId, jobId: data._id });
+  if (data?._id) createdJobIds.push({ streamId, jobId: data._id });
   return data;
 }
 
-async function deleteScheduleJob(authRequest, liveId, jobId) {
+async function deleteScheduleJob(authRequest, streamId, jobId) {
   let res;
   try {
-    res = await authRequest.delete(`${SCH_BASE(liveId)}/${jobId}`);
+    res = await authRequest.delete(`${SCH_BASE(streamId)}/${jobId}`);
   } finally {
     const idx = createdJobIds.findIndex(
-      (r) => r.liveId === liveId && r.jobId === jobId
+      (r) => r.streamId === streamId && r.jobId === jobId
     );
     if (idx !== -1) createdJobIds.splice(idx, 1);
   }
@@ -84,16 +82,36 @@ async function deleteScheduleJob(authRequest, liveId, jobId) {
 
 test.describe("Schedule-Job API (Live Stream)", () => {
 
-  // Cleanup global de todo lo creado durante la suite completa
+  test.beforeAll(async ({ request }) => {
+    const payload = dataFactory.generateLiveStreamPayload({ type: 'video', online: 'false' });
+    const res = await request.post(`${process.env.BASE_URL}${LIVE_BASE}`, {
+      headers: { "X-API-Token": process.env.API_TOKEN },
+      form: payload,
+    });
+    if (res.ok()) {
+      const body = await res.json();
+      const data = Array.isArray(body.data) ? body.data[0] : body.data;
+      liveId = data?._id;
+    }
+  });
+
   test.afterAll(async ({ request }) => {
-    for (const { liveId, jobId } of [...createdJobIds]) {
+    for (const { streamId, jobId } of [...createdJobIds]) {
       try {
-        await request.delete(`${process.env.BASE_URL}${SCH_BASE(liveId)}/${jobId}`, {
+        await request.delete(`${process.env.BASE_URL}${SCH_BASE(streamId)}/${jobId}`, {
           headers: { "X-API-Token": process.env.API_TOKEN }
         });
       } catch (_) { /* orphan cleanup */ }
     }
     createdJobIds.length = 0;
+
+    if (liveId) {
+      try {
+        await request.delete(`${process.env.BASE_URL}${LIVE_BASE}/${liveId}`, {
+          headers: { "X-API-Token": process.env.API_TOKEN }
+        });
+      } catch (_) { /* orphan cleanup */ }
+    }
   });
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -109,17 +127,15 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       };
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
-      const res = await authRequest.get(SCH_BASE(LIVE_ID));
+      const res = await authRequest.get(SCH_BASE(liveId));
 
       expect(res.ok()).toBeTruthy();
       expect(res.status()).toBe(200);
 
       const body = await res.json();
       expect(body.status).toBe("OK");
-      // data puede ser null, objeto o array según el estado del live
       expect(["object", "undefined"]).toContain(typeof body.data);
 
-      // Validación Zod
       getScheduleResponseSchema.parse(body);
     });
 
@@ -129,7 +145,6 @@ test.describe("Schedule-Job API (Live Stream)", () => {
         headers: { "X-API-Token": process.env.API_TOKEN }
       });
 
-      // La plataforma puede devolver 200 con data null o 404 con ERROR
       expect([200, 404]).toContain(res.status());
 
       const body = await res.json();
@@ -144,11 +159,10 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       };
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
-      const res = await authRequest.get(SCH_BASE(LIVE_ID));
+      const res = await authRequest.get(SCH_BASE(liveId));
 
       expect(res.ok()).toBeTruthy();
       const headers = res.headers();
-      // Esperamos Content-Type JSON
       expect(headers["content-type"]).toMatch(/application\/json/i);
     });
 
@@ -158,7 +172,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       };
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
-      const res = await authRequest.get(SCH_BASE(LIVE_ID));
+      const res = await authRequest.get(SCH_BASE(liveId));
       const body = await res.json();
 
       expect(body.status).toBe("OK");
@@ -188,7 +202,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
       const payload = dataFactory.generateSchedulePayload();
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), { form: payload });
+      const res = await authRequest.post(SCH_BASE(liveId), { form: payload });
 
       if (!res.ok()) {
         const err = await res.text();
@@ -202,8 +216,8 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       const job = Array.isArray(body.data) ? body.data[0] : body.data;
       if (job?._id) {
-        createdJobIds.push({ liveId: LIVE_ID, jobId: job._id });
-        await deleteScheduleJob(authRequest, LIVE_ID, job._id);
+        createdJobIds.push({ streamId: liveId, jobId: job._id });
+        await deleteScheduleJob(authRequest, liveId, job._id);
       }
     });
 
@@ -214,8 +228,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       };
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
-      // Enviamos solo el nombre, faltan fechas
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), {
+      const res = await authRequest.post(SCH_BASE(liveId), {
         form: { name: "PartialJob" },
       });
 
@@ -232,7 +245,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       let job;
       try {
-        job = await createScheduleJob(authRequest, LIVE_ID);
+        job = await createScheduleJob(authRequest, liveId);
       } catch {
         test.skip(true, "No se pudo crear schedule-job para update");
         return;
@@ -240,15 +253,24 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       if (!job?._id) return;
 
+      // Poll until job is accessible — EventSchedule materialization can lag
+      await expect.poll(
+        async () => {
+          const r = await authRequest.get(`${SCH_BASE(liveId)}/${job._id}`);
+          return r.status();
+        },
+        { timeout: 6000, intervals: [500, 1000, 2000] }
+      ).toBe(200);
+
       const updRes = await authRequest.post(
-        `${SCH_BASE(LIVE_ID)}/${job._id}`,
+        `${SCH_BASE(liveId)}/${job._id}`,
         { form: { date_end_hour: "23" } }
       );
 
       try {
         expect([200, 204]).toContain(updRes.status());
       } finally {
-        await deleteScheduleJob(authRequest, LIVE_ID, job._id);
+        await deleteScheduleJob(authRequest, liveId, job._id);
       }
     });
 
@@ -265,13 +287,13 @@ test.describe("Schedule-Job API (Live Stream)", () => {
         date_end:   "2020-01-01"
       });
 
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), { form: payload });
+      const res = await authRequest.post(SCH_BASE(liveId), { form: payload });
       expect([200, 400, 422]).toContain(res.status());
 
       if (res.ok()) {
         const body = await res.json();
         const job = Array.isArray(body.data) ? body.data[0] : body.data;
-        if (job?._id) await deleteScheduleJob(authRequest, LIVE_ID, job._id);
+        if (job?._id) await deleteScheduleJob(authRequest, liveId, job._id);
       }
     });
   });
@@ -291,7 +313,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       let job;
       try {
-        job = await createScheduleJob(authRequest, LIVE_ID);
+        job = await createScheduleJob(authRequest, liveId);
       } catch {
         test.skip(true, "No se pudo crear schedule-job");
         return;
@@ -299,7 +321,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       if (!job?._id) return;
 
-      const delRes = await deleteScheduleJob(authRequest, LIVE_ID, job._id);
+      const delRes = await deleteScheduleJob(authRequest, liveId, job._id);
       expect([200, 204]).toContain(delRes.status());
     });
   });
@@ -318,10 +340,10 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       const payload = dataFactory.generateSchedulePayload({
         date_start_hour: "18",
-        date_end_hour:   "10", // Antes que el inicio
+        date_end_hour:   "10",
       });
 
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), { form: payload });
+      const res = await authRequest.post(SCH_BASE(liveId), { form: payload });
       expect([400, 422]).toContain(res.status());
     });
 
@@ -333,10 +355,10 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
       const payload = dataFactory.generateSchedulePayload({
-        date_start_minute: "99", // Minuto inválido
+        date_start_minute: "99",
       });
 
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), { form: payload });
+      const res = await authRequest.post(SCH_BASE(liveId), { form: payload });
       expect([400, 422]).toContain(res.status());
     });
 
@@ -349,11 +371,10 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       const singleDate = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), {
+      const res = await authRequest.post(SCH_BASE(liveId), {
         form: { on_date: singleDate, off_date: singleDate },
       });
 
-      // on_date === off_date es inválido en la mayoría de plataformas
       expect([200, 400, 422]).toContain(res.status());
     });
 
@@ -369,22 +390,20 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       const onDate  = new Date(now.getTime() + 60 * 60 * 1000);
       const offDate = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), {
+      const res = await authRequest.post(SCH_BASE(liveId), {
         form: {
           on_date:   onDate.toISOString(),
           off_date:  offDate.toISOString(),
           recurring: "true",
-          // sin campo 'days'
         },
       });
 
-      // Puede aceptar o rechazar; lo importante es que no sea 500
       expect([200, 400, 422]).toContain(res.status());
       if (res.ok()) {
         const body = await res.json();
         const job  = Array.isArray(body.data) ? body.data[0] : body.data;
         if (job?._id) {
-          await deleteScheduleJob(authRequest, LIVE_ID, job._id);
+          await deleteScheduleJob(authRequest, liveId, job._id);
         }
       }
     });
@@ -399,7 +418,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       const allDays = ["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
       const payload = dataFactory.generateRecurringSchedulePayload({ days: allDays });
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), { form: payload });
+      const res = await authRequest.post(SCH_BASE(liveId), { form: payload });
 
       expect([200, 400]).toContain(res.status());
 
@@ -407,7 +426,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
         const body = await res.json();
         const job  = Array.isArray(body.data) ? body.data[0] : body.data;
         if (job?._id) {
-          await deleteScheduleJob(authRequest, LIVE_ID, job._id);
+          await deleteScheduleJob(authRequest, liveId, job._id);
         }
       }
     });
@@ -419,13 +438,13 @@ test.describe("Schedule-Job API (Live Stream)", () => {
   test.describe("5. Seguridad — Autenticación y Autorización", () => {
 
     test("TC_SCH_020_GET_WithoutToken_ShouldReturn401or403", async ({ playwright }) => {
+      if (!liveId) { test.skip(true, 'No live stream available'); return; }
       const unauthCtx = await playwright.request.newContext({
         baseURL: process.env.BASE_URL,
-        // Sin token
       });
 
       try {
-        const res = await unauthCtx.get(`${LIVE_BASE}/${LIVE_ID}/schedule-job`);
+        const res = await unauthCtx.get(`${LIVE_BASE}/${liveId}/schedule-job`);
         expect([401, 403]).toContain(res.status());
       } finally {
         await unauthCtx.dispose();
@@ -433,6 +452,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
     });
 
     test("TC_SCH_021_POST_WithoutToken_ShouldReturn401or403", async ({ playwright }) => {
+      if (!liveId) { test.skip(true, 'No live stream available'); return; }
       const now     = new Date();
       const onDate  = new Date(now.getTime() + 60 * 60 * 1000);
       const offDate = new Date(now.getTime() + 2 * 60 * 60 * 1000);
@@ -442,7 +462,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       });
 
       try {
-        const res = await unauthCtx.post(`${LIVE_BASE}/${LIVE_ID}/schedule-job`, {
+        const res = await unauthCtx.post(`${LIVE_BASE}/${liveId}/schedule-job`, {
           form: {
             on_date:  onDate.toISOString(),
             off_date: offDate.toISOString(),
@@ -455,6 +475,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
     });
 
     test("TC_SCH_022_DELETE_WithoutToken_ShouldReturn401or403", async ({ playwright }) => {
+      if (!liveId) { test.skip(true, 'No live stream available'); return; }
       const fakeJobId = "000000000000000000000001";
       const unauthCtx = await playwright.request.newContext({
         baseURL: process.env.BASE_URL,
@@ -462,7 +483,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
 
       try {
         const res = await unauthCtx.delete(
-          `${LIVE_BASE}/${LIVE_ID}/schedule-job/${fakeJobId}`
+          `${LIVE_BASE}/${liveId}/schedule-job/${fakeJobId}`
         );
         expect([401, 403]).toContain(res.status());
       } finally {
@@ -471,13 +492,14 @@ test.describe("Schedule-Job API (Live Stream)", () => {
     });
 
     test("TC_SCH_023_GET_WithInvalidToken_ShouldReturn401or403", async ({ playwright }) => {
+      if (!liveId) { test.skip(true, 'No live stream available'); return; }
       const badCtx = await playwright.request.newContext({
         baseURL: process.env.BASE_URL,
         extraHTTPHeaders: { "X-API-Token": "invalid_token_xyz_000" },
       });
 
       try {
-        const res = await badCtx.get(`${LIVE_BASE}/${LIVE_ID}/schedule-job`);
+        const res = await badCtx.get(`${LIVE_BASE}/${liveId}/schedule-job`);
         expect([401, 403]).toContain(res.status());
       } finally {
         await badCtx.dispose();
@@ -497,9 +519,8 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       };
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), { form: {} });
+      const res = await authRequest.post(SCH_BASE(liveId), { form: {} });
 
-      // Payload vacío no debería causar 500
       expect([200, 400, 422]).toContain(res.status());
     });
 
@@ -515,16 +536,15 @@ test.describe("Schedule-Job API (Live Stream)", () => {
         unknownField:  faker.random.alphaNumeric(12),
         anotherExtra:  true,
       });
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), { form: payload });
+      const res = await authRequest.post(SCH_BASE(liveId), { form: payload });
 
-      // Campos extra deben ser ignorados o generar 400, nunca 500
       expect([200, 400, 422]).toContain(res.status());
 
       if (res.ok()) {
         const body = await res.json();
         const job  = Array.isArray(body.data) ? body.data[0] : body.data;
         if (job?._id) {
-          await deleteScheduleJob(authRequest, LIVE_ID, job._id);
+          await deleteScheduleJob(authRequest, liveId, job._id);
         }
       }
     });
@@ -539,8 +559,9 @@ test.describe("Schedule-Job API (Live Stream)", () => {
     });
 
     test("TC_SCH_027_GET_JobById_WhenJobDoesNotExist", async ({ request }) => {
+      if (!liveId) { test.skip(true, 'No live stream available'); return; }
       const fakeJobId = "000000000000000000000099";
-      const res = await request.get(`${process.env.BASE_URL}${SCH_BASE(LIVE_ID)}/${fakeJobId}`, {
+      const res = await request.get(`${process.env.BASE_URL}${SCH_BASE(liveId)}/${fakeJobId}`, {
         headers: { "X-API-Token": process.env.API_TOKEN }
       });
 
@@ -559,7 +580,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
       const longStr = "A".repeat(500);
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), {
+      const res = await authRequest.post(SCH_BASE(liveId), {
         form: { on_date: longStr, off_date: longStr },
       });
 
@@ -573,7 +594,7 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
       const start = Date.now();
-      const res   = await authRequest.get(SCH_BASE(LIVE_ID));
+      const res   = await authRequest.get(SCH_BASE(liveId));
       const elapsed = Date.now() - start;
 
       expect(res.ok()).toBeTruthy();
@@ -587,11 +608,10 @@ test.describe("Schedule-Job API (Live Stream)", () => {
       };
       if (!(await ensureScheduleApiAvailable(authRequest))) return;
 
-      const res = await authRequest.post(SCH_BASE(LIVE_ID), {
+      const res = await authRequest.post(SCH_BASE(liveId), {
         form: { on_date: "null", off_date: "null" },
       });
 
-      // Valores literales "null" no deben producir 500
       expect([200, 400, 422]).toContain(res.status());
     });
   });

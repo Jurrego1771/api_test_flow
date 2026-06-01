@@ -56,3 +56,15 @@ pipeline/04_manifest.json
 pipeline/0*_gate.json
 pipeline/input/diff.patch
 pipeline/learning/
+
+# Playwright output
+results.json
+
+# Allure
+allure-report/
+
+# Reporters
+reporters/
+
+# Skills lock
+skills-lock.json

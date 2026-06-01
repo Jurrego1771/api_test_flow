@@ -6,7 +6,7 @@ type: project
 
 # Testing Gaps — API Test Flow
 
-Última actualización: 2026-05-06
+Última actualización: 2026-05-31
 
 > **Importante — actualización manual requerida.**
 > Este archivo NO se actualiza automáticamente cuando se generan tests nuevos.
@@ -21,55 +21,49 @@ type: project
 | media | ✅ | ✅ | ✅ | ✅ |
 | live-stream | ✅ | ✅ | ✅ | ✅ |
 | schedule | ✅ | ✅ | ✅ | ⬜ |
-| ad | ✅ | ⬜ | ⬜ | ✅ |
-| category | ✅ | ⬜ | ⬜ | ✅ |
+| ad | ✅ | ✅ | ✅ | ✅ |
+| category | ✅ | ✅ | ✅ | ✅ |
 | playlist | ✅ | ✅ | ✅ | ✅ |
-| article | ⬜ | ⬜ | ✅ | ⬜ |
+| article | ✅ | ⬜ | ✅ | ⬜ |
 | show | ✅ | ✅ | ✅ | ✅ |
-| coupon | ✅ | ✅ | ⬜ | ⬜ |
-| access-restriction | ✅ | ⬜ | ⬜ | ✅ |
-| customer | ✅ | ⬜ | ⬜ | ⬜ |
-| EPG | ✅ | ⬜ | ✅ | ✅ |
+| coupon | ✅ | ✅ | 〜 | ✅ |
+| access | ✅ | ✅ | ⬜ | ✅ |
+| access-restriction | ✅ | ✅ | ✅ | ✅ |
+| customer | ✅ | ✅ | ⬜ | ✅ |
+| EPG | ✅ | ✅ | ✅ | ✅ |
 | webhooks | ⬜ | ⬜ | ⬜ | ⬜ |
 | VMS | ⬜ | ⬜ | ⬜ | ⬜ |
 
-## Gaps Prioritarios (P0/P1)
-
-### ⬜ article — smoke + regression + contract
-- El endpoint devuelve 404 en muchos envs — difícil de probar automáticamente
-- Requiere `ensureEndpointAvailable` como prerequisito
-- **Decisión**: dejar como `@quarantine` hasta que el endpoint sea estable
-
-### ⬜ webhooks — todas las capas
-- Auth con JWT diferente (`WEBHOOK_JWT` expira en ~24h)
-- Requiere endpoint receptor para validar delivery
-- Gap #1: crear suite básica smoke con endpoints configuración
-
-### ⬜ VMS — todas las capas
-- URL y token diferentes (`VMS_BASE_URL`, `VMS_TOKEN`)
-- Módulo separado del rest de la API
-- Gap #2: explorar endpoints disponibles + crear smoke suite
-
-### ⬜ ad — regression + integration
-- Bug conocido: `tags=[]` no limpia el array
-- Falta: test de flujo ad en un live stream
-- Gap #3: regression para campo `tags` + integration con live
-
-### ⬜ customer — regression + integration + contract
-- Comportamiento especial: DELETE desactiva, no elimina
-- Falta: flujo de suscripción completo
-- Gap #4: regression básica + contract schema
+## Gaps Prioritarios
 
 ### ⬜ schedule — contract
-- Smoke y regression existen
-- Falta validación de schema Zod para schedule responses
-- Gap #5: agregar `schedule.schema.js` + contract spec
+- Smoke y regression existen. Falta contract spec usando `schedule.schema.js` existente.
 
-## Bugs Conocidos (tests marcados @known-bug)
+### ⬜ webhooks — todas las capas
+- Auth JWT diferente (`WEBHOOK_JWT`). Requiere endpoint receptor para validar delivery.
 
-- `POST /api/ad/:id` con `tags=[]` → no limpia el array
-- `POST /api/category/:id` con `description=''` → no limpia el campo
+### ⬜ VMS — todas las capas
+- URL y token diferentes (`VMS_BASE_URL`, `VMS_TOKEN`). Módulo separado.
+
+### ⬜ article — regression + contract
+- Smoke existe con `ensureEndpointAvailable`. Endpoint inestable en dev/staging.
+
+### 〜 coupon — integration (límites) — PARCIAL
+- `coupon-limits.integration.spec.js` cubre: persistencia de campos `max_use`/`customer_max_use`/`percent` via GET, search por código (`GET /api/coupon/:code/search`), y actualización de límites.
+- Enforcement real (canjear cupón y verificar bloqueo) requiere endpoint de canje — no investigado aún. Posible: `/api/customer/:id/coupon`.
+
+### ⬜ customer — integration
+- Flujo suscripción completo no cubierto. Requiere módulo de pagos.
+
+## Bugs Conocidos
+
+- `POST /api/ad/:id` con `tags=[]` → no limpia el array (TC_AD_INT_002)
+- `POST /api/category/:id` con `description=''` → no limpia el campo (TC_CAT_REG_002)
+- `POST /api/ad/new` con `insertion[default_duration]: '-5'` → acepta valor negativo (TC_AD_033)
+- `POST /api/ad/new` sin `type` → crea ad sin type en lugar de rechazar (TC_AD_013)
+- `POST /api/ad/new` con `type: 'nonexistent'` → acepta enum inválido (TC_AD_014)
+- `POST /api/ad/new` con `name: '     '` → acepta nombre solo espacios (TC_AD_016)
 
 ## Marcadores de Estado
-- ✅ = cobertura completa (todos los casos P0/P1)
+- ✅ = cobertura existe (mínimo smoke + algún negative)
 - ⬜ = sin cobertura o cobertura parcial conocida

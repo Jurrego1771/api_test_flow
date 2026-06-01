@@ -144,3 +144,9 @@ The module can be considered covered enough for the first pass when:
 
 This register should be revisited if live ingest architecture changes, if Medialive or EPG flows are reworked, or if new child resources are added under `live-stream`.
 
+## 10. Known API Quirks
+
+- `POST /api/live-stream` requires `{ form: true }`
+- Response `data` can be array or direct object
+- `online: "false"` is sent as string (not boolean)
+

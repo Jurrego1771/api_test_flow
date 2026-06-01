@@ -2,11 +2,12 @@ name: 🌙 Nightly — Suite Completa
 
 on:
   schedule:
-    - cron: '0 6 * * *'  # 06:00 UTC = 03:00 Chile
+    - cron: '0 6 * * 1-6'  # lun–sáb 06:00 UTC: smoke + contract + regression
+    - cron: '0 6 * * 0'    # domingo 06:00 UTC: suite completa (+ integration)
   workflow_dispatch:
     inputs:
       project:
-        description: 'Proyecto (smoke/regression/integration/contract) — vacío = todos'
+        description: 'Proyecto (smoke/regression/integration/contract) — vacío = auto según día'
         required: false
         default: ''
       workers:
@@ -16,7 +17,7 @@ on:
 
 jobs:
   full-suite:
-    timeout-minutes: 60
+    timeout-minutes: 90
     runs-on: ubuntu-latest
 
     permissions:
@@ -47,10 +48,21 @@ jobs:
       run: |
         WORKERS="${{ github.event.inputs.workers || '4' }}"
         PROJECT="${{ github.event.inputs.project }}"
+        DAY=$(date +%u)  # 1=lun … 7=dom
+
         if [ -n "$PROJECT" ]; then
+          # workflow_dispatch con proyecto específico
           npx playwright test --project="$PROJECT" --workers="$WORKERS"
+        elif [ "$DAY" = "7" ]; then
+          # Domingo: suite completa
+          # integration corre con 2 workers para evitar race conditions en media IDs
+          echo "🗓️  Domingo — suite completa"
+          npx playwright test --project=smoke --project=contract --project=regression --workers="$WORKERS"
+          npx playwright test --project=integration --workers=2
         else
-          npx playwright test --workers="$WORKERS"
+          # Lun–sáb: rápido (~30 min)
+          echo "🗓️  Lun–sáb — smoke + contract + regression"
+          npx playwright test --project=smoke --project=contract --project=regression --workers="$WORKERS"
         fi
       env:
         BASE_URL: ${{ secrets.BASE_URL }}
@@ -97,7 +109,6 @@ jobs:
           mkdir -p allure-report
           echo "<html><body><h1>Sin resultados</h1></body></html>" > allure-report/index.html
         fi
-        node scripts/brand-allure-report.js allure-report
 
     - name: 📢 Slack — siempre
       if: always()

@@ -116,3 +116,10 @@ This module should be treated as a taxonomy and propagation module, not just a C
 ## 10. Next Update Needed
 
 Revisit this register if category hierarchy logic changes, if filter propagation moves out of model hooks, or if category-driven access filtering is redesigned.
+
+## 11. Known API Quirks
+
+- `POST /api/category` requires `{ form: true }`
+- `GET /api/category/:id` does **not** return the `visible` field — use list GET with filter
+- `drm: 'deny'` activates DRM; any other value normalizes to `{enabled: false, allow: false}`
+- `description: ''` on update does **not** clear the field — documented bug

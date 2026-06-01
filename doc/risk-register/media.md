@@ -128,3 +128,9 @@ The module can be considered covered enough for the first pass when:
 ## 9. Next Update Needed
 
 This register should be revisited after the first real API run, especially if new failures appear in upload, transcode, DRM, or response contracts.
+
+## 10. Known API Quirks
+
+- `POST /api/media` requires `{ form: true }` (not JSON)
+- Response `data` can be array or object depending on API version
+- `is_published` is sent as string `"true"/"false"`, returned as boolean

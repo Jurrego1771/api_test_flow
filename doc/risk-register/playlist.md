@@ -116,3 +116,9 @@ The module can be considered covered enough for the first pass when:
 ## 9. Next Update Needed
 
 This register should be revisited if playlist rule shapes change, if access token behavior moves to a different endpoint set, or if the media association logic is refactored.
+
+## 10. Known API Quirks
+
+- The 4 playlist types: `manual`, `smart`, `series`, `playout`
+- `rules.manual.medias` accepts empty array on creation
+- Smart playlist evaluates rules in real time — do not cache results in tests

@@ -57,7 +57,9 @@
       "Bash([ -s \"$f\" ])",
       "Bash(python3 -c ' *)",
       "Bash(gh run *)",
-      "Bash(git ls-tree *)"
+      "Bash(git ls-tree *)",
+      "Bash(Remove-Item *)",
+      "WebFetch(domain:jurrego1771.github.io)"
     ]
   }
 }

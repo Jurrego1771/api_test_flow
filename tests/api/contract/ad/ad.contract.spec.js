@@ -43,9 +43,9 @@ test.describe('Ad - Contract', () => {
             account: ACCOUNT_ID,
             type: 'schedule',
         }, { form: true });
+        const adId = createRes.body?.data?._id;
+        if (adId) cleaner.register('ad', adId);
         expect(createRes.ok).toBeTruthy();
-        const adId = createRes.body.data._id;
-        cleaner.register('ad', adId);
 
         const res = await apiClient.get(`/api/ad/${adId}`);
         expect(res.ok, `GET failed: ${res.status}`).toBeTruthy();

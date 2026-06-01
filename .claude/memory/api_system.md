@@ -6,7 +6,7 @@ type: project
 
 # API sm2 — Referencia para QA
 
-**Última verificación desde fuente**: 2026-05-06
+**Última verificación desde fuente**: 2026-05-31
 **Base URL**: `https://dev.platform.mediastre.am` (env: `BASE_URL`)
 **Auth**: Header `x-api-token: <token>` — ApiClient lo inyecta automáticamente
 
@@ -38,6 +38,10 @@ type: project
 - **module:ad** — `POST /api/ad/:id` con `tags=[]` NO limpia el array (bug confirmado) — marcar con `knownBugTest`
 - **module:category** — `POST /api/category/:id` con `description=''` NO limpia el campo (bug confirmado) — marcar con `knownBugTest`
 - **Persistencia** — verificar siempre con GET posterior — el backend puede retornar valores del request sin haberlos guardado realmente
+- **module:access-check** — `GET /api/access/check/play` retorna `{ status: "EXPIRED" }` SIN campo `message` cuando token expiró/inválido. Enum real: `OK | ERROR | EXPIRED`. Campo `message` es opcional.
+- **module:coupon** — create response (`POST /api/coupon`) NO incluye `percent` ni `max_use`. Hacer GET para verificarlos.
+- **module:access-restriction** — `POST` y `DELETE` requieren session auth (cookie), NO API token. En entornos API-token-only los writes fallan. Usar probe `arWriteAvailable` antes de tests de escritura.
+- **module:coupon** — `POST /api/coupon` requiere `{ multipart: true }`. Requiere `group` existente — obtener via `GET /api/coupon-group`.
 
 ## DataFactory — Métodos Disponibles
 
@@ -51,10 +55,10 @@ type: project
 | schedule | `dataFactory.generateSchedulePayload(overrides)` |
 | access-restriction | `dataFactory.generateAccessRestrictionPayload(overrides)` |
 | article | `dataFactory.generateArticlePayload(overrides)` |
-| ad | ❌ Sin factory — construir inline |
-| category | ❌ Sin factory — construir inline |
-| coupon | ❌ Sin factory — construir inline |
-| customer | ❌ Sin factory — construir inline |
+| ad | `dataFactory.generateAdPayload(overrides)` |
+| category | `dataFactory.generateCategoryPayload(overrides)` |
+| coupon | `dataFactory.generateCouponPayload(groupId, overrides)` — requiere groupId existente |
+| customer | `dataFactory.generateCustomerPayload(overrides)` |
 
 **Patrón para módulos sin factory:**
 ```javascript

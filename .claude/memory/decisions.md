@@ -76,3 +76,23 @@ type: project
 **Why**: Si una aserción falla (expect throws), el recurso creado quedará huérfano en la base de datos si register no se ejecutó. El cleanup es crítico para mantener el ambiente de test limpio.
 
 **How to apply**: Orden correcto: POST → obtener id → `cleaner.register(tipo, id)` → aserciones.
+
+---
+
+## D-008 — `test.fail()` para bugs de backend documentados
+
+**Decisión**: Usar `test.fail()` en tests que documentan bugs conocidos del backend donde la API acepta lo que debería rechazar. El test espera que la aserción falle (comportamiento incorrecto del backend). Cuando el bug se corrija, el test empezará a pasar y Playwright lo marcará como "passed unexpectedly", alertando al equipo.
+
+**Why**: Los bugs no deben silenciarse con assertions permisivas (`[200, 400]`). `test.fail()` documenta la expectativa correcta Y actúa como alarma automática cuando el backend se corrige.
+
+**How to apply**: `test.fail()` al inicio del test + `if (res.ok) cleaner.register(tipo, id)` para cleanup + assertion de lo que DEBERÍA retornar (ej: `expect([400, 422]).toContain(res.status)`).
+
+---
+
+## D-009 — Tests de live-stream crean su propio stream en beforeAll
+
+**Decisión**: Los test suites de live-stream (schedule, logo, quizzes) crean un live stream dedicado en `test.beforeAll` y lo eliminan en `test.afterAll`. No hardcodear IDs ni depender de streams preexistentes.
+
+**Why**: Los IDs hardcodeados `68dd426831f7bd5b6561e59e` y `6971288e64b2477e2b935259` fueron eliminados del entorno y causaron fallos masivos en el nightly. La dependencia de datos preexistentes es frágil.
+
+**How to apply**: Todo test que necesite un live stream crea uno propio. Si el create falla, `liveId` queda `null` y un `beforeEach` guard hace `test.skip`.

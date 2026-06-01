@@ -58,10 +58,10 @@ test.describe('Ad — POST /api/ad/new · VMAP', () => {
         createAdResponseSchema.parse(res.body);
 
         const ad = extractAd(res);
+        if (ad?._id) cleaner.register('ad', ad._id);
         expect(ad._id).toBeTruthy();
         expect(ad.name).toBe(name);
         expect(ad.type).toBe('vmap');
-        cleaner.register('ad', ad._id);
     });
 
     test('TC_AD_015_POST_Create_VMAP_MissingTag @negative', async () => {
@@ -125,10 +125,10 @@ test.describe('Ad — POST /api/ad/new · VAST', () => {
         createAdResponseSchema.parse(res.body);
 
         const ad = extractAd(res);
+        if (ad?._id) cleaner.register('ad', ad._id);
         expect(ad._id).toBeTruthy();
         expect(ad.name).toBe(name);
         expect(ad.type).toBe('vast');
-        cleaner.register('ad', ad._id);
     });
 
     test('TC_AD_021_POST_Create_VAST_NegativePrerollSkip @negative', async () => {
@@ -145,9 +145,10 @@ test.describe('Ad — POST /api/ad/new · VAST', () => {
         if (res.status === 400) {
             expect(res.body.status).toBe('ERROR');
         } else {
+            const ad = extractAd(res);
+            if (ad?._id) cleaner.register('ad', ad._id);
             expect(res.status).toBe(200);
-            expect(extractAd(res).preroll_skip_at).toBeGreaterThanOrEqual(0);
-            cleaner.register('ad', extractAd(res)._id);
+            expect(ad.preroll_skip_at).toBeGreaterThanOrEqual(0);
         }
     });
 
@@ -165,9 +166,10 @@ test.describe('Ad — POST /api/ad/new · VAST', () => {
         if (res.status === 400) {
             expect(res.body.status).toBe('ERROR');
         } else {
+            const ad = extractAd(res);
+            if (ad?._id) cleaner.register('ad', ad._id);
             expect(res.status).toBe(200);
-            expect(extractAd(res).min_media_time_length).toBeGreaterThanOrEqual(0);
-            cleaner.register('ad', extractAd(res)._id);
+            expect(ad.min_media_time_length).toBeGreaterThanOrEqual(0);
         }
     });
 
@@ -217,10 +219,10 @@ test.describe('Ad — POST /api/ad/new · ad-insertion', () => {
         createAdResponseSchema.parse(res.body);
 
         const ad = extractAd(res);
+        if (ad?._id) cleaner.register('ad', ad._id);
         expect(ad._id).toBeTruthy();
         expect(ad.name).toBe(name);
         expect(ad.type).toBe('ad-insertion');
-        cleaner.register('ad', ad._id);
     });
 
     test('TC_AD_031_POST_Create_AdInsertion_MissingTag @negative', async () => {
@@ -257,8 +259,9 @@ test.describe('Ad — POST /api/ad/new · ad-insertion', () => {
         if (res.status === 400) {
             expect(res.body.status).toBe('ERROR');
         } else {
+            const ad = extractAd(res);
+            if (ad?._id) cleaner.register('ad', ad._id);
             expect(res.status).toBe(200);
-            cleaner.register('ad', extractAd(res)._id);
         }
     });
 

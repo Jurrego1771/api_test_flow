@@ -18,26 +18,47 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { ApiClient } = require('../../helpers');
-const { ResourceCleaner } = require('../../helpers');
+const { ApiClient, ResourceCleaner, dataFactory } = require('../../helpers');
 const { faker } = require("@faker-js/faker");
 require("dotenv").config();
 
 let liveId;
 
-// Fetch a real live stream ID once before all tests
+// Create a dedicated live stream for this suite
 test.beforeAll(async ({ playwright }) => {
   const ctx = await playwright.request.newContext({
     baseURL: process.env.BASE_URL,
     extraHTTPHeaders: { "X-API-Token": process.env.API_TOKEN },
   });
   try {
-    const res = await ctx.get("/api/live-stream?limit=1");
-    const body = await res.json();
-    liveId = body.data?.[0]?._id;
+    const payload = dataFactory.generateLiveStreamPayload({ type: 'video', online: 'false' });
+    const res = await ctx.post("/api/live-stream", { form: payload });
+    if (res.ok()) {
+      const body = await res.json();
+      const data = Array.isArray(body.data) ? body.data[0] : body.data;
+      liveId = data?._id;
+    }
   } finally {
     await ctx.dispose();
   }
+});
+
+test.afterAll(async ({ playwright }) => {
+  if (!liveId) return;
+  const ctx = await playwright.request.newContext({
+    baseURL: process.env.BASE_URL,
+    extraHTTPHeaders: { "X-API-Token": process.env.API_TOKEN },
+  });
+  try {
+    await ctx.delete(`/api/live-stream/${liveId}`);
+  } finally {
+    await ctx.dispose();
+  }
+});
+
+// Skip all tests if live stream creation failed in beforeAll
+test.beforeEach(async () => {
+  if (!liveId) test.skip(true, 'No live stream available for quiz tests');
 });
 
 // ─── Helper ───────────────────────────────────────────────────────────────────

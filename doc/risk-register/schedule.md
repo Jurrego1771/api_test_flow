@@ -144,3 +144,10 @@ This module should be treated as a concurrency and consistency hotspot, not just
 ## 10. Next Update Needed
 
 Revisit this register if the schedule materialization model changes, if a unique index or lock strategy is added, or if new schedule sources are introduced beyond HTTP and EPG reconciliation.
+
+## 11. Known API Quirks
+
+- `type` accepts `"onetime"` and `"recurring"`, NOT `"once"` or `"recurrent"`
+- Hours/minutes sent as Number, not as zero-padded string
+- Derived `EventSchedule` may take time to materialize after job creation — use retry with `sleep(500)`
+- `tz_offset` is offset in whole hours (integer), not minutes

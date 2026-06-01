@@ -116,3 +116,11 @@ This module should be treated as a monetization and delivery-config module, not 
 ## 10. Next Update Needed
 
 Revisit this register if ad delivery modes are simplified, if MediaTailor integration changes, or if inherited ad propagation moves out of model hooks.
+
+## 11. Known API Quirks
+
+- Create endpoint: `POST /api/ad/new` (NOT `/api/ad`) — requires `{ form: true }`
+- Update endpoint: `POST /api/ad/:id` — requires `{ form: true }`
+- DELETE is idempotent — returns 200 for non-existent IDs
+- `tags: []` on update does **not** clear the array — documented bug
+- `is_enabled` sent as string `"true"/"false"`, returned as boolean
