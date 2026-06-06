@@ -1,0 +1,6 @@
+Cleaning up 5 resources...
+Cleaned ad: 6a23dd890bbaf9e037a94e45
+Cleaned ad: 6a23dd896a8529dff295f7c6
+Cleaned ad: 6a23dd896a8529dff295f7be
+Cleaned ad: 6a23dd896a8529dff295f7b6
+Cleaned ad: 6a23dd886a8529dff295f7af
