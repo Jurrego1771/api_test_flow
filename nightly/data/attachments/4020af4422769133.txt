@@ -1,4 +1,0 @@
-Cleaning up 3 resources...
-Cleaned playlist: 6a2537da0bbaf9e037bdb76f
-Cleaned media: 6a2537da0bbaf9e037bdb730
-Cleaned category: 6a2537da0bbaf9e037bdb727
