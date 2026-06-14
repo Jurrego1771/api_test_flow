@@ -1,0 +1,3 @@
+Cleaning up 2 resources...
+Cleaned coupon: 6a2e775c8471cd08f956d167
+Cleaned customer: 6a2e775b8471cd08f956d122
