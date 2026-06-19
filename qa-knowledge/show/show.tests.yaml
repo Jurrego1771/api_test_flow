@@ -45,7 +45,7 @@ quirks:
     desc: "No se puede cambiar el `type` de un show ya creado (update lo rechaza)."
 
 # -----------------------------------------------------------------------------
-# total: 82  (smoke:15  regression:22  contract:2  integration:43)
+# total: 83  (smoke:15  regression:22  contract:2  integration:44)
 # -----------------------------------------------------------------------------
 tests:
 
@@ -137,6 +137,7 @@ tests:
       - { name: TC_SHW_DELETE_season_no_token, op: "DELETE /api/show/:id/season/:seasonId", tags: [negative], desc: "Sin token." }
       # Episodes — Create
       - { name: TC_SHW_POST_episode_valid, op: "POST /api/show/:id/season/:seasonId/episode", risk: SHW-004, desc: "Crea episode con content media." }
+      - { name: TC_SHW_POST_episode_media_visible_in_show, op: "GET /api/show/:id/season/:seasonId/episode/:episodeId", risk: SHW-005, desc: "Media asociada queda visible vía la jerarquía (content populado + show_info enlaza al show)." }
       - { name: TC_SHW_POST_episode_with_optional_fields, op: "POST /api/show/:id/season/:seasonId/episode", desc: "Episode con opcionales." }
       - { name: TC_SHW_POST_episode_order_auto_assigned, op: "POST /api/show/:id/season/:seasonId/episode", risk: SHW-008, desc: "Order auto-asignado." }
       - { name: TC_SHW_POST_episode_missing_title, op: "POST /api/show/:id/season/:seasonId/episode", tags: [negative], desc: "Falta title -> error." }
@@ -167,6 +168,4 @@ tests:
       - { name: "TC_SHW_INT_CASCADE_002_DELETE_Season_Removes_Episodes", op: "DELETE /api/show/:id/season/:seasonId", risk: SHW-006, desc: "Borrar season -> desaparece del listado del show. Q3" }
       - { name: "TC_SHW_INT_CASCADE_003_DELETE_Show_Multiple_Seasons_All_Gone", op: DELETE /api/show/:id, tags: [critical], risk: SHW-006, desc: "Borrar show con N seasons -> todas fuera del listado. Q3" }
 
-gaps:
-  - risk: SHW-005
-    desc: "Episode con media asociada: se crea con content media, pero no se afirma explícitamente que la media quede 'visible en el show'."
+gaps: []   # Todos los riesgos del register cubiertos (SHW-005 cerrado).

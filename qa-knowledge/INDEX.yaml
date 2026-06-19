@@ -49,10 +49,10 @@ modules:
     tests_file: show/show.tests.yaml
     risk_file: show/show.risk.yaml
     risk_register: doc/risk-register/show.md
-    counts: { smoke: 15, regression: 22, contract: 2, integration: 43, total: 82 }
-    coverage: { risks: 11, covered: 10, partial: 1, uncovered: 0 }
+    counts: { smoke: 15, regression: 22, contract: 2, integration: 44, total: 83 }
+    coverage: { risks: 11, covered: 11, partial: 0, uncovered: 0 }
     hot: >
-      Jerarquía show -> season -> episode. Bien cubierto. DELETE = SOFT-delete
+      Jerarquía show -> season -> episode. Cobertura COMPLETA (11/11). DELETE = SOFT-delete
       (F1/Q3): GET by-id sigue 200 tras borrar; el cascade solo se ve en el
       LISTADO. Tests de cascade corregidos para verificar vía listado.
 

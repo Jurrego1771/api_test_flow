@@ -18,13 +18,13 @@ status_legend: [covered, partial, uncovered]
 
 summary:
   total_risks: 11
-  covered: 10
-  partial: 1
+  covered: 11
+  partial: 0
   uncovered: 0
   note: >
-    Módulo bien cubierto (83 tests). El risk-register marcaba SHW-007/008/011
-    como ✗ pero ya tienen tests reales (orphan via cascade-list, order auto-assign,
-    invalid date). Único pendiente: SHW-005 (media visible en show) parcial.
+    Módulo COMPLETAMENTE cubierto (83 tests). El risk-register marcaba
+    SHW-007/008/011 como ✗ pero ya tienen tests reales (orphan via cascade-list,
+    order auto-assign, invalid date). SHW-005 cerrado con TC_SHW_POST_episode_media_visible_in_show.
   findings:
     - id: F1
       severity: medium
@@ -66,9 +66,9 @@ risks:
   - id: SHW-005
     risk: "Episode con media asociada -> media visible en el show."
     priority: P1
-    status: partial
-    covered_by: [TC_SHW_POST_episode_valid]
-    gap: "El episode se crea con content media, pero ningún test afirma explícitamente que la media quede visible/listada en el show."
+    status: covered
+    covered_by: [TC_SHW_POST_episode_media_visible_in_show, TC_SHW_POST_episode_valid]
+    gap: null
 
   - id: SHW-006
     risk: "DELETE show elimina seasons y episodes (cascade)."

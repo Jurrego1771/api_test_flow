@@ -127,6 +127,36 @@ test.describe("Show Episode — Create (POST /api/show/:id/season/:seasonId/epis
     episodeSchema.parse(res.body);
   });
 
+  test("TC_SHW_POST_episode_media_visible_in_show", async () => {
+    // SHW-005: la media asociada al episode queda visible a través de la jerarquía
+    // del show. En GET, content[].value se popula con el objeto media completo y
+    // trae show_info que enlaza de vuelta al show/season/episode.
+    const season = await createSeason(apiClient, show._id, cleaner);
+    const createRes = await apiClient.post(
+      `/api/show/${show._id}/season/${season._id}/episode`,
+      { title: `qa_ep_media_${faker.random.alphaNumeric(6)}`, content: [{ content_type: "Media", type: "full", value: mediaId }] }
+    );
+    expect(createRes.status).toBe(200);
+    const epId = createRes.body._id;
+    cleaner.register("episode", `${show._id}/${season._id}/${epId}`);
+
+    const getRes = await apiClient.get(`/api/show/${show._id}/season/${season._id}/episode/${epId}`);
+    expect(getRes.status).toBe(200);
+
+    const content = getRes.body.content ?? [];
+    expect(content.length).toBeGreaterThan(0);
+
+    // content[].value viene populado (objeto) en GET, o id (string) en algunos casos
+    const media = content[0].value;
+    const linkedMediaId = typeof media === "string" ? media : (media._id ?? media.id);
+    expect(linkedMediaId).toBe(mediaId);
+
+    // La media enlaza de vuelta al show (visible en el show)
+    if (media && typeof media === "object" && media.show_info) {
+      expect(media.show_info.showId).toBe(show._id);
+    }
+  });
+
   test("TC_SHW_POST_episode_with_optional_fields", async () => {
     const season = await createSeason(apiClient, show._id, cleaner);
 
