@@ -11,6 +11,13 @@ class ResourceCleaner {
     }
 
     register(type, id) {
+        // Guard: un id nulo/undefined (p.ej. create devolvió data sin _id) generaba un
+        // "Cleaned customer: undefined" fantasma — DELETE /api/.../undefined daba 404 y se
+        // loggeaba como limpio. Se ignora y se avisa para no enmascarar el problema.
+        if (id == null || id === 'undefined') {
+            console.warn(`ResourceCleaner: register('${type}') con id inválido (${id}) — se ignora`);
+            return;
+        }
         this.createdResources.push({ type, id });
     }
 
@@ -54,8 +61,11 @@ class ResourceCleaner {
                 return this.apiClient.delete(`/api/live-stream/${liveId}/quizzes/${quizId}`);
             }
             case 'customer':
-                // No DELETE endpoint — deactivate instead
-                return this.apiClient.post(`/api/customer/${id}`, { status: 'INACTIVE' });
+                // Soft-delete real: DELETE -> status DELETED + obsolete + date_deleted
+                // (el customer sale del listado por defecto de la cuenta).
+                // Antes: POST update {status:INACTIVE}, que devolvía 200 pero DEJABA el
+                // customer presente (INACTIVE) -> los recursos se acumulaban en la cuenta.
+                return this.apiClient.delete(`/api/customer/${id}`);
             case 'epg-origin':
                 return this.apiClient.delete(`/api/settings/epg-mask/input/${id}`);
             default:
