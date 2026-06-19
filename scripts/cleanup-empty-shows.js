@@ -84,13 +84,17 @@ async function getAllShows() {
 }
 
 /**
- * Verifica si un show tiene seasons
+ * Verifica si un show tiene seasons via GET /api/show/:id/season
+ * Más confiable que inspeccionar show.seasons del listado (que varía con populate)
  */
 async function hasSeasons(show) {
     try {
-        // Verificar si el show tiene seasons
-        if (show.seasons && Array.isArray(show.seasons) && show.seasons.length > 0) {
-            console.log(`  Show "${show.title}" tiene ${show.seasons.length} seasons`);
+        const response = await apiClient.get(`/api/show/${show._id}/season`);
+        const seasons = response.data?.data ?? response.data ?? [];
+        const count = Array.isArray(seasons) ? seasons.length : 0;
+
+        if (count > 0) {
+            console.log(`  Show "${show.title}" tiene ${count} seasons`);
             return true;
         }
 

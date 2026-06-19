@@ -35,30 +35,31 @@ test.beforeAll(async ({ playwright }) => {
     extraHTTPHeaders: { "X-API-Token": process.env.API_TOKEN },
   });
 
-  // Probe show/season to find free media IDs
   const probeShowRes = await ctx.post("/api/show", { data: { title: `qa_probe_${Date.now()}`, type: "tvshow" } });
   const probeShow = await probeShowRes.json();
   const probeSeasonRes = await ctx.post(`/api/show/${probeShow._id}/season`, { data: { title: "qa_probe_season" } });
   const probeSeason = await probeSeasonRes.json();
 
-  const mediaRes = await ctx.get("/api/media?limit=100&sort=-date_created");
-  const allMedia = (await mediaRes.json()).data || [];
-
   const freeIds = [];
-  for (const m of allMedia) {
-    if (freeIds.length >= 2) break;
-    const epRes = await ctx.post(`/api/show/${probeShow._id}/season/${probeSeason._id}/episode`, {
-      data: { title: "qa_probe_ep", content: [{ content_type: "Media", type: "full", value: m._id }] },
-    });
-    if (epRes.status() === 200) {
-      const ep = await epRes.json();
-      freeIds.push(m._id);
-      await ctx.delete(`/api/show/${probeShow._id}/season/${probeSeason._id}/episode/${ep._id}`);
-    }
-  }
+  try {
+    const mediaRes = await ctx.get("/api/media?limit=100&sort=-date_created");
+    const allMedia = (await mediaRes.json()).data || [];
 
-  await ctx.delete(`/api/show/${probeShow._id}`);
-  await ctx.dispose();
+    for (const m of allMedia) {
+      if (freeIds.length >= 2) break;
+      const epRes = await ctx.post(`/api/show/${probeShow._id}/season/${probeSeason._id}/episode`, {
+        data: { title: "qa_probe_ep", content: [{ content_type: "Media", type: "full", value: m._id }] },
+      });
+      if (epRes.status() === 200) {
+        const ep = await epRes.json();
+        freeIds.push(m._id);
+        await ctx.delete(`/api/show/${probeShow._id}/season/${probeSeason._id}/episode/${ep._id}`);
+      }
+    }
+  } finally {
+    await ctx.delete(`/api/show/${probeShow._id}`);
+    await ctx.dispose();
+  }
 
   if (freeIds.length < 2) throw new Error(`Could not find 2 free media IDs (found ${freeIds.length})`);
   mediaId = freeIds[0];

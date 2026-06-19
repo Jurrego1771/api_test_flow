@@ -55,6 +55,7 @@ test.describe('Show — Cascade Delete Integration', () => {
         });
         expect(seasonRes.status).toBe(200);
         const season = seasonRes.body?.data ?? seasonRes.body;
+        cleaner.register('season', `${show._id}/${season._id}`);
 
         const mediaRes = await apiClient.get('/api/media?limit=10&sort=-date_created');
         const mediaList = mediaRes.body?.data ?? [];
