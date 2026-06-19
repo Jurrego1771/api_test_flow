@@ -1,0 +1,167 @@
+name: 🏭 Prod — Monitor (diario) + Full (manual)
+
+# Cadencia por capa (test pyramid aplicado al scheduling):
+#  - DIARIO  (schedule): solo @prod-safe (read-only) en US + EU. Monitoreo de
+#    salud + contrato. Barato, cero escritura. Responde "¿prod vivo y sano?".
+#  - MANUAL  (workflow_dispatch mode=full): suite COMPLETA destructiva contra la
+#    cuenta QA. Reservada para REGRESIÓN CRÍTICA (post-release grande, post-
+#    incidente, validar deploy de infra). NO se corre periódicamente.
+#
+# dev sigue en push.yml + nightly.yml (full diario). Esto NO los toca.
+# El prod-guard (globalSetup) exige QA_ACCOUNT=true para cualquier corrida en prod.
+
+on:
+  schedule:
+    - cron: '0 7 * * *'   # diario 07:00 UTC — monitor @prod-safe (US + EU)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'safe (read-only @prod-safe) | full (suite completa destructiva, cuenta QA)'
+        required: false
+        default: 'safe'
+      region:
+        description: 'us | eu | both'
+        required: false
+        default: 'both'
+      workers:
+        description: 'Workers paralelos (default: 4)'
+        required: false
+        default: '4'
+
+jobs:
+  prod:
+    timeout-minutes: 90
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    strategy:
+      fail-fast: false
+      max-parallel: 1   # secuencial: no saturar prod ni mezclar reportes
+      matrix:
+        region: [us, eu]
+
+    steps:
+      - name: 🎯 Resolver modo + si esta región corre
+        id: gate
+        run: |
+          REGION="${{ matrix.region }}"
+          EVENT="${{ github.event_name }}"
+          INPUT_REGION="${{ github.event.inputs.region }}"
+          INPUT_MODE="${{ github.event.inputs.mode }}"
+
+          if [ "$EVENT" = "schedule" ]; then
+            MODE="safe"; WANT="both"
+          else
+            MODE="${INPUT_MODE:-safe}"; WANT="${INPUT_REGION:-both}"
+          fi
+
+          RUN="false"
+          if [ "$WANT" = "both" ] || [ "$WANT" = "$REGION" ]; then RUN="true"; fi
+
+          echo "run=$RUN"   >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "🗺️  region=$REGION run=$RUN mode=$MODE (event=$EVENT)"
+
+      - name: 📥 Checkout repo
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        if: steps.gate.outputs.run == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: ☕ Setup Java (allure-commandline)
+        if: steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 📦 Install dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: npm ci
+
+      - name: 🩺 Monitor — @prod-safe (read-only)
+        if: steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'safe'
+        run: npx playwright test --project=smoke --grep "@prod-safe" --workers=2
+        env:
+          BASE_URL: ${{ matrix.region == 'us' && secrets.US_BASE_URL || secrets.EU_BASE_URL }}
+          API_TOKEN: ${{ matrix.region == 'us' && secrets.US_API_TOKEN || secrets.EU_API_TOKEN }}
+          QA_ACCOUNT: 'true'
+
+      - name: 🧪 Full — suite completa destructiva (cuenta QA)
+        if: steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        run: |
+          WORKERS="${{ github.event.inputs.workers || '4' }}"
+          npx playwright test --project=smoke --project=contract --project=regression --workers="$WORKERS"
+          npx playwright test --project=integration --workers=2
+        env:
+          BASE_URL: ${{ matrix.region == 'us' && secrets.US_BASE_URL || secrets.EU_BASE_URL }}
+          API_TOKEN: ${{ matrix.region == 'us' && secrets.US_API_TOKEN || secrets.EU_API_TOKEN }}
+          QA_ACCOUNT: 'true'
+
+      - name: 📤 Upload artifacts
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: prod-${{ matrix.region }}-${{ steps.gate.outputs.mode }}-${{ github.run_number }}
+          path: |
+            test-results/results.json
+            allure-results/
+          if-no-files-found: warn
+          retention-days: 14
+
+      # ── Allure con historial por región — solo en modo full ──────────────────
+      - name: 📥 Recuperar historial Allure de gh-pages
+        if: always() && steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages-branch
+
+      - name: 📋 Restaurar historial previo
+        if: always() && steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        continue-on-error: true
+        run: |
+          mkdir -p allure-results/history
+          if [ -d "gh-pages-branch/prod-${{ matrix.region }}/history" ]; then
+            cp -r "gh-pages-branch/prod-${{ matrix.region }}/history/." allure-results/history/
+          fi
+
+      - name: 📊 Generar Allure Report
+        if: always() && steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        run: |
+          if [ -d "allure-results" ] && [ "$(ls -A allure-results)" ]; then
+            npm run allure:generate
+          else
+            mkdir -p allure-report
+            echo "<html><body><h1>Sin resultados</h1></body></html>" > allure-report/index.html
+          fi
+
+      - name: 🚀 Deploy Allure a GitHub Pages (/prod-<region>/) — solo full
+        if: always() && steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./allure-report
+          publish_branch: gh-pages
+          destination_dir: prod-${{ matrix.region }}
+          commit_message: "ci: prod-${{ matrix.region }} report [${{ github.run_number }}]"
+
+      # Slack: monitor diario solo si falla (ruido bajo); full siempre.
+      - name: 📢 Slack
+        if: always() && steps.gate.outputs.run == 'true'
+        run: node notify-slack.js
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUITE_NAME: "🏭 Prod ${{ steps.gate.outputs.mode }} · ${{ matrix.region == 'us' && 'US' || 'EU' }}"
+          REPORT_URL: "https://jurrego1771.github.io/api_test_flow/prod-${{ matrix.region }}/"
+          NOTIFY_ON_FAIL_ONLY: ${{ steps.gate.outputs.mode == 'full' && 'false' || 'true' }}
