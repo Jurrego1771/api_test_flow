@@ -34,7 +34,7 @@ modules:
     tests_file: live-stream/live-stream.tests.yaml
     risk_file: live-stream/live-stream.risk.yaml
     risk_register: doc/risk-register/live-stream.md
-    counts: { smoke: 11, regression: 60, contract: 3, integration: 40, total: 114 }
+    counts: { smoke: 11, regression: 60, contract: 3, integration: 41, total: 115 }
     coverage: { risks: 23, covered: 2, partial: 10, uncovered: 11 }
     hot: >
       Gran superficie (85 handlers backend). Núcleo CRUD + estado + quizzes +

@@ -77,7 +77,7 @@ quirks:
 
 # -----------------------------------------------------------------------------
 # Tests por capa
-# total: 114  (smoke:11  regression:60  contract:3  integration:40)
+# total: 115  (smoke:11  regression:60  contract:3  integration:41)
 # -----------------------------------------------------------------------------
 tests:
 
@@ -250,6 +250,7 @@ tests:
       - { name: TC_SCH_028_POST_VeryLongStringInDates_ShouldReject, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "String muy largo en fechas -> rechazo." }
       - { name: TC_SCH_029_GET_ResponseTime_ShouldBeUnder5s, op: "GET /api/live-stream/:id/schedule-job", desc: "Tiempo de respuesta < 5s." }
       - { name: TC_SCH_030_POST_NullValues_ShouldRejectOrHandle, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "Valores null - rechaza o maneja." }
+      - { name: TC_SCH_031_POST_OverlappingOnetime_Rejected, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], risk: LIVE-RISK-002, desc: "Dos jobs onetime solapados -> overlap detectado (data INVALID_DATE_ERROR_OVERLAPPED_DATES); BUG F7: sale 500 no 400." }
 
 # -----------------------------------------------------------------------------
 # Gaps / pendientes

@@ -65,6 +65,12 @@ findings:
     desc: "Envelopes de error distintos: SGAI y transcription usan campo `error`; background devuelve 200 con status:ERROR (assertear body.data, no HTTP code)."
   - id: F6
     desc: "fix-tz-offset/update.js:50 fórmula sospechosa start_hour 2x + módulo sin normalizar negativos; usa __dagerous_force_create__ que salta validación de solapamiento."
+  - id: F7
+    severity: medium
+    desc: >
+      Solapamiento de schedule-job: el overlap SÍ se detecta (data=INVALID_DATE_ERROR_OVERLAPPED_DATES)
+      pero el HTTP status sale 500 en vez de 400 — runInTransaction re-envuelve el CustomError y pierde
+      su status. Confirmado por TC_SCH_031. El cliente no puede distinguir overlap de error real por código.
 
 risks:
   - id: LIVE-RISK-001
@@ -102,11 +108,12 @@ risks:
       - TC_SCH_017_POST_SameonDateAndoffDate_ShouldReject
       - TC_SCH_018_POST_RecurringWithoutDays_Behavior
       - TC_SCH_019_POST_RecurringWithAllDays
+      - TC_SCH_031_POST_OverlappingOnetime_Rejected
     gap: >
+      Cubierto: solapamiento onetime (TC_SCH_031, expone F7: sale 500 no 400).
       Falta: persistencia de tz_offset en UTC; endpoint fix-tz-offset (recálculo masivo);
-      solapamiento de jobs (INVALID_DATE_ERROR_OVERLAPPED_DATES); recurrente cruzando
-      medianoche; preservación de campos en update; días específicos (subconjunto);
-      OVER_MAX_DURATION; SCHEDULE_RECORDING_DURATION. Ver F6.
+      recurrente cruzando medianoche; preservación de campos en update; días específicos
+      (subconjunto); OVER_MAX_DURATION; SCHEDULE_RECORDING_DURATION. Ver F6/F7.
 
   - id: LIVE-RISK-003
     area: Recording control
