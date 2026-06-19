@@ -157,10 +157,19 @@ risks:
     status: partial
     covered_by:
       - TC_LIV_045_GET_RestreamList
+      - TC_LIV_051_POST_CreateRestream_Custom_HappyPath
+      - TC_LIV_052_POST_CreateRestream_MissingRequired
+      - TC_LIV_053_GET_RestreamDetail
+      - TC_LIV_054_GET_RestreamDetail_NotFound
+      - TC_LIV_055_POST_UpdateRestream_Name
+      - TC_LIV_056_DELETE_Restream
+      - TC_LIV_057_POST_StartRestream_NotFound
+      - TC_LIV_058_POST_StopRestream_NotFound
     gap: >
-      Solo GET list cubierto. Falta: create (type custom/social + campos requeridos,
-      LIMIT_REACHED), start/stop (LIVE_RESTREAMING_NOT_FOUND), update (revalida combinación
-      type), delete (stop antes de remove). Filtro social-media puede ocultar->404.
+      Cubierto: create custom + missing-required, detail (+not-found), update name,
+      delete (stop()=resolve en STOPPED), start/stop not-found. Falta: type 'social'
+      (requiere social_connections), start/stop HAPPY (recording server externo),
+      LIMIT_REACHED, filtro social-media (enabled_social_medias oculta->404).
 
   - id: LIVE-RISK-008
     area: Ad insertion

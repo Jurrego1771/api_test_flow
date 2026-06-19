@@ -77,7 +77,7 @@ quirks:
 
 # -----------------------------------------------------------------------------
 # Tests por capa
-# total: 101  (smoke:11  regression:47  contract:3  integration:40)
+# total: 109  (smoke:11  regression:55  contract:3  integration:40)
 # -----------------------------------------------------------------------------
 tests:
 
@@ -103,7 +103,8 @@ tests:
     files:
       - tests/api/regression/live/live-advanced.regression.spec.js
       - tests/api/regression/live/live-logo.regression.spec.js
-    purpose: CRUD extra, filtros/paginación, estado runtime, asociaciones, logo (assets).
+      - tests/api/regression/live/live-restream.regression.spec.js
+    purpose: CRUD extra, filtros/paginación, estado runtime, asociaciones, logo (assets), restream lifecycle.
     cases:
       # 1b. CRUD adicional
       - { name: TC_LIV_002_POST_CreateStreamAudio, op: POST /api/live-stream, desc: "Crea stream de audio." }
@@ -149,6 +150,15 @@ tests:
       - { name: TC_LIV_048_POST_StopRecord_NotRecording, op: POST /api/live-stream/:id/stop-record, risk: LIVE-RISK-003, desc: "stop sin grabar -> 200 status:ERROR NOT_RECORDING." }
       - { name: TC_LIV_049_POST_StopRecord_NotFound, op: POST /api/live-stream/:id/stop-record, tags: [negative], risk: LIVE-RISK-003, desc: "stop a id inexistente -> 404 LIVE_STREAM_NOT_FOUND." }
       - { name: TC_LIV_050_POST_StartRecord_NotFound, op: POST /api/live-stream/:id/start-record, tags: [negative], risk: LIVE-RISK-003, desc: "start a id inexistente -> 404 LIVE_STREAM_NOT_FOUND." }
+      # 12. Restream lifecycle (LIVE-RISK-007) — archivo live-restream.regression.spec.js
+      - { name: TC_LIV_051_POST_CreateRestream_Custom_HappyPath, op: POST /api/live-stream/:id/restream, tags: [critical], risk: LIVE-RISK-007, desc: "Crea restream custom (name+publishing_point+stream_id) -> STOPPED." }
+      - { name: TC_LIV_052_POST_CreateRestream_MissingRequired, op: POST /api/live-stream/:id/restream, tags: [negative], risk: LIVE-RISK-007, desc: "custom sin publishing_point/stream_id -> 400 VALIDATION_ERROR." }
+      - { name: TC_LIV_053_GET_RestreamDetail, op: "GET /api/live-stream/:id/restream/:restreamId", risk: LIVE-RISK-007, desc: "Detalle del restream creado." }
+      - { name: TC_LIV_054_GET_RestreamDetail_NotFound, op: "GET /api/live-stream/:id/restream/:restreamId", tags: [negative], risk: LIVE-RISK-007, desc: "restreamId inexistente -> 404 LIVE_RESTREAMING_NOT_FOUND." }
+      - { name: TC_LIV_055_POST_UpdateRestream_Name, op: "POST /api/live-stream/:id/restream/:restreamId", risk: LIVE-RISK-007, desc: "Actualiza nombre del restream y persiste." }
+      - { name: TC_LIV_056_DELETE_Restream, op: "DELETE /api/live-stream/:id/restream/:restreamId", risk: LIVE-RISK-007, desc: "Borra restream (stop()=resolve en STOPPED) -> luego 404." }
+      - { name: TC_LIV_057_POST_StartRestream_NotFound, op: "POST /api/live-stream/:id/restream/:restreamId/start", tags: [negative], risk: LIVE-RISK-007, desc: "start a restream inexistente -> 404." }
+      - { name: TC_LIV_058_POST_StopRestream_NotFound, op: "POST /api/live-stream/:id/restream/:restreamId/stop", tags: [negative], risk: LIVE-RISK-007, desc: "stop a restream inexistente -> 404." }
       # Logo — Positivos y Persistencia (TC_LOG)
       - { name: TC_LOG_001_POST_UploadValidLogo, op: POST /api/live-stream/:id/logo, desc: "Sube logo válido." }
       - { name: TC_LOG_002_GET_VerifyPersistence, op: GET /api/live-stream/:id, desc: "El logo persiste tras subir." }
