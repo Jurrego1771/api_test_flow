@@ -19,4 +19,5 @@
 - [decisions.md](decisions.md) — Decisiones de arquitectura y sus razones
 
 ## Sesiones (se crean dinámicamente)
+- [2026-06-19](sessions/2026-06-19_qa-knowledge-y-prod-multiambiente.md) — qa-knowledge (category/live-stream/show), prod multi-ambiente (D-010), cleaner multi-pass, fixes show
 <!-- sessions/YYYY-MM-DD_tema.md -->

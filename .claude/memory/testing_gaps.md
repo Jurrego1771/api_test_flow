@@ -6,7 +6,7 @@ type: project
 
 # Testing Gaps — API Test Flow
 
-Última actualización: 2026-05-31
+Última actualización: 2026-06-19
 
 > **Importante — actualización manual requerida.**
 > Este archivo NO se actualiza automáticamente cuando se generan tests nuevos.
@@ -63,6 +63,17 @@ type: project
 - `POST /api/ad/new` sin `type` → crea ad sin type en lugar de rechazar (TC_AD_013)
 - `POST /api/ad/new` con `type: 'nonexistent'` → acepta enum inválido (TC_AD_014)
 - `POST /api/ad/new` con `name: '     '` → acepta nombre solo espacios (TC_AD_016)
+- `POST /api/live-stream/:id` (update parcial) → pisa `logo.live.position`/`url` aunque no se envíen (TC_LIV_047, LIVE-RISK-011)
+- `POST /api/live-stream/:id/schedule-job` solapado → detecta overlap pero responde 500 en vez de 400 (TC_SCH_031, finding F7)
+- `POST /api/category/:id` sin campo `parent` → huérfana al hijo (parent=null) (TC_CAT_REG_013)
+- Show/Season DELETE = soft-delete: GET by-id sigue 200 tras borrar (no es bug, es diseño — cascade se ve en listado)
+
+## Cobertura machine-readable (qa-knowledge/)
+Mapeo detallado tests↔riesgos por módulo en `qa-knowledge/<modulo>/` (ver INDEX.yaml). Mapeados:
+- **category**: 40 tests · 11 riesgos (4 cov / 3 partial / 4 uncov)
+- **live-stream**: 115 tests · 23 riesgos (2 cov / 10 partial / 11 uncov — 15 P0 abiertos, requieren mocks/2º token)
+- **show**: 83 tests · 11 riesgos (**11/11 covered**, 0 gaps)
+Pendiente mapear el resto de módulos (media, ad, playlist, coupon, etc.).
 
 ## Marcadores de Estado
 - ✅ = cobertura existe (mínimo smoke + algún negative)

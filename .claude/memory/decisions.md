@@ -99,10 +99,34 @@ type: project
 
 ---
 
-## D-010 — Estrategia multi-ambiente: prod por blast radius
+## D-010 — Estrategia multi-ambiente: cadencia por capa + blast radius
 
-**Decisión**: dev corre la suite full en cada push/diario. Prod (US + EU) corre la suite full **semanal (lunes)** PERO apuntando a una **cuenta QA dedicada** por región, nunca a datos de clientes. Un `prod-guard` (globalSetup, `tests/prod-guard.js`) aborta cualquier corrida contra prod sin `QA_ACCOUNT=true`.
+**Decisión**: cadencia por costo/riesgo (test pyramid aplicado al scheduling):
+- **dev**: full en cada push (smoke+contract) + diario (full). Sin cambios.
+- **prod US+EU diario** (`prod.yml` schedule): SOLO `@prod-safe` (read-only). Monitor salud + contrato. Cero escritura.
+- **prod US+EU a demanda** (`prod.yml` workflow_dispatch `mode=full`): suite COMPLETA destructiva contra **cuenta QA dedicada**. Reservada a **regresión crítica** (post-release grande, post-incidente, validar deploy infra). NUNCA periódica.
+- `prod-guard` (globalSetup, `tests/prod-guard.js`) aborta cualquier corrida contra prod sin `QA_ACCOUNT=true`.
 
-**Why**: La suite es destructiva (crea/borra recursos reales, toggle online, start-record, ad-insertion). Correrla contra data compartida de prod = riesgo operacional real (costo, monetización, ghost data en clientes). La cuenta QA aísla el blast radius. El guard previene el accidente clásico `BASE_URL=<prod> npx playwright test` con token equivocado. dev no se toca.
+**Why**: La suite full es destructiva (crea/borra recursos reales, toggle online, start-record, ad-insertion) y extensa (~30-90 min). Correrla periódica en prod es cara y de bajo retorno — el grueso de validación ya vive en dev. En prod lo periódico importante es "¿vivo + contrato intacto?" (read-only); la full se reserva como gate de regresión crítica. La cuenta QA aísla el blast radius cuando sí se corre destructivo. El guard previene `BASE_URL=<prod> npx playwright test` con token equivocado.
 
-**How to apply**: Workflows de prod (`prod-weekly.yml`) inyectan `QA_ACCOUNT=true` + secrets `US_/EU_BASE_URL` y `US_/EU_API_TOKEN` (tokens de cuenta QA). US=`platform.mediastre.am`, EU=`eu.platform.mediastre.am`. Tests read-only seguros en cualquier ambiente: tag `@prod-safe` (ej. health-check `GET /api/version`, que es público y texto plano). Al agregar un test que sea seguro en prod, marcarlo `@prod-safe`.
+**How to apply**: `prod.yml` inyecta `QA_ACCOUNT=true` + secrets `US_/EU_BASE_URL` y `US_/EU_API_TOKEN`. US=`platform.mediastre.am`, EU=`eu.platform.mediastre.am`. Regresión crítica: `gh workflow run prod.yml -f mode=full -f region=eu`. `@prod-safe` = tests read-only PUROS (hoy: health-check `GET /api/version`). Crece deliberado: antes de tagear `@prod-safe`, verificar que el test NO escribe (uno destructivo mal tageado correría en el monitor diario de prod). GET-detail que crean recurso primero NO son `@prod-safe`.
+
+---
+
+## D-011 — qa-knowledge: mapa de cobertura machine-readable por módulo
+
+**Decisión**: Mantener `qa-knowledge/` como fuente de verdad de "qué tests existen y qué riesgos cubren". Estructura: `INDEX.yaml` (router) + `SCHEMA.md` (formato) + por módulo `<modulo>/<modulo>.tests.yaml` (qué se prueba) y `<modulo>.risk.yaml` (riesgos + estado de cobertura). Conectados por IDs estables bidireccionales: `risk.covered_by[] <-> tests.case.name` (covered_by es autoritativo; `case.risk` es backlink opcional).
+
+**Why**: Un agente en cold-start necesita saber qué hay sin grepear `tests/` a ciegas (caro en tokens, frágil). Retrieval estructural (INDEX → glob módulo → entrada autocontenida) es determinístico y barato; RAG/embeddings no aporta a esta escala. Cada entrada es autocontenida para que un fragmento recuperado se entienda solo.
+
+**How to apply**: Antes de crear/revisar tests → leer `qa-knowledge/INDEX.yaml` y saltar al módulo (CLAUDE.md lo exige). Al agregar/cambiar tests → actualizar tests.yaml + risk.yaml + counts del INDEX. Validar integridad: cada `covered_by` apunta a un test real, `summary` coincide con statuses, counts del INDEX = casos reales (script en SCHEMA.md). Mapeados: category, live-stream, show. Pendiente: resto.
+
+---
+
+## D-012 — ResourceCleaner multi-pass con verificación de res.ok
+
+**Decisión**: `ResourceCleaner.clean()` usa cleanup multi-pass (hasta 4 pasadas) orden-independiente, verifica `res.ok` (404 = ya borrado = éxito), loguea `LEAK:` real cuando falla, y conserva en `createdResources` lo que no se pudo borrar (no resetea a ciegas).
+
+**Why**: La versión previa borraba en una pasada LIFO, descartaba la respuesta y logueaba "Cleaned" siempre → leaks silenciosos en jerarquías padre/hijo (un padre con `CANT_DELETE_PARENT` quedaba huérfano sin aviso, acumulándose corrida tras corrida — medido: +1 categoría/run). El multi-pass borra el hijo en una pasada y el padre en la siguiente, sin depender del orden de `register()`.
+
+**How to apply**: No hace falta registrar en orden padre→hijo (el multi-pass lo resuelve). Si un recurso no se limpia, sale en logs como `LEAK:` con la razón (no se traga). Verificado: 123 tests de categoría x3 → 0 leaks.

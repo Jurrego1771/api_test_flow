@@ -6,9 +6,11 @@ type: project
 
 # API sm2 — Referencia para QA
 
-**Última verificación desde fuente**: 2026-05-31
-**Base URL**: `https://dev.platform.mediastre.am` (env: `BASE_URL`)
+**Última verificación desde fuente**: 2026-06-19
+**Base URL dev**: `https://dev.platform.mediastre.am` (env: `BASE_URL`)
+**Base URL prod**: US=`https://platform.mediastre.am`, EU=`https://eu.platform.mediastre.am` (ver D-010)
 **Auth**: Header `x-api-token: <token>` — ApiClient lo inyecta automáticamente
+**Health**: `GET /api/version` — público (sin auth), texto plano semver (ej. `7.0.65`). Canario de ambiente.
 
 ## Módulos y Rutas Base
 
@@ -42,6 +44,16 @@ type: project
 - **module:coupon** — create response (`POST /api/coupon`) NO incluye `percent` ni `max_use`. Hacer GET para verificarlos.
 - **module:access-restriction** — `POST` y `DELETE` requieren session auth (cookie), NO API token. En entornos API-token-only los writes fallan. Usar probe `arWriteAvailable` antes de tests de escritura.
 - **module:coupon** — `POST /api/coupon` requiere `{ multipart: true }`. Requiere `group` existente — obtener via `GET /api/coupon-group`.
+- **module:show** — DELETE show/season = **SOFT-delete**. `GET by-id` del hijo sigue devolviendo **200** tras borrar el padre; el cascade SOLO se observa en el **LISTADO** (`GET /api/show/:id/season` ya no lo incluye). Tests de cascade deben verificar vía listado, no esperar 404/500 by-id.
+- **module:show** — `POST /api/show` funciona con JSON (la suite lo usa así), aunque el risk-register menciona `form:true`. Ambos sirven.
+- **module:show** — episode `content[].value`: en CREATE es el id (string); en GET viene **populado** (objeto media completo con `show_info` que enlaza de vuelta a {showId,seasonId,episodeId}).
+- **module:live-stream** — `POST /api/live-stream/:id` (update parcial) **PISA** `logo.live.position` (→`'top-right'`) y `logo.live.url` (→`''`) aunque no se envíen (update.js:480-485). `nowplaying` SÍ se preserva. Bug de pérdida de datos en updates parciales (LIVE-RISK-011 / finding F1).
+- **module:live-stream** — `NOT_FOUND` inconsistente: devuelve **HTTP 200** con `status:ERROR` en toggle-online / record/start|stop / stop-record, pero **404** en toggle-bookmark / detail / update / delete (finding F4).
+- **module:live-stream** — solapamiento de schedule-job: el overlap SÍ se detecta (`data: INVALID_DATE_ERROR_OVERLAPPED_DATES`) pero sale **HTTP 500** en vez de 400 — `runInTransaction` re-envuelve el CustomError y pierde su status (finding F7).
+- **module:live-stream** — `record/start.js` y `record/stop.js` usan `findById` SIN filtro de account (riesgo cross-tenant, finding F2 — no probado end-to-end, requiere 2º token).
+- **module:live-stream** — Moments (`/moment/*`) **DEPRECADO** → todos los endpoints devuelven `410 FEATURE_DEPRECATED`.
+- **module:live-stream** — restream nace `status:'STOPPED'` → `stop()` resuelve sin llamar al recording server (delete de restream es seguro/determinista en tests).
+- **module:category** — `POST /api/category/:id` (update) SIN el campo `parent` setea `parent=null` → huérfana al hijo. Editar solo el nombre de un hijo lo desconecta del padre (update.js:88-89). Solo reproducible vía API (la UI siempre reenvía parent).
 
 ## DataFactory — Métodos Disponibles
 
