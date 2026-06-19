@@ -23,24 +23,28 @@ async function createCategory(client, overrides = {}) {
 
 test.describe('Category — Regression', () => {
     test('TC_CAT_REG_001_GET_ById_NoVisibleField', async () => {
-        // CAT-004: GET /:id no retorna campo `visible` (quirk conocido)
+        // CAT-004 / Q2: GET /:id NO retorna el campo `visible` (select acotado en detail.js)
         const cat = await createCategory(apiClient, { visible: true });
         cleaner.register('category', cat._id);
 
         const res = await apiClient.get(`/api/category/${cat._id}`);
         expect(res.ok).toBeTruthy();
-        // Quirk: `visible` ausente en GET individual — documentar si cambia
         expect(res.body.data._id).toBe(cat._id);
+        // Afirma el quirk: el campo no debe venir en el detalle individual
+        expect(res.body.data.visible).toBeUndefined();
     });
 
     test('TC_CAT_REG_002_POST_Update_EmptyDescription_KnownBug @negative', async () => {
-        // CAT-005: description:'' no limpia el campo — bug conocido
+        // CAT-005 / Q4: description:'' en update NO limpia el campo — bug conocido
         const cat = await createCategory(apiClient, { description: 'initial description' });
         cleaner.register('category', cat._id);
 
         const res = await apiClient.post(`/api/category/${cat._id}`, { description: '' }, { form: true });
         expect(res.ok).toBeTruthy();
-        // Bug: description no se limpia — documenta comportamiento real
+        // El update no echa `description` (select acotado). Se lee via GET /:id (detail sí la retorna).
+        // Afirma el bug: la descripción sigue intacta, no se limpió.
+        const get = await apiClient.get(`/api/category/${cat._id}`);
+        expect(get.body.data.description).toBe('initial description');
     });
 
     test('TC_CAT_REG_003_ParentChild_Tree', async () => {
@@ -102,26 +106,25 @@ test.describe('Category — Regression', () => {
         }
     });
 
-    test('TC_CAT_REG_006_DRM_Inheritance_From_Parent', async () => {
-        // CAT-006: hijo hereda DRM del padre
+    test('TC_CAT_REG_006_DRM_NotInherited_From_Parent', async () => {
+        // El DRM NO se hereda del padre: un hijo sin drm explícito queda con el
+        // default del schema (enabled:false), aunque el padre tenga drm:'deny' (enabled:true).
+        // GET /:id no retorna drm (Q2) → se lee via list.
         const parent = await createCategory(apiClient, { drm: 'deny' });
         cleaner.register('category', parent._id);
 
         const child = await createCategory(apiClient, { parent: parent._id });
         cleaner.register('category', child._id);
 
-        // Child DRM may be inherited — document actual behavior
-        const res = await apiClient.get(`/api/category/${child._id}`);
+        const res = await apiClient.get(`/api/category?category_name=${encodeURIComponent(child.name)}`);
         expect(res.ok).toBeTruthy();
-        expect(res.body.data._id).toBe(child._id);
+        const found = res.body.data.find(c => c._id === child._id);
+        expect(found).toBeDefined();
+        expect(found.drm?.enabled ?? false).toBe(false);
     });
 
-    test('TC_CAT_REG_007_Filter_FullPath @negative', async () => {
-        // CAT: flag full=true devuelve rutas completas con separador
-        const res = await apiClient.get('/api/category?full=true&with_count=true');
-        expect(res.ok).toBeTruthy();
-        expect(Array.isArray(res.body.data)).toBe(true);
-    });
+    // (REG_007 eliminado — duplicaba el smoke full=true y no afirmaba nada;
+    //  la ruta completa se valida de verdad en REG_020)
 
     test('TC_CAT_REG_008_Update_Name_Persists', async () => {
         // Update de nombre persiste y es recuperable
