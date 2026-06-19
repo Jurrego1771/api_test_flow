@@ -1,0 +1,251 @@
+# =============================================================================
+# QA Knowledge — Category module
+# Mapa rápido de cobertura de tests para la API de Category (sm2).
+# Objetivo: entender en segundos qué se prueba, dónde, y qué quirks existen.
+# =============================================================================
+
+module:
+  name: Category
+  prefix: TC_CAT
+  base_path: /api/category
+  risk_register: doc/risk-register/category.md
+  schema: schemas/category.schema.js
+  backend_source: D:/Dev/Repos/mediastream/sm2/src/server/routes/api/category
+  summary: >
+    Taxonomía transversal. No es CRUD simple: es un gestor de árbol con
+    propagación. Cambiar una categoría recalcula descendientes y
+    filter_categories, y borrarla limpia referencias en Media/Show/Article.
+
+# -----------------------------------------------------------------------------
+# Endpoints cubiertos
+# -----------------------------------------------------------------------------
+endpoints:
+  - method: GET
+    path: /api/category
+    desc: Lista categorías. Modos query - category_name, full, with_count, parent.
+  - method: POST
+    path: /api/category
+    desc: Crea categoría. Requiere form-encoded. name obligatorio.
+  - method: GET
+    path: /api/category/:id
+    desc: Detalle. NO retorna visible/parent/drm/track (select acotado).
+  - method: POST
+    path: /api/category/:id
+    desc: Update. Valida ciclos de parent. Footgun - ver quirks.
+  - method: DELETE
+    path: /api/category/:id
+    desc: Borra. Bloquea si tiene hijos (CANT_DELETE_PARENT). Hook limpia refs.
+  - method: POST
+    path: /api/category/:id/media
+    desc: Asignación masiva de la categoría a N medias.
+
+# -----------------------------------------------------------------------------
+# Quirks / comportamientos no obvios del backend (LEER antes de tocar tests)
+# -----------------------------------------------------------------------------
+quirks:
+  - id: Q1
+    desc: "POST /api/category requiere { form: true } (form-encoded, no JSON)."
+  - id: Q2
+    desc: GET /:id NO devuelve el campo `visible` (ni parent/drm/track). Leer via list con filtro.
+  - id: Q3
+    desc: "drm 'deny'/'all'/'compatible' activan DRM; cualquier otro valor normaliza a enabled:false, allow:false."
+  - id: Q4
+    desc: description:'' en update NO limpia el campo (bug documentado).
+  - id: Q5
+    severity: high
+    type: latent-bug
+    desc: >
+      update.js:88-89 — POST /:id SIN el campo `parent` setea parent=null.
+      Editar solo el nombre de un hijo lo deja HUÉRFANO. Reproducible solo via
+      API (la UI siempre reenvía parent). Cubierto por TC_CAT_REG_013.
+
+# -----------------------------------------------------------------------------
+# Tests por capa
+# total: 40  (smoke:11  regression:24  contract:3  integration:2)
+# -----------------------------------------------------------------------------
+tests:
+
+  smoke:
+    file: tests/api/smoke/category/category-crud.smoke.spec.js
+    purpose: Happy path - cada endpoint responde y el contrato base se mantiene.
+    cases:
+      - name: "GET list — OK + array sin filtros"
+        op: GET /api/category
+        desc: Contrato base del listado.
+      - name: "GET list — filtro category_name"
+        op: GET /api/category?category_name=
+        desc: Busca por nombre. Usa poll (índice de búsqueda con lag).
+      - name: "GET list — flag full"
+        op: GET /api/category?full=true
+        desc: Ruta completa en el nombre; responde array.
+      - name: "GET list — with_count"
+        op: GET /api/category?with_count=true
+        desc: Conteo de hijos; responde array.
+      - name: "GET list — contiene hija creada"
+        op: GET /api/category?category_name=
+        desc: Relación parent/child aparece en listado.
+      - name: TC-CAT-POST-001
+        op: POST /api/category
+        desc: Crear categoría mínima (solo name).
+      - name: TC-CAT-POST-002
+        op: POST /api/category
+        desc: Crear completa - parent, drm, track, visible.
+      - name: TC-CAT-POST-NEG-001
+        op: POST /api/category
+        tags: [negative]
+        desc: Falta name -> 400 NAME_IS_REQUIRED.
+      - name: TC-CAT-POST-NEG-002
+        op: POST /api/category
+        tags: [negative]
+        desc: drm inválido -> normaliza a enabled:false. (ver Q3)
+      - name: TC-CAT-POST-NEG-003
+        op: POST /api/category
+        tags: [negative]
+        desc: parent no-ObjectId -> 400/500 ERROR.
+      - name: TC-CAT-POST-NEG-004
+        op: POST /api/category
+        tags: [negative]
+        desc: name vacío -> 400/500 ERROR.
+
+  regression:
+    file: tests/api/regression/category/category.regression.spec.js
+    purpose: Validaciones, negativos, edge cases, branches y quirks del backend.
+    cases:
+      - name: TC_CAT_REG_001_GET_ById_NoVisibleField
+        op: GET /api/category/:id
+        quirk_ref: Q2
+        desc: "GET /:id NO retorna `visible` — afirma visible === undefined."
+      - name: TC_CAT_REG_002_POST_Update_EmptyDescription_KnownBug
+        op: POST /api/category/:id
+        tags: [negative]
+        quirk_ref: Q4
+        desc: "description:'' no limpia el campo — afirma que sigue intacta (leído via GET /:id)."
+      - name: TC_CAT_REG_003_ParentChild_Tree
+        op: GET /api/category
+        desc: Relación padre/hijo persiste (verificada via list).
+      - name: TC_CAT_REG_004_WithCount_AddsChildren
+        op: GET /api/category?with_count=true
+        tags: [critical]
+        desc: with_count agrega count_children y has_children.
+      - name: TC_CAT_REG_005_DELETE_WithChildren
+        op: DELETE /api/category/:id
+        desc: Borrar padre con hijos - acepta 200/400/409.
+      - name: TC_CAT_REG_006_DRM_NotInherited_From_Parent
+        op: GET /api/category
+        quirk_ref: Q3
+        desc: "DRM NO se hereda: hijo sin drm queda enabled:false aunque el padre sea 'deny'."
+      # REG_007 eliminado — duplicaba el smoke full=true sin afirmar nada (ver REG_020).
+      - name: TC_CAT_REG_008_Update_Name_Persists
+        op: POST /api/category/:id
+        desc: Update de nombre persiste y es recuperable.
+      - name: TC_CAT_REG_009_POST_DRM_All_Branch
+        op: POST /api/category
+        desc: drm 'all' -> enabled:true, allow:true, incompatible:false. (Q3)
+      - name: TC_CAT_REG_010_POST_DRM_Compatible_Branch
+        op: POST /api/category
+        desc: drm 'compatible' -> enabled:true, allow:true, incompatible:true. (Q3)
+      - name: TC_CAT_REG_011_POST_Update_ParentCycle_Rejected
+        op: POST /api/category/:id
+        tags: [negative, critical]
+        risk: CAT-RISK-001
+        desc: Mover A bajo su descendiente -> 400 INVALID_PARENT.
+      - name: TC_CAT_REG_012_POST_Update_SelfParent_ResetsToRoot
+        op: POST /api/category/:id
+        desc: parent === self -> normaliza a raíz (parent null).
+      - name: TC_CAT_REG_013_POST_Update_OmitParent_OrphansChild
+        op: POST /api/category/:id
+        tags: [negative]
+        quirk_ref: Q5
+        desc: >
+          BUG LATENTE (update.js:88-89) - un POST /:id SIN el campo `parent`
+          setea parent=null, dejando al hijo HUÉRFANO. Editar solo el nombre
+          de un hijo lo desconecta del padre. Solo reproducible via API (la UI
+          siempre reenvía parent). El test fija el comportamiento real; si el
+          backend lo arregla, este test falla y obliga a revisar.
+      - name: TC_CAT_REG_014_GET_ById_NotFound
+        op: GET /api/category/:id
+        tags: [negative]
+        desc: id inexistente -> 404 NOT_FOUND.
+      - name: TC_CAT_REG_015_POST_Update_NotFound
+        op: POST /api/category/:id
+        tags: [negative]
+        desc: update a id inexistente -> 404 NOT_FOUND.
+      - name: TC_CAT_REG_016_DELETE_NotFound
+        op: DELETE /api/category/:id
+        tags: [negative]
+        desc: delete a id inexistente -> 404 NOT_FOUND.
+      - name: TC_CAT_REG_017_DELETE_ParentWithChildren_Blocked
+        op: DELETE /api/category/:id
+        tags: [negative, critical]
+        desc: Borrar padre con hijos -> 400 CANT_DELETE_PARENT + padre sobrevive (estricto).
+      - name: TC_CAT_REG_018_GET_FilterByParentId
+        op: GET /api/category?parent=:id
+        desc: Filtra hijos de un parent dado.
+      - name: TC_CAT_REG_019_GET_FilterParentNull_RootsOnly
+        op: GET /api/category?parent=null
+        desc: Solo raíces; el hijo no aparece.
+      - name: TC_CAT_REG_020_GET_FullPath_BuildsHierarchyName
+        op: GET /api/category?full=true
+        desc: Arma "Parent > Child" en el nombre.
+      - name: TC_CAT_REG_021_POST_DuplicateName_UniqueSlug
+        op: POST /api/category
+        risk: CAT-RISK-009
+        desc: Nombre duplicado -> slug auto-único.
+      - name: TC_CAT_REG_022_POST_Visible_False_Persists
+        op: POST /api/category
+        desc: visible:false persiste (leído via list por Q2).
+      - name: TC_CAT_REG_023_POST_Visible_Default_True
+        op: POST /api/category
+        desc: visible omitido -> default true.
+      - name: TC_CAT_REG_024_POST_AssignMedia_MissingData
+        op: POST /api/category/:id/media
+        tags: [negative]
+        desc: Sin media_id -> 400 MISSING_DATA.
+      - name: TC_CAT_REG_025_POST_AssignMedia_CategoryNotFound
+        op: POST /api/category/:id/media
+        tags: [negative]
+        desc: Categoría inexistente -> 404 NOT_FOUND.
+
+  contract:
+    file: tests/api/contract/category/category.contract.spec.js
+    purpose: Validación exacta de schema Zod (detecta breaking changes del backend).
+    schema_ref: schemas/category.schema.js
+    cases:
+      - name: TC_CON_CAT_001
+        op: POST /api/category
+        tags: [contract]
+        desc: Respuesta de create cumple createCategoryResponseSchema.
+      - name: TC_CON_CAT_002
+        op: GET /api/category/:id
+        tags: [contract]
+        desc: Respuesta de detail cumple getCategoryResponseSchema.
+      - name: TC_CON_CAT_003
+        op: GET /api/category
+        tags: [contract]
+        desc: Respuesta de list cumple listCategoryResponseSchema.
+
+  integration:
+    file: tests/api/integration/category/category-media-cascade.integration.spec.js
+    purpose: Flujos multi-recurso (categoría <-> media) y cascada de borrado.
+    cases:
+      - name: TC_CAT_INT_001_POST_AssignMedia_BulkHappyPath
+        op: POST /api/category/:id/media
+        tags: [critical]
+        risk: CAT-RISK-004
+        desc: Asigna 1 categoría a N medias; verifica cada media (poll por lag).
+      - name: TC_CAT_INT_002_DELETE_Category_PullsRefFromMedia
+        op: DELETE /api/category/:id
+        tags: [critical]
+        risk: CAT-RISK-003
+        desc: Borrar categoría limpia su ref en Media via hook post('remove') ($pull).
+
+# -----------------------------------------------------------------------------
+# Gaps conocidos (aún sin cobertura - requieren setup especial)
+# -----------------------------------------------------------------------------
+gaps:
+  - risk: CAT-RISK-010
+    desc: Account isolation - leer/mutar categoría de otra cuenta. Requiere 2º token.
+  - risk: CAT-RISK-007
+    desc: Image upload/delete (file-backed). Endpoints /:id/image y /:id/ai-image sin cubrir.
+  - risk: CAT-RISK-002
+    desc: Propagación profunda de filter_categories al mover una categoría 3+ niveles.

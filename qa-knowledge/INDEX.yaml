@@ -1,0 +1,32 @@
+# =============================================================================
+# QA Knowledge — ÍNDICE / ROUTER
+# Léeme PRIMERO. Barato (1 nivel). Te dice a qué archivo de módulo saltar.
+# Patrón de descubrimiento para un agente:
+#   1. Leer este INDEX.yaml
+#   2. Elegir módulo por `name` / `hot` / `endpoints`
+#   3. Leer el `file` de ese módulo (autocontenido)
+# Formato de cada archivo de módulo: ver qa-knowledge/SCHEMA.md
+# =============================================================================
+
+version: 1
+root: qa-knowledge/
+
+modules:
+  - name: Category
+    prefix: TC_CAT
+    file: category/category.tests.yaml
+    base_path: /api/category
+    counts: { smoke: 11, regression: 24, contract: 3, integration: 2, total: 40 }
+    hot: >
+      Gestor de árbol con propagación, no CRUD simple. Borrar limpia refs en
+      Media/Show/Article. BUG LATENTE Q5: update sin `parent` huérfana al hijo.
+    risk_register: doc/risk-register/category.md
+
+# Plantilla para agregar un módulo nuevo (copiar y completar):
+# - name: <Modulo>
+#   prefix: TC_XXX
+#   file: <modulo>/<modulo>.tests.yaml
+#   base_path: /api/<modulo>
+#   counts: { smoke: 0, regression: 0, contract: 0, integration: 0, total: 0 }
+#   hot: "1-2 líneas: qué lo hace riesgoso / qué trampa recordar"
+#   risk_register: doc/risk-register/<modulo>.md
