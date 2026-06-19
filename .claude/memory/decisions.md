@@ -96,3 +96,13 @@ type: project
 **Why**: Los IDs hardcodeados `68dd426831f7bd5b6561e59e` y `6971288e64b2477e2b935259` fueron eliminados del entorno y causaron fallos masivos en el nightly. La dependencia de datos preexistentes es frágil.
 
 **How to apply**: Todo test que necesite un live stream crea uno propio. Si el create falla, `liveId` queda `null` y un `beforeEach` guard hace `test.skip`.
+
+---
+
+## D-010 — Estrategia multi-ambiente: prod por blast radius
+
+**Decisión**: dev corre la suite full en cada push/diario. Prod (US + EU) corre la suite full **semanal (lunes)** PERO apuntando a una **cuenta QA dedicada** por región, nunca a datos de clientes. Un `prod-guard` (globalSetup, `tests/prod-guard.js`) aborta cualquier corrida contra prod sin `QA_ACCOUNT=true`.
+
+**Why**: La suite es destructiva (crea/borra recursos reales, toggle online, start-record, ad-insertion). Correrla contra data compartida de prod = riesgo operacional real (costo, monetización, ghost data en clientes). La cuenta QA aísla el blast radius. El guard previene el accidente clásico `BASE_URL=<prod> npx playwright test` con token equivocado. dev no se toca.
+
+**How to apply**: Workflows de prod (`prod-weekly.yml`) inyectan `QA_ACCOUNT=true` + secrets `US_/EU_BASE_URL` y `US_/EU_API_TOKEN` (tokens de cuenta QA). US=`platform.mediastre.am`, EU=`eu.platform.mediastre.am`. Tests read-only seguros en cualquier ambiente: tag `@prod-safe` (ej. health-check `GET /api/version`, que es público y texto plano). Al agregar un test que sea seguro en prod, marcarlo `@prod-safe`.

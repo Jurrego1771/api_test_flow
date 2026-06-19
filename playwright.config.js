@@ -3,6 +3,7 @@ const { defineConfig } = require("@playwright/test");
 
 module.exports = defineConfig({
   testDir: "./tests",
+  globalSetup: require.resolve("./tests/prod-guard.js"),
   timeout: process.env.CI ? 45_000 : 30_000,
   workers: 2,
   retries: process.env.CI ? 2 : 1,

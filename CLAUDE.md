@@ -151,11 +151,21 @@ Tags funcionales (no redundar con nombre del proyecto):
 - Slack: **solo si hay fallos**
 - Playwright HTML report → `https://jurrego1771.github.io/api_test_flow/smoke/` (via peaceiris/actions-gh-pages)
 
-### nightly.yml (06:00 UTC diario + workflow_dispatch)
+### nightly.yml (06:00 UTC diario + workflow_dispatch) — DEV
 - Proyectos: todos (smoke + regression + integration + contract)
 - Slack: **siempre**
 - Allure deploy → `https://jurrego1771.github.io/api_test_flow/nightly/`
 - `workflow_dispatch` acepta inputs `project` y `workers`
+
+### prod-weekly.yml (lunes + workflow_dispatch) — PROD US + EU
+- Suite completa contra **producción**, apuntando a la **cuenta QA dedicada** de cada región (datos aislados, nunca clientes).
+- Schedule: lunes 06:00 UTC = US, 06:30 UTC = EU (matrix con gate por cron).
+- Ambientes: US = `https://platform.mediastre.am`, EU = `https://eu.platform.mediastre.am`.
+- Secrets: `US_BASE_URL`/`US_API_TOKEN`, `EU_BASE_URL`/`EU_API_TOKEN` (tokens de cuenta QA).
+- Inyecta `QA_ACCOUNT=true` → requerido por el **prod-guard** (`tests/prod-guard.js`, globalSetup): aborta cualquier corrida contra prod sin esa flag (red de seguridad anti-destructivo).
+- Health-check `@prod-safe` (`GET /api/version`) corre como canario antes de la suite pesada.
+- Slack: **siempre**. Allure → `/prod-us/` y `/prod-eu/`.
+- **dev no se toca** (push.yml + nightly.yml siguen igual).
 
 ### Slack (notify-slack.js)
 ```bash
@@ -172,7 +182,19 @@ node notify-slack.js
 BASE_URL=https://dev.platform.mediastre.am
 API_TOKEN=<token con permisos read+write>
 SLACK_WEBHOOK_URL=<webhook>
+QA_ACCOUNT=true   # SOLO requerido para correr contra prod (cuenta QA). El prod-guard lo exige.
 ```
+
+### Estrategia multi-ambiente
+| Ambiente | URL | Cuándo | Suite |
+|---|---|---|---|
+| dev | `dev.platform.mediastre.am` | push (smoke+contract) + diario (full) | full, destructiva |
+| US prod | `platform.mediastre.am` | lunes 06:00 UTC | full, **cuenta QA** |
+| EU prod | `eu.platform.mediastre.am` | lunes 06:30 UTC | full, **cuenta QA** |
+
+La suite es destructiva → en prod SOLO corre contra la cuenta QA dedicada (datos aislados).
+El `prod-guard` (globalSetup) aborta si `BASE_URL` es prod y `QA_ACCOUNT != true`.
+Tests read-only seguros en cualquier ambiente se marcan `@prod-safe`.
 
 ---
 
