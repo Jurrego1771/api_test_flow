@@ -11,22 +11,30 @@
 version: 1
 root: qa-knowledge/
 
+# Cada módulo expone DOS archivos conectados por IDs estables:
+#   tests_file -> qué se prueba (cases)        ver SCHEMA.md
+#   risk_file  -> qué riesgos hay + cobertura  (covered_by <-> case.name)
 modules:
   - name: Category
     prefix: TC_CAT
-    file: category/category.tests.yaml
     base_path: /api/category
+    tests_file: category/category.tests.yaml
+    risk_file: category/category.risk.yaml
+    risk_register: doc/risk-register/category.md
     counts: { smoke: 11, regression: 24, contract: 3, integration: 2, total: 40 }
+    coverage: { risks: 11, covered: 4, partial: 3, uncovered: 4 }
     hot: >
       Gestor de árbol con propagación, no CRUD simple. Borrar limpia refs en
       Media/Show/Article. BUG LATENTE Q5: update sin `parent` huérfana al hijo.
-    risk_register: doc/risk-register/category.md
+      P0 abiertos: CAT-RISK-002, 003, 005, 010.
 
 # Plantilla para agregar un módulo nuevo (copiar y completar):
 # - name: <Modulo>
 #   prefix: TC_XXX
-#   file: <modulo>/<modulo>.tests.yaml
 #   base_path: /api/<modulo>
-#   counts: { smoke: 0, regression: 0, contract: 0, integration: 0, total: 0 }
-#   hot: "1-2 líneas: qué lo hace riesgoso / qué trampa recordar"
+#   tests_file: <modulo>/<modulo>.tests.yaml
+#   risk_file: <modulo>/<modulo>.risk.yaml
 #   risk_register: doc/risk-register/<modulo>.md
+#   counts: { smoke: 0, regression: 0, contract: 0, integration: 0, total: 0 }
+#   coverage: { risks: 0, covered: 0, partial: 0, uncovered: 0 }
+#   hot: "1-2 líneas: qué lo hace riesgoso / qué trampa recordar / P0 abiertos"

@@ -1,0 +1,156 @@
+# =============================================================================
+# QA Knowledge — Category · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register: qué riesgos hay, su nivel, y
+# CUÁLES están cubiertos por tests (link bidireccional con category.tests.yaml).
+#
+# Conexión entre archivos (IDs estables, grafo navegable en ambos sentidos):
+#   risk.yaml  risks[].covered_by  ->  tests.yaml cases[].name
+#   tests.yaml cases[].risk        ->  risk.yaml  risks[].id
+# Fuente narrativa completa: doc/risk-register/category.md
+# =============================================================================
+
+module:
+  name: Category
+  prefix: CAT-RISK
+  tests_file: qa-knowledge/category/category.tests.yaml
+  risk_register: doc/risk-register/category.md
+  scoring:
+    formula: score = impact * likelihood * detectability   # cada dim 1..5
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+# Estado de cobertura por riesgo:
+#   covered    = el riesgo tiene tests que lo validan de forma efectiva
+#   partial    = parcialmente validado; falta una arista (ver `gap`)
+#   uncovered  = sin tests (ver `gap` para qué falta y por qué)
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 11
+  covered: 4
+  partial: 3
+  uncovered: 4
+  # Foco prioritario = P0 sin cobertura plena
+  p0_open:
+    - { id: CAT-RISK-002, status: uncovered, why: "propagación profunda de filter_categories" }
+    - { id: CAT-RISK-003, status: partial,   why: "cleanup solo verificado en Media, falta Show/Article" }
+    - { id: CAT-RISK-005, status: partial,   why: "falta filtrado por categorías de usuario" }
+    - { id: CAT-RISK-010, status: uncovered, why: "account isolation — requiere 2º token" }
+
+risks:
+  - id: CAT-RISK-001
+    area: Tree integrity
+    risk: Updates de parent crean loops o jerarquías inválidas.
+    score: 80
+    priority: P0
+    status: covered
+    covered_by:
+      - TC_CAT_REG_011_POST_Update_ParentCycle_Rejected
+      - TC_CAT_REG_012_POST_Update_SelfParent_ResetsToRoot
+    gap: null
+
+  - id: CAT-RISK-002
+    area: Filter propagation
+    risk: Recalcular filter_categories pierde descendientes o deja sets stale.
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: >
+      Falta test que mueva una categoría 3+ niveles y verifique que
+      filter_categories de todos los descendientes se recalcula.
+
+  - id: CAT-RISK-003
+    area: Content removal
+    risk: Borrar categoría deja referencias stale en Media/Show/Article.
+    score: 100
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_CAT_INT_002_DELETE_Category_PullsRefFromMedia
+    gap: "Solo verificado el $pull en Media. Falta cubrir Show y Article."
+
+  - id: CAT-RISK-004
+    area: Media assignment
+    risk: Asignación masiva actualiza registros equivocados o solo parcial.
+    score: 64
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_CAT_INT_001_POST_AssignMedia_BulkHappyPath
+      - TC_CAT_REG_024_POST_AssignMedia_MissingData
+      - TC_CAT_REG_025_POST_AssignMedia_CategoryNotFound
+    gap: "Falta escenario de fallo parcial (cursor interrumpido a mitad)."
+
+  - id: CAT-RISK-005
+    area: Access filtering
+    risk: Cambios de visible/filter_categories exponen u ocultan contenido errado.
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_CAT_REG_022_POST_Visible_False_Persists
+      - TC_CAT_REG_023_POST_Visible_Default_True
+    gap: "Falta filtrado por categorías de usuario (no-admin) y scope de lectura."
+
+  - id: CAT-RISK-006
+    area: DRM flags
+    risk: Flags allow/deny/compatible persisten incorrectos.
+    score: 48
+    priority: P1
+    status: covered
+    covered_by:
+      - TC_CAT_REG_009_POST_DRM_All_Branch
+      - TC_CAT_REG_010_POST_DRM_Compatible_Branch
+      - TC_CAT_REG_006_DRM_NotInherited_From_Parent
+      - TC-CAT-POST-NEG-002      # smoke: drm inválido -> enabled:false
+    gap: null
+
+  - id: CAT-RISK-007
+    area: Image lifecycle
+    risk: Upload/delete de imagen deja archivos stale o URLs rotas.
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Endpoints /:id/image y /:id/ai-image sin cubrir (file-backed)."
+
+  - id: CAT-RISK-008
+    area: Search/list
+    risk: El listado devuelve jerarquía o scope de cuenta equivocados.
+    score: 36
+    priority: P1
+    status: covered
+    covered_by:
+      - TC_CAT_REG_018_GET_FilterByParentId
+      - TC_CAT_REG_019_GET_FilterParentNull_RootsOnly
+      - TC_CAT_REG_020_GET_FullPath_BuildsHierarchyName
+      - TC_CAT_REG_004_WithCount_AddsChildren
+    gap: null
+
+  - id: CAT-RISK-009
+    area: Slug uniqueness
+    risk: Colisiones de slug generan URLs inestables.
+    score: 36
+    priority: P1
+    status: covered
+    covered_by:
+      - TC_CAT_REG_021_POST_DuplicateName_UniqueSlug
+    gap: null
+
+  - id: CAT-RISK-010
+    area: Account isolation
+    risk: Una cuenta ve o muta categorías de otra.
+    score: 40
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Requiere 2º token/cuenta. Negativos cross-account en todas las rutas."
+
+  - id: CAT-RISK-011
+    area: Custom metadata
+    risk: Campos custom / metadata de búsqueda divergen del árbol real.
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Falta round-trip de custom y verificación tras mutar el árbol."
