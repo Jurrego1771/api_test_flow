@@ -1,0 +1,193 @@
+# =============================================================================
+# QA Knowledge — Ad · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> ad.tests.yaml cases[].name (IDs estables).
+# Fuente narrativa: doc/risk-register/ad.md
+# =============================================================================
+
+module:
+  name: Ad
+  prefix: AD-RISK
+  tests_file: qa-knowledge/ad/ad.tests.yaml
+  risk_register: doc/risk-register/ad.md
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 14
+  covered: 3
+  partial: 4
+  uncovered: 7
+  note: >
+    Módulo de monetización tratado hoy como CRUD: la cobertura real es create/
+    update/delete + validación + búsqueda (capas smoke/regression/contract, 46
+    tests). Los riesgos ALTOS son los SIDE-EFFECTS (propagación a Media, cascade
+    en Media/Event, MediaTailor, type-switch cleanup, overlay/pausead, account
+    isolation, transcode) — todos sin tocar. 8 de los 9 P0 están abiertos.
+  p0_open:
+    - { id: AD-RISK-001, status: partial,   why: "Create por type cubierto; falta type-switch stale-cleanup." }
+    - { id: AD-RISK-003, status: uncovered, why: "Sin test de propagación de ads heredados a Media (post-save hook)." }
+    - { id: AD-RISK-004, status: partial,   why: "Idempotencia cubierta; falta verificar cascade de refs en Media/Event." }
+    - { id: AD-RISK-005, status: uncovered, why: "Sin test de sync MediaTailor en ad-insertion." }
+    - { id: AD-RISK-006, status: uncovered, why: "Solo tags:[] known-bug; falta overlay/pausead round-trip + null-clearing." }
+    - { id: AD-RISK-007, status: partial,   why: "AllScheduleFields cubre forma; falta local pre/mid/post media refs." }
+    - { id: AD-RISK-008, status: partial,   why: "Create VMAP cubierto; falta exclusividad DAI/VMAP en switch." }
+    - { id: AD-RISK-013, status: uncovered, why: "Sin test de account isolation (cross-account read/write)." }
+
+risks:
+  - id: AD-RISK-001
+    area: Type switching
+    risk: "Cambiar type deja config anidada stale o borra la rama equivocada."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_AD_013_POST_Create_MissingType @negative"
+      - "TC_AD_014_POST_Create_InvalidType @negative"
+      - "TC_AD_REG_002_POST_Create_InvalidType @negative"
+      - "TC_AD_REG_005_GET_AllAdTypes_Valid"
+    gap: "Cubre create/validación por type, NO el switch entre types (limpieza de campos anidados stale al pasar p.ej. ad-insertion -> vast)."
+
+  - id: AD-RISK-002
+    area: Insertion ads
+    risk: "Config ad-insertion escribe tag/loop/duration mal y rompe delivery."
+    score: 80
+    priority: P0
+    status: covered
+    covered_by:
+      - "TC_AD_030_POST_Create_AdInsertion_HappyPath @critical"
+      - "TC_AD_031_POST_Create_AdInsertion_MissingTag @negative"
+      - "TC_AD_032_POST_Create_AdInsertion_ZeroDuration @negative"
+      - "TC_AD_033_POST_Create_AdInsertion_NegativeDuration @negative"
+    gap: "Create + validación de tag/duration cubiertos. Update de insertion y MediaTailor (AD-RISK-005) aparte."
+
+  - id: AD-RISK-003
+    area: Save hooks
+    risk: "Post-save propaga ads/adswizz heredados a los Media equivocados."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de propagación de herencia a Media (category/tag matching) ni rollback."
+
+  - id: AD-RISK-004
+    area: Remove hooks
+    risk: "Borrar ad deja refs huérfanas o remueve de más en Media/Event."
+    score: 100
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_AD_DELETE_ad_not_found"
+      - "TC_AD_REG_010_DELETE_Idempotent"
+    gap: "Solo idempotencia/borrado básico. Falta verificar limpieza de refs en Media/Event y account scoping del cascade."
+
+  - id: AD-RISK-005
+    area: MediaTailor sync
+    risk: "Save de ad-insertion crea/borra config MediaTailor incorrectamente."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de paths create/update/delete de MediaTailor ni manejo de error."
+
+  - id: AD-RISK-006
+    area: Overlay/pause ad config
+    risk: "Campos overlay/pause-ad se persisten inconsistentes o se pisan parcialmente."
+    score: 64
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Solo el known-bug tags:[] (Q4). Falta round-trip de overlay/pausead + null-clearing + custom params."
+
+  - id: AD-RISK-007
+    area: Local ad schedule
+    risk: "Schedules de local ad guardan mid/pre/post media mal."
+    score: 64
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_AD_REG_009_POST_Create_AllScheduleFields"
+    gap: "Cubre forma de schedule. Falta local mode con refs reales pre/mid/post a Media y validación de posiciones."
+
+  - id: AD-RISK-008
+    area: Google DAI / VMAP
+    risk: "Switch a/desde DAI/VMAP deja estado conflictivo / config inválida."
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_AD_010_POST_Create_VMAP_HappyPath @critical"
+      - "TC_AD_015_POST_Create_VMAP_MissingTag @negative"
+      - "TC_AD_017_POST_Create_VMAP_InvalidTagURL @negative"
+    gap: "Create VMAP + validación cubiertos. Falta exclusividad/nulling de campos al hacer switch entre DAI/VMAP y otros modos."
+
+  - id: AD-RISK-009
+    area: Prebid / adswizz
+    risk: "Settings prebid/adswizz se persisten mal y afectan monetización/targeting."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de zone_id/base_url/custom config de adswizz ni de prebid."
+
+  - id: AD-RISK-010
+    area: Search/list
+    risk: "Listado devuelve account scope, filtros o paginación equivocados."
+    score: 36
+    priority: P1
+    status: covered
+    covered_by:
+      - "TC_AD_GET_list_default"
+      - "TC_AD_GET_list_pagination"
+      - "TC_AD_GET_search_by_name"
+      - "TC_AD_GET_search_by_id"
+      - "TC_AD_INT_001_POST_AssignCategory_FilteredInList @critical"
+      - "TC_AD_INT_005_GET_SearchByCategory"
+      - "TC_AD_REG_008_GET_Search_EmptyResults"
+    gap: null
+
+  - id: AD-RISK-011
+    area: Media references
+    risk: "Create/update deja refs Media colgando o populate equivocado."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by:
+      - "TC_AD_INT_003_POST_RemoveCategory_VerifyGone"
+    gap: "INT_003 toca refs de category, no las refs Media de schedule.mid/pre/post/loop ni populate/cleanup al borrar."
+
+  - id: AD-RISK-012
+    area: Validation gaps
+    risk: "min media time / category / tag / referer inválidos pasan sin validar."
+    score: 36
+    priority: P1
+    status: covered
+    covered_by:
+      - "min_media_time_length negativo se normaliza o devuelve 400"
+      - "TC_AD_022_POST_Create_VAST_NegativeMinMediaTime @negative"
+      - "TC_AD_021_POST_Create_VAST_NegativePrerollSkip @negative"
+      - "TC_AD_015_POST_Create_VMAP_MissingTag @negative"
+      - "TC_AD_023_POST_Create_VAST_MissingTag @negative"
+      - "TC_AD_REG_004_POST_Update_NegativePrerollSkip @negative"
+    gap: null
+
+  - id: AD-RISK-013
+    area: Account isolation
+    risk: "Una cuenta puede leer/mutar la config de ad de otra cuenta."
+    score: 40
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test cross-account (read/write con token de otra cuenta -> debe 404/forbidden)."
+
+  - id: AD-RISK-014
+    area: Transcode trigger
+    risk: "Endpoint /transcode corre con insertion incompleta o assets equivocados."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Endpoint POST /api/ad/:id/transcode sin test (insertion-ready vs insertion-missing, loop asset)."
