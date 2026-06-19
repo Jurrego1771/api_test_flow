@@ -157,14 +157,16 @@ Tags funcionales (no redundar con nombre del proyecto):
 - Allure deploy → `https://jurrego1771.github.io/api_test_flow/nightly/`
 - `workflow_dispatch` acepta inputs `project` y `workers`
 
-### prod-weekly.yml (lunes + workflow_dispatch) — PROD US + EU
-- Suite completa contra **producción**, apuntando a la **cuenta QA dedicada** de cada región (datos aislados, nunca clientes).
-- Schedule: lunes 06:00 UTC = US, 06:30 UTC = EU (matrix con gate por cron).
+### prod.yml — PROD US + EU (nightly destructiva + full manual)
+Tres modos, todos contra la **cuenta QA dedicada** (prod-guard exige `QA_ACCOUNT=true`):
+- **Nightly (lun/mié/sáb, 06:00 UTC):** suite DESTRUCTIVA `smoke+contract+regression` (sin integration) en US + EU. Misma suite que el nightly de dev. Slack siempre. Allure → `/prod-us/` y `/prod-eu/`. Es la cadencia periódica.
+- **Full (manual, `workflow_dispatch mode=full`):** suite COMPLETA + integration. Para **regresión crítica** (post-release grande, post-incidente, validar deploy de infra). Slack siempre.
+- **Safe (manual, `mode=safe`):** solo `@prod-safe` (read-only). Disponible a demanda; ya NO se corre programado.
+- `workflow_dispatch` inputs: `mode` (safe/nightly/full, default nightly), `region` (us/eu/both), `workers`.
 - Ambientes: US = `https://platform.mediastre.am`, EU = `https://eu.platform.mediastre.am`.
 - Secrets: `US_BASE_URL`/`US_API_TOKEN`, `EU_BASE_URL`/`EU_API_TOKEN` (tokens de cuenta QA).
-- Inyecta `QA_ACCOUNT=true` → requerido por el **prod-guard** (`tests/prod-guard.js`, globalSetup): aborta cualquier corrida contra prod sin esa flag (red de seguridad anti-destructivo).
-- Health-check `@prod-safe` (`GET /api/version`) corre como canario antes de la suite pesada.
-- Slack: **siempre**. Allure → `/prod-us/` y `/prod-eu/`.
+- **`IGNORE_GLOB`** (env, CSV de globs → `testIgnore` en `playwright.config.js`): excluye módulos por ambiente. **EU** excluye `article`/`epg` (módulos no habilitados → 403) y `show` (migró a microservicio gRPC `api.eu.platform.mediastre.am/show` con contrato `{version,data}`; el monolito `/api/show` cuelga → 502). **US** corre todo (sin filtro).
+- `@prod-safe` = tests read-only puros (hoy: health-check `GET /api/version`).
 - **dev no se toca** (push.yml + nightly.yml siguen igual).
 
 ### Slack (notify-slack.js)
@@ -185,16 +187,16 @@ SLACK_WEBHOOK_URL=<webhook>
 QA_ACCOUNT=true   # SOLO requerido para correr contra prod (cuenta QA). El prod-guard lo exige.
 ```
 
-### Estrategia multi-ambiente
+### Estrategia multi-ambiente (cadencia por capa)
 | Ambiente | URL | Cuándo | Suite |
 |---|---|---|---|
 | dev | `dev.platform.mediastre.am` | push (smoke+contract) + diario (full) | full, destructiva |
-| US prod | `platform.mediastre.am` | lunes 06:00 UTC | full, **cuenta QA** |
-| EU prod | `eu.platform.mediastre.am` | lunes 06:30 UTC | full, **cuenta QA** |
+| US/EU prod | `platform.mediastre.am` / `eu.platform.mediastre.am` | **lun/mié/sáb** | nightly `smoke+contract+regression`, **cuenta QA** |
+| US/EU prod | (idem) | **manual / regresión crítica** | full (+ integration), **cuenta QA** |
 
-La suite es destructiva → en prod SOLO corre contra la cuenta QA dedicada (datos aislados).
+En prod la cadencia periódica es la **nightly destructiva** (lun/mié/sáb) contra la cuenta QA dedicada; el full (+ integration) queda a demanda.
+EU excluye `show`/`article`/`epg` vía `IGNORE_GLOB` (no disponibles con los tests actuales); US corre todo.
 El `prod-guard` (globalSetup) aborta si `BASE_URL` es prod y `QA_ACCOUNT != true`.
-Tests read-only seguros en cualquier ambiente se marcan `@prod-safe`.
 
 ---
 
