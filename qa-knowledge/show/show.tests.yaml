@@ -1,0 +1,172 @@
+# =============================================================================
+# QA Knowledge — Show module
+# Mapa rápido de cobertura de tests para la API de Show (sm2).
+# Cubre /api/show y sus sub-recursos anidados (season, episode).
+# Formato: qa-knowledge/SCHEMA.md
+# =============================================================================
+
+module:
+  name: Show
+  prefix: TC_SHW
+  base_path: /api/show
+  risk_file: qa-knowledge/show/show.risk.yaml
+  risk_register: doc/risk-register/show.md
+  schema: schemas/show.schema.js   # + season.schema.js, episode.schema.js
+  backend_source: D:/Dev/Repos/mediastream/sm2/src/server/model/schemas/show_season.js
+  summary: >
+    Catálogo jerárquico show -> season -> episode (tvshow/podcast). Borrado en
+    cascada por SOFT-delete: al borrar show/season, los hijos desaparecen del
+    LISTADO pero el GET by-id sigue devolviendo 200 (no filtra borrados). Ver Q3.
+
+endpoints:
+  - { method: POST, path: /api/show, desc: "Crea show (title + type requeridos)." }
+  - { method: GET, path: /api/show/:id, desc: "Detalle (soporta populate)." }
+  - { method: POST, path: /api/show/:id, desc: "Update (parcial/completo). No permite cambiar type." }
+  - { method: DELETE, path: /api/show/:id, desc: "Borra show (soft-delete; cascada a seasons)." }
+  - { method: "*", path: "/api/show/:id/season[/:seasonId]", desc: "CRUD de seasons anidadas." }
+  - { method: "*", path: "/api/show/:id/season/:seasonId/episode[/:episodeId]", desc: "CRUD de episodes anidados." }
+
+quirks:
+  - id: Q1
+    desc: "POST /api/show — la suite lo usa con JSON; el risk-register lista form:true. Ambos funcionan."
+  - id: Q2
+    desc: "genres debe ser valor del enum documentado (ver dataFactory.generateShowPayload); valor inválido se limpia."
+  - id: Q3
+    severity: medium
+    type: soft-delete
+    desc: >
+      DELETE show/season = SOFT-delete. GET by-id del hijo sigue devolviendo 200
+      tras borrar el padre; el cascade SOLO se observa en el LISTADO (la season/
+      episode desaparece de GET .../season). Los tests de cascade verifican vía
+      listado, no by-id (corregido — antes asumían hard-delete 404/500).
+  - id: Q4
+    desc: "ResourceCleaner: season id = 'showId/seasonId', episode id = 'showId/seasonId/episodeId'."
+  - id: Q5
+    desc: "No se puede cambiar el `type` de un show ya creado (update lo rechaza)."
+
+# -----------------------------------------------------------------------------
+# total: 82  (smoke:15  regression:22  contract:2  integration:43)
+# -----------------------------------------------------------------------------
+tests:
+
+  smoke:
+    files:
+      - tests/api/smoke/show/show-crud.smoke.spec.js
+      - tests/api/smoke/show/show-seasons.smoke.spec.js
+    purpose: Happy path CRUD del show + creación de seasons (positivos, negativos y auth).
+    cases:
+      - { name: TC_SHW_001_POST_CreateMinimal, op: POST /api/show, desc: "Crea show mínimo (title+type)." }
+      - { name: TC_SHW_010_GET_ExistingShowDetail, op: GET /api/show/:id, desc: "Detalle de un show creado." }
+      - { name: TC_SHW_NEG_010_GET_NonExistentShow, op: GET /api/show/:id, tags: [negative], desc: "Show inexistente." }
+      - { name: TC_SHW_050_DELETE_Success, op: DELETE /api/show/:id, desc: "Borra show OK." }
+      - { name: TC_SHW_NEG_002_POST_MissingTitle, op: POST /api/show, tags: [negative], risk: SHW-001, desc: "Falta title -> 400." }
+      - { name: TC_SHW_POST_season_valid, op: "POST /api/show/:id/season", risk: SHW-003, desc: "Crea season válida." }
+      - { name: TC_SHW_POST_season_with_optional_fields, op: "POST /api/show/:id/season", desc: "Season con campos opcionales." }
+      - { name: TC_SHW_POST_season_order_auto_assigned, op: "POST /api/show/:id/season", risk: SHW-008, desc: "Order auto-asignado a la season." }
+      - { name: TC_SHW_POST_season_show_linked_in_response, op: "POST /api/show/:id/season", desc: "Respuesta enlaza el show." }
+      - { name: TC_SHW_POST_season_no_token, op: "POST /api/show/:id/season", tags: [negative], desc: "Sin token -> 401/403." }
+      - { name: TC_SHW_POST_season_invalid_token, op: "POST /api/show/:id/season", tags: [negative], desc: "Token inválido -> 401/403." }
+      - { name: TC_SHW_POST_season_missing_title, op: "POST /api/show/:id/season", tags: [negative], desc: "Falta title -> error." }
+      - { name: TC_SHW_POST_season_empty_title, op: "POST /api/show/:id/season", tags: [negative], desc: "Title vacío -> error." }
+      - { name: TC_SHW_POST_season_show_not_found, op: "POST /api/show/:id/season", tags: [negative], desc: "Show inexistente -> not found." }
+      - { name: TC_SHW_POST_season_invalid_show_id, op: "POST /api/show/:id/season", tags: [negative], desc: "showId malformado -> error." }
+
+  regression:
+    file: tests/api/regression/show/show-advanced.regression.spec.js
+    purpose: Create/read/update/delete avanzado + validaciones y edge cases.
+    cases:
+      - { name: "TC_SHW_001_INSERT_MinimalPayload - schema validation", op: POST /api/show, desc: "Create mínimo valida schema." }
+      - { name: TC_SHW_002_INSERT_FullPayload, op: POST /api/show, desc: "Create con payload completo." }
+      - { name: TC_SHW_003_INSERT_GenresNullCleaning, op: POST /api/show, risk: SHW-010, desc: "genres inválidos/null se limpian. Q2" }
+      - { name: TC_SHW_004_INSERT_NextEpisodeDefault, op: POST /api/show, desc: "next_episode con default." }
+      - { name: TC_SHW_NEG_001_INSERT_MissingAccount, op: POST /api/show, tags: [negative], risk: SHW-001, desc: "Falta account -> error." }
+      - { name: TC_SHW_NEG_003_INSERT_InvalidType, op: POST /api/show, tags: [negative], risk: SHW-002, desc: "type inválido -> rechazo." }
+      - { name: TC_SHW_NEG_004_INSERT_InvalidDateFormat, op: POST /api/show, tags: [negative], risk: SHW-011, desc: "first_emision con fecha inválida -> rechazo." }
+      - { name: TC_SHW_011_GET_ShowWithPopulate, op: GET /api/show/:id, desc: "Detalle con populate." }
+      - { name: TC_SHW_NEG_011_GET_InvalidShowId, op: GET /api/show/:id, tags: [negative], desc: "showId inválido -> error." }
+      - { name: TC_SHW_040_UPDATE_PartialUpdate, op: POST /api/show/:id, desc: "Update parcial persiste." }
+      - { name: TC_SHW_041_UPDATE_CompleteUpdate, op: POST /api/show/:id, desc: "Update completo persiste." }
+      - { name: TC_SHW_042_UPDATE_NextEpisodeValidation, op: POST /api/show/:id, desc: "Validación de next_episode en update." }
+      - { name: TC_SHW_NEG_040_UPDATE_CannotChangeShowType, op: POST /api/show/:id, tags: [negative], risk: SHW-002, desc: "No permite cambiar type. Q5" }
+      - { name: TC_SHW_NEG_041_UPDATE_NonExistentShow, op: POST /api/show/:id, tags: [negative], desc: "Update a show inexistente -> error." }
+      - { name: TC_SHW_051_REMOVE_ShowStatusDeletedAfterRemove, op: DELETE /api/show/:id, risk: SHW-006, desc: "Status DELETE tras remove (soft-delete). Q3" }
+      - { name: TC_SHW_NEG_050_REMOVE_NonExistentShow, op: DELETE /api/show/:id, tags: [negative], desc: "Delete a show inexistente." }
+      - { name: TC_SHW_NEG_051_REMOVE_InvalidShowId, op: DELETE /api/show/:id, tags: [negative], desc: "Delete con showId inválido." }
+      - { name: TC_SHW_070_VALIDATION_EmptyTitle, op: POST /api/show, tags: [negative], risk: SHW-001, desc: "Title vacío -> rechazo." }
+      - { name: TC_SHW_071_VALIDATION_VeryLongTitle, op: POST /api/show, desc: "Title muy largo - boundary." }
+      - { name: TC_SHW_072_VALIDATION_SpecialCharactersInTitle, op: POST /api/show, desc: "Caracteres especiales en title." }
+      - { name: TC_SHW_073_VALIDATION_EmptyGenresArray, op: POST /api/show, risk: SHW-010, desc: "genres vacío - boundary." }
+      - { name: TC_SHW_074_VALIDATION_UnicodeCharactersInDescription, op: POST /api/show, desc: "Unicode en description." }
+
+  contract:
+    file: tests/api/contract/show/show.contract.spec.js
+    purpose: Validación de schema Zod (detecta breaking changes del backend).
+    schema_ref: schemas/show.schema.js
+    cases:
+      - { name: "TC_CON_SHW_001 POST /api/show response schema", op: POST /api/show, tags: [contract], risk: SHW-009, desc: "Respuesta de create cumple schema." }
+      - { name: "TC_CON_SHW_002 GET /api/show/:id response schema", op: GET /api/show/:id, tags: [contract], risk: SHW-009, desc: "Respuesta de detail cumple schema." }
+
+  integration:
+    files:
+      - tests/api/integration/show/show-seasons.integration.spec.js
+      - tests/api/integration/show/show-episodes.integration.spec.js
+      - tests/api/integration/show/show-cascade.integration.spec.js
+    purpose: Sub-recursos anidados (season/episode CRUD) + borrado en cascada.
+    cases:
+      # Seasons — List
+      - { name: TC_SHW_GET_season_list_valid, op: "GET /api/show/:id/season", desc: "Lista seasons del show." }
+      - { name: TC_SHW_GET_season_list_empty_show, op: "GET /api/show/:id/season", desc: "Show sin seasons -> lista vacía." }
+      - { name: TC_SHW_GET_season_list_with_limit, op: "GET /api/show/:id/season", desc: "Lista con limit." }
+      - { name: TC_SHW_GET_season_list_show_not_found, op: "GET /api/show/:id/season", tags: [negative], desc: "Show inexistente." }
+      - { name: TC_SHW_GET_season_list_no_token, op: "GET /api/show/:id/season", tags: [negative], desc: "Sin token -> 401/403." }
+      # Seasons — Get by ID
+      - { name: TC_SHW_GET_season_by_id_valid, op: "GET /api/show/:id/season/:seasonId", desc: "Detalle de season." }
+      - { name: TC_SHW_GET_season_by_id_with_populate, op: "GET /api/show/:id/season/:seasonId", desc: "Detalle con populate." }
+      - { name: TC_SHW_GET_season_by_id_not_found, op: "GET /api/show/:id/season/:seasonId", tags: [negative], desc: "season inexistente." }
+      - { name: TC_SHW_GET_season_by_id_no_token, op: "GET /api/show/:id/season/:seasonId", tags: [negative], desc: "Sin token." }
+      # Seasons — Update
+      - { name: TC_SHW_POST_season_update_title, op: "POST /api/show/:id/season/:seasonId", desc: "Update title de season." }
+      - { name: TC_SHW_POST_season_update_description, op: "POST /api/show/:id/season/:seasonId", desc: "Update description." }
+      - { name: TC_SHW_POST_season_update_persists, op: "POST /api/show/:id/season/:seasonId", desc: "Update persiste y es recuperable." }
+      - { name: TC_SHW_POST_season_update_not_found, op: "POST /api/show/:id/season/:seasonId", tags: [negative], desc: "season inexistente." }
+      - { name: TC_SHW_POST_season_update_no_token, op: "POST /api/show/:id/season/:seasonId", tags: [negative], desc: "Sin token." }
+      # Seasons — Delete
+      - { name: TC_SHW_DELETE_season_valid, op: "DELETE /api/show/:id/season/:seasonId", desc: "Borra season." }
+      - { name: TC_SHW_DELETE_season_confirm_gone, op: "GET /api/show/:id/season", desc: "Season ya no aparece en el listado tras borrar. Q3" }
+      - { name: TC_SHW_DELETE_season_not_found, op: "DELETE /api/show/:id/season/:seasonId", tags: [negative], desc: "season inexistente." }
+      - { name: TC_SHW_DELETE_season_no_token, op: "DELETE /api/show/:id/season/:seasonId", tags: [negative], desc: "Sin token." }
+      # Episodes — Create
+      - { name: TC_SHW_POST_episode_valid, op: "POST /api/show/:id/season/:seasonId/episode", risk: SHW-004, desc: "Crea episode con content media." }
+      - { name: TC_SHW_POST_episode_with_optional_fields, op: "POST /api/show/:id/season/:seasonId/episode", desc: "Episode con opcionales." }
+      - { name: TC_SHW_POST_episode_order_auto_assigned, op: "POST /api/show/:id/season/:seasonId/episode", risk: SHW-008, desc: "Order auto-asignado." }
+      - { name: TC_SHW_POST_episode_missing_title, op: "POST /api/show/:id/season/:seasonId/episode", tags: [negative], desc: "Falta title -> error." }
+      - { name: TC_SHW_POST_episode_missing_content, op: "POST /api/show/:id/season/:seasonId/episode", tags: [negative], desc: "Falta content -> error." }
+      - { name: TC_SHW_POST_episode_season_not_found, op: "POST /api/show/:id/season/:seasonId/episode", tags: [negative], desc: "season inexistente." }
+      - { name: TC_SHW_POST_episode_no_token, op: "POST /api/show/:id/season/:seasonId/episode", tags: [negative], desc: "Sin token." }
+      # Episodes — List
+      - { name: TC_SHW_GET_episode_list_valid, op: "GET /api/show/:id/season/:seasonId/episode", desc: "Lista episodes." }
+      - { name: TC_SHW_GET_episode_list_empty_season, op: "GET /api/show/:id/season/:seasonId/episode", desc: "Season sin episodes -> vacío." }
+      - { name: TC_SHW_GET_episode_list_with_limit, op: "GET /api/show/:id/season/:seasonId/episode", desc: "Lista con limit." }
+      - { name: TC_SHW_GET_episode_list_no_token, op: "GET /api/show/:id/season/:seasonId/episode", tags: [negative], desc: "Sin token." }
+      # Episodes — Get by ID
+      - { name: TC_SHW_GET_episode_by_id_valid, op: "GET /api/show/:id/season/:seasonId/episode/:episodeId", desc: "Detalle de episode." }
+      - { name: TC_SHW_GET_episode_by_id_not_found, op: "GET /api/show/:id/season/:seasonId/episode/:episodeId", tags: [negative], desc: "episode inexistente." }
+      - { name: TC_SHW_GET_episode_by_id_no_token, op: "GET /api/show/:id/season/:seasonId/episode/:episodeId", tags: [negative], desc: "Sin token." }
+      # Episodes — Update
+      - { name: TC_SHW_POST_episode_update_title, op: "POST /api/show/:id/season/:seasonId/episode/:episodeId", desc: "Update title." }
+      - { name: TC_SHW_POST_episode_update_description, op: "POST /api/show/:id/season/:seasonId/episode/:episodeId", desc: "Update description." }
+      - { name: TC_SHW_POST_episode_update_persists, op: "POST /api/show/:id/season/:seasonId/episode/:episodeId", desc: "Update persiste." }
+      - { name: TC_SHW_POST_episode_update_not_found, op: "POST /api/show/:id/season/:seasonId/episode/:episodeId", tags: [negative], desc: "episode inexistente." }
+      - { name: TC_SHW_POST_episode_update_no_token, op: "POST /api/show/:id/season/:seasonId/episode/:episodeId", tags: [negative], desc: "Sin token." }
+      # Episodes — Delete
+      - { name: TC_SHW_DELETE_episode_valid, op: "DELETE /api/show/:id/season/:seasonId/episode/:episodeId", desc: "Borra episode." }
+      - { name: TC_SHW_DELETE_episode_not_found, op: "DELETE /api/show/:id/season/:seasonId/episode/:episodeId", tags: [negative], desc: "episode inexistente." }
+      - { name: TC_SHW_DELETE_episode_no_token, op: "DELETE /api/show/:id/season/:seasonId/episode/:episodeId", tags: [negative], desc: "Sin token." }
+      # Cascade (soft-delete, verificado vía listado — Q3)
+      - { name: "TC_SHW_INT_CASCADE_001_DELETE_Show_Removes_Seasons", op: DELETE /api/show/:id, tags: [critical], risk: SHW-006, desc: "Borrar show -> seasons desaparecen del listado. Q3" }
+      - { name: "TC_SHW_INT_CASCADE_002_DELETE_Season_Removes_Episodes", op: "DELETE /api/show/:id/season/:seasonId", risk: SHW-006, desc: "Borrar season -> desaparece del listado del show. Q3" }
+      - { name: "TC_SHW_INT_CASCADE_003_DELETE_Show_Multiple_Seasons_All_Gone", op: DELETE /api/show/:id, tags: [critical], risk: SHW-006, desc: "Borrar show con N seasons -> todas fuera del listado. Q3" }
+
+gaps:
+  - risk: SHW-005
+    desc: "Episode con media asociada: se crea con content media, pero no se afirma explícitamente que la media quede 'visible en el show'."

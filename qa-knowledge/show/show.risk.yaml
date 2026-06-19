@@ -1,0 +1,119 @@
+# =============================================================================
+# QA Knowledge — Show · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> show.tests.yaml cases[].name (IDs estables).
+# Fuente narrativa: doc/risk-register/show.md
+# =============================================================================
+
+module:
+  name: Show
+  prefix: SHW
+  tests_file: qa-knowledge/show/show.tests.yaml
+  risk_register: doc/risk-register/show.md
+  scoring:
+    note: "El risk-register de show usa Priority (P0..P2) + Layer, sin score numérico."
+    bands: { P0: critico, P1: alto, P2: medio }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 11
+  covered: 10
+  partial: 1
+  uncovered: 0
+  note: >
+    Módulo bien cubierto (83 tests). El risk-register marcaba SHW-007/008/011
+    como ✗ pero ya tienen tests reales (orphan via cascade-list, order auto-assign,
+    invalid date). Único pendiente: SHW-005 (media visible en show) parcial.
+  findings:
+    - id: F1
+      severity: medium
+      desc: >
+        DELETE show/season = SOFT-delete. GET by-id del hijo sigue 200 tras borrar
+        el padre; el cascade solo se observa en el LISTADO. Los tests de cascade se
+        corrigieron para verificar vía listado (antes asumían hard-delete 404/500,
+        fallaban 3 + 1 flaky). Ver Q3 en tests.yaml.
+
+risks:
+  - id: SHW-001
+    risk: "Create show sin title o type -> 400."
+    priority: P0
+    status: covered
+    covered_by: [TC_SHW_NEG_002_POST_MissingTitle, TC_SHW_NEG_001_INSERT_MissingAccount, TC_SHW_070_VALIDATION_EmptyTitle]
+    gap: null
+
+  - id: SHW-002
+    risk: "type inválido rechazado (y no se puede cambiar en update)."
+    priority: P0
+    status: covered
+    covered_by: [TC_SHW_NEG_003_INSERT_InvalidType, TC_SHW_NEG_040_UPDATE_CannotChangeShowType]
+    gap: null
+
+  - id: SHW-003
+    risk: "Crear season bajo show válido."
+    priority: P0
+    status: covered
+    covered_by: [TC_SHW_POST_season_valid, TC_SHW_POST_season_with_optional_fields]
+    gap: null
+
+  - id: SHW-004
+    risk: "Crear episode bajo season válida."
+    priority: P0
+    status: covered
+    covered_by: [TC_SHW_POST_episode_valid, TC_SHW_POST_episode_with_optional_fields]
+    gap: null
+
+  - id: SHW-005
+    risk: "Episode con media asociada -> media visible en el show."
+    priority: P1
+    status: partial
+    covered_by: [TC_SHW_POST_episode_valid]
+    gap: "El episode se crea con content media, pero ningún test afirma explícitamente que la media quede visible/listada en el show."
+
+  - id: SHW-006
+    risk: "DELETE show elimina seasons y episodes (cascade)."
+    priority: P1
+    status: covered
+    covered_by:
+      - TC_SHW_INT_CASCADE_001_DELETE_Show_Removes_Seasons
+      - TC_SHW_INT_CASCADE_002_DELETE_Season_Removes_Episodes
+      - TC_SHW_INT_CASCADE_003_DELETE_Show_Multiple_Seasons_All_Gone
+      - TC_SHW_051_REMOVE_ShowStatusDeletedAfterRemove
+    gap: "Cascade verificado vía listado (soft-delete, F1). El borrado físico de episodes hijos no se verifica por by-id (devuelve 200)."
+
+  - id: SHW-007
+    risk: "Season huérfana tras DELETE show."
+    priority: P1
+    status: covered
+    covered_by: [TC_SHW_INT_CASCADE_001_DELETE_Show_Removes_Seasons, TC_SHW_INT_CASCADE_003_DELETE_Show_Multiple_Seasons_All_Gone]
+    gap: "CASCADE_001/003 confirman que la season no queda huérfana en el listado del show borrado."
+
+  - id: SHW-008
+    risk: "Ordenamiento de episodes dentro de la season."
+    priority: P2
+    status: covered
+    covered_by: [TC_SHW_POST_episode_order_auto_assigned, TC_SHW_POST_season_order_auto_assigned]
+    gap: null
+
+  - id: SHW-009
+    risk: "El schema de respuesta no rompe (breaking change silencioso)."
+    priority: P0
+    status: covered
+    covered_by:
+      - "TC_CON_SHW_001 POST /api/show response schema"
+      - "TC_CON_SHW_002 GET /api/show/:id response schema"
+    gap: null
+
+  - id: SHW-010
+    risk: "genres con valor inválido normalizado o rechazado."
+    priority: P1
+    status: covered
+    covered_by: [TC_SHW_003_INSERT_GenresNullCleaning, TC_SHW_073_VALIDATION_EmptyGenresArray]
+    gap: null
+
+  - id: SHW-011
+    risk: "first_emision con formato de fecha inválido."
+    priority: P1
+    status: covered
+    covered_by: [TC_SHW_NEG_004_INSERT_InvalidDateFormat]
+    gap: null
