@@ -383,3 +383,81 @@ test.describe('9. Schedule y Restream', () => {
         expect(res.ok).toBeTruthy();
     });
 });
+
+// ObjectId válido en formato pero inexistente
+const FAKE_ID = 'ffffffffffffffffffffffff';
+
+test.describe('10. Update — preservación de campos (LIVE-RISK-011)', () => {
+    // BUG (F1): el update PISA campos no enviados. update.js:480-486 resetea
+    // nowplaying->false, logo.live.position->'top-right', logo.live.url->''
+    // en CUALQUIER update parcial. Estos tests fijan el comportamiento real;
+    // si el backend lo arregla (preserva), fallarán y obligarán a revisar.
+
+    test('TC_LIV_046_POST_PartialUpdate_PreservesNowplaying', async () => {
+        // Contraste con el logo: nowplaying SÍ se preserva en update parcial
+        // (verificado empíricamente). Si un cambio futuro lo rompe, este test lo detecta.
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        // Activa nowplaying
+        const onRes = await apiClient.post(`${API_BASE}/${stream._id}`, { nowplaying: 'true' }, { form: true });
+        expect(onRes.ok).toBeTruthy();
+        let getRes = await apiClient.get(`${API_BASE}/${stream._id}`);
+        expect(getRes.body.data.nowplaying).toBe(true);
+
+        // Update SOLO del nombre (sin nowplaying) → debe PRESERVAR nowplaying
+        const updRes = await apiClient.post(`${API_BASE}/${stream._id}`, { name: `qa_keep_${Date.now()}` }, { form: true });
+        expect(updRes.ok).toBeTruthy();
+
+        getRes = await apiClient.get(`${API_BASE}/${stream._id}`);
+        expect(getRes.body.data.nowplaying).toBe(true);
+    });
+
+    test('TC_LIV_047_POST_PartialUpdate_ResetsLogoPosition @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        // Setea posición de logo distinta al default
+        const setRes = await apiClient.post(`${API_BASE}/${stream._id}`, { logo_live_position: 'bottom-left' }, { form: true });
+        expect(setRes.ok).toBeTruthy();
+        let getRes = await apiClient.get(`${API_BASE}/${stream._id}`);
+        expect(getRes.body.data.logo?.live?.position).toBe('bottom-left');
+
+        // Update SOLO del nombre → el bug resetea la posición a 'top-right'
+        const updRes = await apiClient.post(`${API_BASE}/${stream._id}`, { name: `qa_keep_${Date.now()}` }, { form: true });
+        expect(updRes.ok).toBeTruthy();
+
+        getRes = await apiClient.get(`${API_BASE}/${stream._id}`);
+        expect(getRes.body.data.logo?.live?.position).toBe('top-right');
+    });
+});
+
+test.describe('11. Estado de grabación — negativos (LIVE-RISK-003)', () => {
+    test('TC_LIV_048_POST_StopRecord_NotRecording', async () => {
+        // stop-record sobre stream que no graba → 200 con status:ERROR data:NOT_RECORDING
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        const res = await apiClient.post(`${API_BASE}/${stream._id}/stop-record`, {}, { form: true });
+        expect(res.status).toBe(200);
+        expect(res.body.status).toBe('ERROR');
+        expect(res.body.data).toBe('NOT_RECORDING');
+    });
+
+    test('TC_LIV_049_POST_StopRecord_NotFound @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const res = await apiClient.post(`${API_BASE}/${FAKE_ID}/stop-record`, {}, { form: true });
+        expect(res.status).toBe(404);
+        expect(res.body.data).toBe('LIVE_STREAM_NOT_FOUND');
+    });
+
+    test('TC_LIV_050_POST_StartRecord_NotFound @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const res = await apiClient.post(`${API_BASE}/${FAKE_ID}/start-record`, {}, { form: true });
+        expect(res.status).toBe(404);
+        expect(res.body.data).toBe('LIVE_STREAM_NOT_FOUND');
+    });
+});

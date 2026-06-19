@@ -77,7 +77,7 @@ quirks:
 
 # -----------------------------------------------------------------------------
 # Tests por capa
-# total: 96  (smoke:11  regression:42  contract:3  integration:40)
+# total: 101  (smoke:11  regression:47  contract:3  integration:40)
 # -----------------------------------------------------------------------------
 tests:
 
@@ -142,6 +142,13 @@ tests:
       # 9. Schedule y Restream
       - { name: TC_LIV_044_GET_Schedule, op: GET /api/live-stream/:id/schedule, desc: "Consulta schedule del stream." }
       - { name: TC_LIV_045_GET_RestreamList, op: GET /api/live-stream/:id/restream, desc: "Lista de restream." }
+      # 10. Update — preservación de campos (LIVE-RISK-011)
+      - { name: TC_LIV_046_POST_PartialUpdate_PreservesNowplaying, op: POST /api/live-stream/:id, risk: LIVE-RISK-011, desc: "Update solo-nombre PRESERVA nowplaying (contraste con logo)." }
+      - { name: TC_LIV_047_POST_PartialUpdate_ResetsLogoPosition, op: POST /api/live-stream/:id, tags: [negative], risk: LIVE-RISK-011, desc: "BUG F1: update solo-nombre resetea logo.position a 'top-right'." }
+      # 11. Estado de grabación — negativos (LIVE-RISK-003)
+      - { name: TC_LIV_048_POST_StopRecord_NotRecording, op: POST /api/live-stream/:id/stop-record, risk: LIVE-RISK-003, desc: "stop sin grabar -> 200 status:ERROR NOT_RECORDING." }
+      - { name: TC_LIV_049_POST_StopRecord_NotFound, op: POST /api/live-stream/:id/stop-record, tags: [negative], risk: LIVE-RISK-003, desc: "stop a id inexistente -> 404 LIVE_STREAM_NOT_FOUND." }
+      - { name: TC_LIV_050_POST_StartRecord_NotFound, op: POST /api/live-stream/:id/start-record, tags: [negative], risk: LIVE-RISK-003, desc: "start a id inexistente -> 404 LIVE_STREAM_NOT_FOUND." }
       # Logo — Positivos y Persistencia (TC_LOG)
       - { name: TC_LOG_001_POST_UploadValidLogo, op: POST /api/live-stream/:id/logo, desc: "Sube logo válido." }
       - { name: TC_LOG_002_GET_VerifyPersistence, op: GET /api/live-stream/:id, desc: "El logo persiste tras subir." }

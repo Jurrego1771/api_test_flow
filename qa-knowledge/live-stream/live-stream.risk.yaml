@@ -23,16 +23,16 @@ status_legend: [covered, partial, uncovered]
 summary:
   total_risks: 23
   covered: 2
-  partial: 9
-  uncovered: 12
+  partial: 10
+  uncovered: 11
   note: >
     Superficie enorme (85 handlers). Núcleo CRUD + estado básico + quizzes +
     thumb/logo + schedule-job tienen cobertura; sub-recursos completos (restream,
     ad-insertion, drm, epg, metadata, audio_exclusion, transcription) sin tocar.
     Los 15 riesgos P0 están TODOS abiertos (partial/uncovered).
   p0_open:
-    - { id: LIVE-RISK-011, status: uncovered, why: "update parcial PISA logo/nowplaying/producers — bug de pérdida de datos" }
-    - { id: LIVE-RISK-003, status: partial,   why: "toggle-recording sin tocar; stop-record/start-record negativos sin cubrir" }
+    - { id: LIVE-RISK-011, status: partial,   why: "update parcial resetea logo.position/url (bug confirmado TC_LIV_047); producers sin verificar" }
+    - { id: LIVE-RISK-003, status: partial,   why: "stop-record/not-found cubiertos; toggle-recording y ALREADY_RECORDING sin cubrir" }
     - { id: LIVE-RISK-007, status: partial,   why: "restream solo GET list; create/start/stop/update/delete/detail sin cubrir" }
     - { id: LIVE-RISK-012, status: partial,   why: "delete-not-found 404 + cascade de hijos sin verificar" }
     - { id: LIVE-RISK-002, status: partial,   why: "tz_offset, fix-tz-offset, solapamiento, recurrencia cruzando medianoche" }
@@ -47,7 +47,12 @@ summary:
 findings:
   - id: F1
     severity: high
-    desc: "update.js PISA campos no enviados (logo.position->top-right, logo.url->'', nowplaying->false, producers). Update parcial = pérdida silenciosa. Ver LIVE-RISK-011."
+    desc: >
+      update.js PISA logo.live.position (->'top-right') y logo.live.url (->'') en
+      CUALQUIER update parcial (confirmado: TC_LIV_047). Pérdida silenciosa de config de
+      logo al editar solo el nombre. NOTA: nowplaying SÍ se preserva (verificado empírica-
+      mente, TC_LIV_046) — el reset afecta logo, no nowplaying. producers sin verificar.
+      Ver LIVE-RISK-011.
   - id: F2
     severity: high
     desc: "record/start.js:11 y record/stop.js:11 usan findById SIN filtro de account -> posible cross-tenant. Ver LIVE-RISK-003."
@@ -107,11 +112,14 @@ risks:
     status: partial
     covered_by:
       - TC_LIV_023_POST_StartRecord
+      - TC_LIV_048_POST_StopRecord_NotRecording
+      - TC_LIV_049_POST_StopRecord_NotFound
+      - TC_LIV_050_POST_StartRecord_NotFound
     gap: >
-      Falta: stop-record sin grabar (NOT_RECORDING); start-record ya grabando
-      (ALREADY_RECORDING) y sin perfiles (NO_AVAILABLE_PROFILES); toggle-recording
-      ENDPOINT COMPLETO (NO_AVAILABLE_PROFILES/CDN_ZONE); callbacks record/start y
-      record/stop + idempotencia. Seguridad: F2 (cross-account en callbacks).
+      Cubierto: stop-record sin grabar (NOT_RECORDING), not-found en start/stop-record.
+      Falta: start-record ya grabando (ALREADY_RECORDING) y sin perfiles
+      (NO_AVAILABLE_PROFILES, requiere recording server); toggle-recording ENDPOINT
+      COMPLETO; callbacks record/start y record/stop + idempotencia. Seguridad: F2.
 
   - id: LIVE-RISK-004
     area: MediaLive / transcoding
@@ -189,12 +197,14 @@ risks:
     risk: Updates parciales sobrescriben campos no relacionados del live-stream.
     score: 64
     priority: P0
-    status: uncovered
-    covered_by: []
+    status: partial
+    covered_by:
+      - TC_LIV_047_POST_PartialUpdate_ResetsLogoPosition
+      - TC_LIV_046_POST_PartialUpdate_PreservesNowplaying
     gap: >
-      BUG (F1): PUT solo {name} resetea logo.position->'top-right', logo.url->'',
-      nowplaying->false, puede vaciar producers. Falta test que envíe update parcial y
-      verifique que esos campos NO cambian respecto al estado previo.
+      BUG confirmado (F1): update parcial resetea logo.position->'top-right' y logo.url->''
+      (TC_LIV_047). nowplaying se preserva (TC_LIV_046). Falta verificar producers
+      (IIFE frágil update.js:542) y device_type/os/browser restrictions.
 
   - id: LIVE-RISK-012
     area: Delete
