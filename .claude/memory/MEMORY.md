@@ -9,6 +9,9 @@
 ## Filosofía de testing
 - [testing_philosophy.md](testing_philosophy.md) — 4 capas por riesgo, convenciones de naming, reglas de código
 
+## Mapa de cobertura (machine-readable)
+- [qa-knowledge/INDEX.yaml](../../qa-knowledge/INDEX.yaml) — LEER PRIMERO. Router: por módulo qué tests existen, counts y cobertura de riesgos. Saltar a `qa-knowledge/<modulo>/` (tests.yaml + risk.yaml). Evita grepear `tests/` a ciegas. Formato: `qa-knowledge/SCHEMA.md`
+
 ## Gaps de cobertura
 - [testing_gaps.md](testing_gaps.md) — Módulos sin coverage completa por capa, estado actual
 

@@ -25,7 +25,10 @@ api_test_flow/
 ├── utils/
 │   ├── dataFactory.js      ← generación de payloads con faker
 │   └── resourceCleaner.js  ← limpieza de recursos post-test
-├── doc_api/risk-register/  ← registro de riesgos por módulo (prioriza qué cubrir)
+├── doc_api/risk-register/  ← registro de riesgos por módulo (prosa; prioriza qué cubrir)
+├── qa-knowledge/           ← mapa de cobertura machine-readable (LEER INDEX.yaml primero)
+│   ├── INDEX.yaml          ← router: módulos, counts, cobertura, qué leer
+│   └── <modulo>/           ← <modulo>.tests.yaml (qué se prueba) + <modulo>.risk.yaml (riesgos+cobertura)
 ├── .agents/skills/         ← referencias de endpoints de la API
 ├── fixtures/               ← fixtures legacy (no usar en tests nuevos)
 ├── .github/workflows/
@@ -255,5 +258,7 @@ Evaluar riesgo de un PR/rama y correr la suite óptima.
 - Responder en **español** salvo que el usuario use inglés
 - Código de tests en **inglés** (nombres de variables, strings, comentarios técnicos)
 - Antes de crear tests → leer `.claude/memory/api_system.md` y `doc/risk-register/<modulo>.md`
-- Antes de crear un test file → verificar si ya existe uno similar en `tests/api/`
+- **Para saber qué tests existen y qué riesgos están cubiertos → leer `qa-knowledge/INDEX.yaml` y saltar al `qa-knowledge/<modulo>/`**. NO grepear `tests/` a ciegas: el YAML ya dice qué hay, dónde, qué quirks y qué riesgos faltan (`status: uncovered`). Formato: `qa-knowledge/SCHEMA.md`
+- Antes de crear un test file → consultar `qa-knowledge/<modulo>/*.tests.yaml`; si falta, verificar en `tests/api/`
+- Al agregar/cambiar tests → actualizar el `qa-knowledge/<modulo>/` (tests.yaml + risk.yaml) y los counts del INDEX
 - Leer `.claude/memory/MEMORY.md` al inicio de cada sesión para recordar el estado del proyecto
