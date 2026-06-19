@@ -1,24 +1,26 @@
-name: 🏭 Prod — Monitor (diario) + Full (manual)
+name: 🏭 Prod — Nightly (lun/mié/sáb) + Full (manual)
 
-# Cadencia por capa (test pyramid aplicado al scheduling):
-#  - DIARIO  (schedule): solo @prod-safe (read-only) en US + EU. Monitoreo de
-#    salud + contrato. Barato, cero escritura. Responde "¿prod vivo y sano?".
-#  - MANUAL  (workflow_dispatch mode=full): suite COMPLETA destructiva contra la
-#    cuenta QA. Reservada para REGRESIÓN CRÍTICA (post-release grande, post-
-#    incidente, validar deploy de infra). NO se corre periódicamente.
+# Cadencia:
+#  - LUN/MIÉ/SÁB (schedule): nightly DESTRUCTIVA (smoke+contract+regression) en
+#    US + EU contra la cuenta QA. Misma suite que el nightly de dev (sin integration).
+#    EU excluye módulos no disponibles con los tests actuales (article, epg, show:
+#    show migró a microservicio gRPC api.eu.../show con contrato distinto — ver
+#    IGNORE_GLOB del step EU). Escribe/borra en la cuenta QA dedicada.
+#  - MANUAL  (workflow_dispatch): safe (read-only @prod-safe) | nightly | full
+#    (suite COMPLETA + integration). Para regresión crítica puntual.
 #
-# dev sigue en push.yml + nightly.yml (full diario). Esto NO los toca.
+# dev sigue en push.yml + nightly.yml. Esto NO los toca.
 # El prod-guard (globalSetup) exige QA_ACCOUNT=true para cualquier corrida en prod.
 
 on:
   schedule:
-    - cron: '0 7 * * *'   # diario 07:00 UTC — monitor @prod-safe (US + EU)
+    - cron: '0 6 * * 1,3,6'   # lun/mié/sáb 06:00 UTC — nightly destructiva (US + EU)
   workflow_dispatch:
     inputs:
       mode:
-        description: 'safe (read-only @prod-safe) | full (suite completa destructiva, cuenta QA)'
+        description: 'safe (read-only @prod-safe) | nightly (smoke+contract+regression) | full (+ integration)'
         required: false
-        default: 'safe'
+        default: 'nightly'
       region:
         description: 'us | eu | both'
         required: false
@@ -54,9 +56,9 @@ jobs:
           INPUT_MODE="${{ github.event.inputs.mode }}"
 
           if [ "$EVENT" = "schedule" ]; then
-            MODE="safe"; WANT="both"
+            MODE="nightly"; WANT="both"
           else
-            MODE="${INPUT_MODE:-safe}"; WANT="${INPUT_REGION:-both}"
+            MODE="${INPUT_MODE:-nightly}"; WANT="${INPUT_REGION:-both}"
           fi
 
           RUN="false"
@@ -78,7 +80,7 @@ jobs:
           cache: 'npm'
 
       - name: ☕ Setup Java (allure-commandline)
-        if: steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        if: steps.gate.outputs.run == 'true' && (steps.gate.outputs.mode == 'full' || steps.gate.outputs.mode == 'nightly')
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -96,6 +98,22 @@ jobs:
           API_TOKEN: ${{ matrix.region == 'us' && secrets.US_API_TOKEN || secrets.EU_API_TOKEN }}
           QA_ACCOUNT: 'true'
 
+      - name: 🌙 Nightly — smoke + contract + regression (cuenta QA)
+        if: steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'nightly'
+        run: |
+          WORKERS="${{ github.event.inputs.workers || '4' }}"
+          npx playwright test --project=smoke --project=contract --project=regression --workers="$WORKERS"
+        env:
+          BASE_URL: ${{ matrix.region == 'us' && secrets.US_BASE_URL || secrets.EU_BASE_URL }}
+          API_TOKEN: ${{ matrix.region == 'us' && secrets.US_API_TOKEN || secrets.EU_API_TOKEN }}
+          QA_ACCOUNT: 'true'
+          # EU: excluir módulos no disponibles con los tests actuales.
+          #   article, epg -> módulos no habilitados en la cuenta EU (403).
+          #   show -> migró a microservicio gRPC (api.eu.../show) con contrato distinto;
+          #           el monolito /api/show cuelga (502). Los tests actuales no aplican.
+          # US: sin exclusión (todo disponible).
+          IGNORE_GLOB: ${{ matrix.region == 'eu' && '**/article/**,**/epg/**,**/show/**' || '' }}
+
       - name: 🧪 Full — suite completa destructiva (cuenta QA)
         if: steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
         run: |
@@ -106,6 +124,7 @@ jobs:
           BASE_URL: ${{ matrix.region == 'us' && secrets.US_BASE_URL || secrets.EU_BASE_URL }}
           API_TOKEN: ${{ matrix.region == 'us' && secrets.US_API_TOKEN || secrets.EU_API_TOKEN }}
           QA_ACCOUNT: 'true'
+          IGNORE_GLOB: ${{ matrix.region == 'eu' && '**/article/**,**/epg/**,**/show/**' || '' }}
 
       - name: 📤 Upload artifacts
         if: always() && steps.gate.outputs.run == 'true'
@@ -120,7 +139,7 @@ jobs:
 
       # ── Allure con historial por región — solo en modo full ──────────────────
       - name: 📥 Recuperar historial Allure de gh-pages
-        if: always() && steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        if: always() && steps.gate.outputs.run == 'true' && (steps.gate.outputs.mode == 'full' || steps.gate.outputs.mode == 'nightly')
         uses: actions/checkout@v4
         continue-on-error: true
         with:
@@ -128,7 +147,7 @@ jobs:
           path: gh-pages-branch
 
       - name: 📋 Restaurar historial previo
-        if: always() && steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        if: always() && steps.gate.outputs.run == 'true' && (steps.gate.outputs.mode == 'full' || steps.gate.outputs.mode == 'nightly')
         continue-on-error: true
         run: |
           mkdir -p allure-results/history
@@ -137,7 +156,7 @@ jobs:
           fi
 
       - name: 📊 Generar Allure Report
-        if: always() && steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        if: always() && steps.gate.outputs.run == 'true' && (steps.gate.outputs.mode == 'full' || steps.gate.outputs.mode == 'nightly')
         run: |
           if [ -d "allure-results" ] && [ "$(ls -A allure-results)" ]; then
             npm run allure:generate
@@ -147,7 +166,7 @@ jobs:
           fi
 
       - name: 🚀 Deploy Allure a GitHub Pages (/prod-<region>/) — solo full
-        if: always() && steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
+        if: always() && steps.gate.outputs.run == 'true' && (steps.gate.outputs.mode == 'full' || steps.gate.outputs.mode == 'nightly')
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -164,4 +183,4 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUITE_NAME: "🏭 Prod ${{ steps.gate.outputs.mode }} · ${{ matrix.region == 'us' && 'US' || 'EU' }}"
           REPORT_URL: "https://jurrego1771.github.io/api_test_flow/prod-${{ matrix.region }}/"
-          NOTIFY_ON_FAIL_ONLY: ${{ steps.gate.outputs.mode == 'full' && 'false' || 'true' }}
+          NOTIFY_ON_FAIL_ONLY: ${{ (steps.gate.outputs.mode == 'full' || steps.gate.outputs.mode == 'nightly') && 'false' || 'true' }}

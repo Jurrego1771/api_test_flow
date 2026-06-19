@@ -43,6 +43,22 @@ modules:
       Los 15 riesgos P0 están TODOS abiertos. BUG F1: update parcial pisa
       logo/nowplaying/producers. Moments (LIVE-RISK-016) DEPRECADO -> 410.
 
+  - name: Ad
+    prefix: TC_AD
+    base_path: /api/ad
+    tests_file: ad/ad.tests.yaml
+    risk_file: ad/ad.risk.yaml
+    risk_register: doc/risk-register/ad.md
+    counts: { smoke: 12, regression: 31, contract: 3, integration: 0, total: 46 }
+    coverage: { risks: 14, covered: 3, partial: 4, uncovered: 7 }
+    hot: >
+      Config de monetización, NO CRUD simple. Create = POST /api/ad/new (form:true).
+      Cobertura = CRUD + validación + búsqueda; los SIDE-EFFECTS están sin tocar:
+      propagación a Media (003), cascade Media/Event (004), MediaTailor (005),
+      type-switch cleanup (001), overlay/pausead (006), account isolation (013),
+      transcode (014). 8/9 P0 abiertos. Quirks: tags:[] no limpia (Q4), DELETE
+      idempotente (Q3), contract usa type:'schedule' fuera del enum (Q6).
+
   - name: Show
     prefix: TC_SHW
     base_path: /api/show

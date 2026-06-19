@@ -1,0 +1,169 @@
+# =============================================================================
+# QA Knowledge — Ad module
+# Mapa rápido de cobertura de tests para la API de Ad (sm2).
+# Cubre /api/ad (config de delivery/monetización, multi-type).
+# Formato: qa-knowledge/SCHEMA.md
+# =============================================================================
+
+module:
+  name: Ad
+  prefix: TC_AD
+  base_path: /api/ad
+  risk_file: qa-knowledge/ad/ad.risk.yaml
+  risk_register: doc/risk-register/ad.md
+  schema: schemas/ad.schema.js
+  backend_source: D:/Dev/Repos/mediastream/sm2/src/server/routes/api/ad/   # create.js, update.js, index.js, detail.js, delete.js, search.js, transcode.js
+  summary: >
+    Superficie de CONFIG de monetización, NO CRUD simple. El create/update
+    reescribe ramas anidadas según `type` (vast/vmap/googleima/local/ad-insertion/
+    ad-insertion-google/adswizz). Hooks post-save/post-remove mutan Media y Event
+    (ads heredados, MediaTailor). Cobertura actual = CRUD + validación + búsqueda;
+    los side-effects (propagación, cascade en Media/Event, MediaTailor, type-switch
+    cleanup, overlay/pausead, account isolation, transcode) están SIN tocar.
+
+endpoints:
+  - { method: POST, path: /api/ad/new, desc: "Crea ad. OJO: ruta es /new, NO /api/ad. Requiere form:true. Q1" }
+  - { method: GET, path: /api/ad, desc: "Lista (account-scoped). ?query= name regex, ?count=true, ?limit/skip/sort." }
+  - { method: GET, path: /api/ad/:id, desc: "Detalle. Inexistente -> 404 NOT_FOUND." }
+  - { method: POST, path: /api/ad/:id, desc: "Update (parcial/completo). Requiere form:true. Q2" }
+  - { method: DELETE, path: /api/ad/:id, desc: "Borra ad. Idempotente: 200 para ids inexistentes. Q3" }
+  - { method: GET, path: /api/ad/search, desc: "Búsqueda por ?name= o ?id= (índice con consistencia eventual)." }
+  - { method: POST, path: /api/ad/:id/transcode, desc: "Dispara transcode (side-effect). SIN cobertura." }
+
+quirks:
+  - id: Q1
+    type: api-shape
+    desc: "Create = POST /api/ad/new (NO /api/ad) con { form: true }. Sin /new -> no crea."
+  - id: Q2
+    type: api-shape
+    desc: "Update = POST /api/ad/:id (no PUT) con { form: true }."
+  - id: Q3
+    type: idempotent-delete
+    desc: "DELETE idempotente: 200 para ids inexistentes. Smoke delete_not_found acepta [200,400,404]."
+  - id: Q4
+    severity: low
+    type: known-bug
+    desc: >
+      tags:[] en update NO limpia el array (queda el valor previo). Bug documentado.
+      Cubierto como known-behavior por TC_AD_REG_003 y TC_AD_INT_002.
+  - id: Q5
+    type: coercion
+    desc: "is_enabled se envía como string 'true'/'false' y se devuelve boolean."
+  - id: Q6
+    severity: medium
+    type: enum-mismatch
+    desc: >
+      Whitelist real del backend (create.js:22-33, 8 types): vast, vmap, googleima,
+      local, ad-insertion, adswizz, ad-insertion-google, ad-prebid. Type fuera del
+      whitelist -> DEFAULT SILENCIOSO a 'vast' (el modelo no tiene enum). Dos consecuencias:
+      (1) TEST SMELL: el contract crea con type:'schedule' -> backend lo guarda 'vast' ->
+      el schema valida 'vast' y pasa, pero el test no prueba lo que aparenta (input bogus
+      corregido solo). (2) DRIFT REAL: el Zod adTypeEnum NO incluye 'ad-prebid' (que el
+      backend SÍ acepta) -> un ad real ad-prebid rompe el contract GET/list (safeParse
+      falla). Falla latente. Ver gaps AD-DRIFT-001 / AD-SMELL-001.
+  - id: Q7
+    type: env-issue
+    desc: >
+      type 'ad-insertion' puede tirar DB_ERROR en algunos entornos (visto en corrida EU:
+      'TC_AD_REG_005: types caused DB_ERROR (environment issue): ad-insertion'). El test
+      lo tolera; es ruido de ambiente, no bug del test.
+
+# -----------------------------------------------------------------------------
+# total: 46  (smoke:12  regression:31  contract:3  integration:0)
+# (no hay capa integration dedicada; los flujos cross-recurso viven en regression/ad-integration)
+# -----------------------------------------------------------------------------
+tests:
+
+  smoke:
+    file: tests/api/smoke/ad/ad-crud.smoke.spec.js
+    purpose: Happy path CRUD + list/search. Crea ad type vast mínimo y valida contrato base.
+    cases:
+      - { name: "Crear Ad mínimo (name, type, flags)", op: POST /api/ad/new, desc: "Crea ad vast mínimo; valida props base (schedule/adswizz/insertion/categories/tags/referers). Q1" }
+      - { name: "Obtener Ad por ID (200)", op: GET /api/ad/:id, desc: "GET por id devuelve el recurso creado." }
+      - { name: "ID inexistente devuelve 404 (GET)", op: GET /api/ad/:id, tags: [negative], desc: "GET id inexistente -> 404 NOT_FOUND. (describe: Ad - GET)" }
+      - { name: "Actualizar Ad existente (200)", op: POST /api/ad/:id, desc: "Update name + is_enabled + preroll_skip_at persiste. Q2/Q5" }
+      - { name: "min_media_time_length negativo se normaliza o devuelve 400", op: POST /api/ad/:id, tags: [negative, boundary], risk: AD-RISK-012, desc: "min_media_time_length=-1 -> 400 o normaliza a >=0." }
+      - { name: "ID inexistente devuelve 404 (Update)", op: POST /api/ad/:id, tags: [negative], desc: "Update id inexistente -> 404 NOT_FOUND. (describe: Ad - Update)" }
+      - { name: TC_AD_DELETE_ad_by_id, op: DELETE /api/ad/:id, desc: "Borra ad; GET posterior -> 404." }
+      - { name: TC_AD_DELETE_ad_not_found, op: DELETE /api/ad/:id, tags: [negative], risk: AD-RISK-004, desc: "DELETE id inexistente -> [200,400,404] (idempotente). Q3" }
+      - { name: TC_AD_GET_list_default, op: GET /api/ad, tags: [contract], risk: AD-RISK-010, desc: "Lista default cumple listAdResponseSchema." }
+      - { name: TC_AD_GET_list_pagination, op: GET /api/ad, risk: AD-RISK-010, desc: "?limit=2&skip=0 respeta paginación + schema." }
+      - { name: TC_AD_GET_search_by_name, op: GET /api/ad/search, risk: AD-RISK-010, desc: "Búsqueda por name (poll por consistencia eventual del índice)." }
+      - { name: TC_AD_GET_search_by_id, op: GET /api/ad/search, risk: AD-RISK-010, desc: "Búsqueda por id devuelve el ad." }
+
+  regression:
+    files:
+      - tests/api/regression/ad/ad-create.regression.spec.js
+      - tests/api/regression/ad/ad-integration.regression.spec.js
+      - tests/api/regression/ad/ad.regression.spec.js
+    purpose: Create por type (VMAP/VAST/ad-insertion) + negativos + flujos con Category/Media + update/delete edge cases.
+    cases:
+      # ad-create — VMAP
+      - { name: "TC_AD_010_POST_Create_VMAP_HappyPath @critical", op: POST /api/ad/new, tags: [critical], risk: AD-RISK-008, desc: "Crea ad VMAP OK." }
+      - { name: "TC_AD_015_POST_Create_VMAP_MissingTag @negative", op: POST /api/ad/new, tags: [negative], risk: AD-RISK-012, desc: "VMAP sin tag -> error." }
+      - { name: "TC_AD_017_POST_Create_VMAP_InvalidTagURL @negative", op: POST /api/ad/new, tags: [negative], risk: AD-RISK-012, desc: "VMAP con tag URL inválida -> error." }
+      # ad-create — VAST
+      - { name: "TC_AD_020_POST_Create_VAST_HappyPath @critical", op: POST /api/ad/new, tags: [critical], desc: "Crea ad VAST OK." }
+      - { name: "TC_AD_021_POST_Create_VAST_NegativePrerollSkip @negative", op: POST /api/ad/new, tags: [negative], risk: AD-RISK-012, desc: "preroll_skip negativo -> rechazo/normaliza." }
+      - { name: "TC_AD_022_POST_Create_VAST_NegativeMinMediaTime @negative", op: POST /api/ad/new, tags: [negative, boundary], risk: AD-RISK-012, desc: "min_media_time negativo -> rechazo/normaliza." }
+      - { name: "TC_AD_023_POST_Create_VAST_MissingTag @negative", op: POST /api/ad/new, tags: [negative], risk: AD-RISK-012, desc: "VAST sin tag -> error." }
+      # ad-create — ad-insertion
+      - { name: "TC_AD_030_POST_Create_AdInsertion_HappyPath @critical", op: POST /api/ad/new, tags: [critical], risk: AD-RISK-002, desc: "Crea ad-insertion OK. Q7 (puede DB_ERROR por ambiente)." }
+      - { name: "TC_AD_031_POST_Create_AdInsertion_MissingTag @negative", op: POST /api/ad/new, tags: [negative], risk: AD-RISK-002, desc: "ad-insertion sin tag -> error." }
+      - { name: "TC_AD_032_POST_Create_AdInsertion_ZeroDuration @negative", op: POST /api/ad/new, tags: [negative, boundary], risk: AD-RISK-002, desc: "duration=0 -> rechazo/normaliza." }
+      - { name: "TC_AD_033_POST_Create_AdInsertion_NegativeDuration @negative", op: POST /api/ad/new, tags: [negative, boundary], risk: AD-RISK-002, desc: "duration negativa -> rechazo." }
+      # ad-create — negativos genéricos
+      - { name: "TC_AD_011_POST_Create_MissingName @negative", op: POST /api/ad/new, tags: [negative], desc: "Sin name -> error." }
+      - { name: "TC_AD_012_POST_Create_EmptyName @negative", op: POST /api/ad/new, tags: [negative], desc: "name vacío -> error." }
+      - { name: "TC_AD_013_POST_Create_MissingType @negative", op: POST /api/ad/new, tags: [negative], risk: AD-RISK-001, desc: "Sin type -> error." }
+      - { name: "TC_AD_014_POST_Create_InvalidType @negative", op: POST /api/ad/new, tags: [negative], risk: AD-RISK-001, desc: "type inválido -> rechazo." }
+      - { name: "TC_AD_016_POST_Create_NameOnlySpaces @negative", op: POST /api/ad/new, tags: [negative], desc: "name solo espacios -> error." }
+      # ad-integration (cross-recurso, vive en capa regression)
+      - { name: "TC_AD_INT_001_POST_AssignCategory_FilteredInList @critical", op: POST /api/ad/new, tags: [critical], risk: AD-RISK-010, desc: "Ad con category aparece filtrado en el listado por category." }
+      - { name: "TC_AD_INT_002_POST_Update_TagsEmpty_DoesNotClear @known-behavior", op: POST /api/ad/:id, risk: AD-RISK-006, desc: "Update tags:[] NO limpia el array. Q4" }
+      - { name: "TC_AD_INT_003_POST_RemoveCategory_VerifyGone", op: POST /api/ad/:id, risk: AD-RISK-011, desc: "Quitar category del ad -> ya no aparece bajo esa category." }
+      - { name: "TC_AD_INT_004_POST_EnableDisable_Cycle @critical", op: POST /api/ad/:id, tags: [critical], desc: "Ciclo enable/disable persiste. Q5" }
+      - { name: "TC_AD_INT_005_GET_SearchByCategory", op: GET /api/ad/search, risk: AD-RISK-010, desc: "Búsqueda por category." }
+      # ad.regression
+      - { name: "TC_AD_REG_001_POST_Create_MissingName @negative", op: POST /api/ad/new, tags: [negative], desc: "Sin name -> error." }
+      - { name: "TC_AD_REG_002_POST_Create_InvalidType @negative", op: POST /api/ad/new, tags: [negative], risk: AD-RISK-001, desc: "type inválido -> rechazo." }
+      - { name: "TC_AD_REG_003_POST_Update_TagsEmpty_KnownBug @negative", op: POST /api/ad/:id, tags: [negative], risk: AD-RISK-006, desc: "tags:[] en update no limpia (bug). Q4" }
+      - { name: "TC_AD_REG_004_POST_Update_NegativePrerollSkip @negative", op: POST /api/ad/:id, tags: [negative, boundary], risk: AD-RISK-012, desc: "preroll_skip negativo en update -> rechazo/normaliza." }
+      - { name: "TC_AD_REG_005_GET_AllAdTypes_Valid", op: POST /api/ad/new, risk: AD-RISK-001, desc: "Crea ad por cada type del enum y valida. Q7 (ad-insertion puede DB_ERROR por ambiente)." }
+      - { name: "TC_AD_REG_006_POST_Update_EnableDisable", op: POST /api/ad/:id, desc: "Update is_enabled true/false persiste. Q5" }
+      - { name: "TC_AD_REG_007_POST_Update_NonExistent @negative", op: POST /api/ad/:id, tags: [negative], desc: "Update id inexistente -> error." }
+      - { name: "TC_AD_REG_008_GET_Search_EmptyResults", op: GET /api/ad/search, risk: AD-RISK-010, desc: "Búsqueda sin matches -> lista vacía." }
+      - { name: "TC_AD_REG_009_POST_Create_AllScheduleFields", op: POST /api/ad/new, risk: AD-RISK-007, desc: "Create con todos los campos de schedule." }
+      - { name: "TC_AD_REG_010_DELETE_Idempotent", op: DELETE /api/ad/:id, risk: AD-RISK-004, desc: "DELETE idempotente. Q3" }
+
+  contract:
+    file: tests/api/contract/ad/ad.contract.spec.js
+    purpose: Validación de schema Zod (detecta breaking changes del backend).
+    schema_ref: schemas/ad.schema.js
+    cases:
+      - { name: "TC_CON_AD_001 POST /api/ad response schema", op: POST /api/ad/new, tags: [contract], desc: "Respuesta de create cumple createAdResponseSchema. Q6 (type:'schedule')." }
+      - { name: "TC_CON_AD_002 GET /api/ad/:id response schema", op: GET /api/ad/:id, tags: [contract], desc: "Respuesta de detail cumple getAdResponseSchema." }
+      - { name: "TC_CON_AD_003 GET /api/ad list response schema", op: GET /api/ad, tags: [contract], risk: AD-RISK-010, desc: "Respuesta de list cumple listAdResponseSchema." }
+
+  integration:
+    file: null
+    purpose: Sin capa integration dedicada. Flujos cross-recurso (category/media) en regression/ad-integration.
+    cases: []
+
+# -----------------------------------------------------------------------------
+# GAPS — riesgos del register sin cobertura (ver ad.risk.yaml para detalle)
+# -----------------------------------------------------------------------------
+gaps:
+  - { risk: AD-RISK-003, desc: "Propagación de ads heredados a Media en post-save SIN test (P0)." }
+  - { risk: AD-RISK-004, desc: "Remove cascade: limpieza de refs en Media/Event no verificada (solo idempotencia). P0." }
+  - { risk: AD-RISK-005, desc: "Sync MediaTailor en ad-insertion (create/update/delete config) SIN test (P0)." }
+  - { risk: AD-RISK-006, desc: "Overlay/pause-ad nested round-trip + null-clearing SIN test (solo tags:[] known-bug). P0." }
+  - { risk: AD-RISK-001, desc: "Type-switch: limpieza de config anidada stale al cambiar type SIN test (solo create por type). P0." }
+  - { risk: AD-RISK-007, desc: "Local ad schedule con pre/mid/post media refs SIN test (solo AllScheduleFields). P0." }
+  - { risk: AD-RISK-008, desc: "Exclusividad DAI/VMAP al hacer switch SIN test (solo create VMAP). P0." }
+  - { risk: AD-RISK-009, desc: "Prebid/adswizz zone/custom config SIN test (P1)." }
+  - { risk: AD-RISK-011, desc: "Integridad de refs Media (schedule.mid/pre/post) y populate SIN test (P1)." }
+  - { risk: AD-RISK-013, desc: "Account isolation (cross-account read/write) SIN test (P0)." }
+  - { risk: AD-RISK-014, desc: "Endpoint /transcode SIN test (insertion-ready vs missing). P1." }
+  - { id: AD-DRIFT-001, desc: "DRIFT schema<->backend: Zod adTypeEnum (schemas/ad.schema.js) no incluye 'ad-prebid', que el backend SÍ acepta (create.js:22-33). Un ad ad-prebid rompe el contract GET/list. FIX: agregar 'ad-prebid' al adTypeEnum. Q6" }
+  - { id: AD-SMELL-001, desc: "TEST SMELL: TC_CON_AD_001 crea con type:'schedule' (inválido); backend default-ea a 'vast' y el test pasa sin probar el create real. FIX: usar un type válido del whitelist y aserctar data.type === enviado. Q6" }
