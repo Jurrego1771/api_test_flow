@@ -8,6 +8,7 @@ const adTypeEnum = z.enum([
   "ad-insertion",
   "ad-insertion-google",
   "adswizz",
+  "ad-prebid",
 ]);
 
 const adScheduleSchema = z

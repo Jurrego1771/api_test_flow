@@ -25,13 +25,17 @@ test.describe('Ad - Contract', () => {
         const payload = {
             name: `[QA-CONTRACT] Ad ${Date.now()}`,
             account: ACCOUNT_ID,
-            type: 'schedule',
+            type: 'vast',
         };
         const res = await apiClient.post('/api/ad/new', payload, { form: true });
-        const adId = res.body?.data?._id;
+        const created = Array.isArray(res.body?.data) ? res.body.data[0] : res.body?.data;
+        const adId = created?._id;
         if (adId) cleaner.register('ad', adId);
 
         expect(res.ok, `Create failed: ${res.status} ${JSON.stringify(res.body)}`).toBeTruthy();
+        // Backend default-ea a 'vast' types fuera del whitelist (create.js): enviamos un
+        // type válido y verificamos que se persista, en vez de un type bogus auto-corregido.
+        expect(created?.type, `Expected type to persist as sent`).toBe(payload.type);
 
         const parsed = createAdResponseSchema.safeParse(res.body);
         expect(parsed.success, `Schema mismatch: ${JSON.stringify(parsed.error?.issues)}`).toBe(true);
@@ -41,9 +45,10 @@ test.describe('Ad - Contract', () => {
         const createRes = await apiClient.post('/api/ad/new', {
             name: `[QA-CONTRACT] Ad ${Date.now()}`,
             account: ACCOUNT_ID,
-            type: 'schedule',
+            type: 'vast',
         }, { form: true });
-        const adId = createRes.body?.data?._id;
+        const createdAd = Array.isArray(createRes.body?.data) ? createRes.body.data[0] : createRes.body?.data;
+        const adId = createdAd?._id;
         if (adId) cleaner.register('ad', adId);
         expect(createRes.ok).toBeTruthy();
 
