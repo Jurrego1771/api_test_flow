@@ -1,0 +1,332 @@
+# =============================================================================
+# QA Knowledge — Live Stream · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real
+# (análisis de 85 handlers backend vs 96 tests existentes).
+#
+# Conexión (IDs estables, grafo bidireccional):
+#   risk.yaml  risks[].covered_by  ->  tests.yaml cases[].name
+#   tests.yaml cases[].risk        ->  risk.yaml  risks[].id
+# Fuente narrativa completa: doc/risk-register/live-stream.md
+# =============================================================================
+
+module:
+  name: Live Stream
+  prefix: LIVE-RISK
+  tests_file: qa-knowledge/live-stream/live-stream.tests.yaml
+  risk_register: doc/risk-register/live-stream.md
+  scoring:
+    formula: score = impact * likelihood * detectability   # cada dim 1..5
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 23
+  covered: 2
+  partial: 9
+  uncovered: 12
+  note: >
+    Superficie enorme (85 handlers). Núcleo CRUD + estado básico + quizzes +
+    thumb/logo + schedule-job tienen cobertura; sub-recursos completos (restream,
+    ad-insertion, drm, epg, metadata, audio_exclusion, transcription) sin tocar.
+    Los 15 riesgos P0 están TODOS abiertos (partial/uncovered).
+  p0_open:
+    - { id: LIVE-RISK-011, status: uncovered, why: "update parcial PISA logo/nowplaying/producers — bug de pérdida de datos" }
+    - { id: LIVE-RISK-003, status: partial,   why: "toggle-recording sin tocar; stop-record/start-record negativos sin cubrir" }
+    - { id: LIVE-RISK-007, status: partial,   why: "restream solo GET list; create/start/stop/update/delete/detail sin cubrir" }
+    - { id: LIVE-RISK-012, status: partial,   why: "delete-not-found 404 + cascade de hijos sin verificar" }
+    - { id: LIVE-RISK-002, status: partial,   why: "tz_offset, fix-tz-offset, solapamiento, recurrencia cruzando medianoche" }
+    - { id: LIVE-RISK-005, status: uncovered, why: "access/DRM token sin cobertura" }
+    - { id: LIVE-RISK-006, status: uncovered, why: "EPG sync/reconcile sin cobertura" }
+    - { id: LIVE-RISK-008, status: uncovered, why: "ad-insertion/ad-break/sgai sin cobertura" }
+    - { id: LIVE-RISK-010, status: uncovered, why: "access rules (geo/ip/asn/device/concurrency) persistencia sin verificar" }
+    - { id: LIVE-RISK-020, status: uncovered, why: "DRM token issuance sin cobertura" }
+    - { id: LIVE-RISK-022, status: uncovered, why: "gracenote/integraciones externas sin cobertura" }
+
+# Quirks/seguridad transversales detectados en el análisis (afectan diseño de tests):
+findings:
+  - id: F1
+    severity: high
+    desc: "update.js PISA campos no enviados (logo.position->top-right, logo.url->'', nowplaying->false, producers). Update parcial = pérdida silenciosa. Ver LIVE-RISK-011."
+  - id: F2
+    severity: high
+    desc: "record/start.js:11 y record/stop.js:11 usan findById SIN filtro de account -> posible cross-tenant. Ver LIVE-RISK-003."
+  - id: F3
+    severity: medium
+    desc: "detail.js:74 saca sourceArn/flowArn/sourceUrl de la respuesta -> el contract test debe AFIRMAR su ausencia (no filtrar infra)."
+  - id: F4
+    desc: "Contrato HTTP inconsistente: NOT_FOUND da 200+status:ERROR en toggle-online/record-*/stop-record, pero 404 en toggle-bookmark/detail/update/delete."
+  - id: F5
+    desc: "Envelopes de error distintos: SGAI y transcription usan campo `error`; background devuelve 200 con status:ERROR (assertear body.data, no HTTP code)."
+  - id: F6
+    desc: "fix-tz-offset/update.js:50 fórmula sospechosa start_hour 2x + módulo sin normalizar negativos; usa __dagerous_force_create__ que salta validación de solapamiento."
+
+risks:
+  - id: LIVE-RISK-001
+    area: Create/update
+    risk: Stream creado/actualizado con acceso, encoding o estado CDN inválido.
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_LIV_001_POST_CreateStreamVideo
+      - TC_LIV_002_POST_CreateStreamAudio
+      - TC_LIV_004_POST_UpdateNameOnly
+      - TC_LIV_004b_POST_UpdatePartialConfig
+      - "TC_CON_LIV_001 POST /api/live-stream response schema"
+    gap: >
+      Falta: geo inválido (INVALID_GEORESTRICTION), geo_cities (INVALID_CITIES_COUNTRY)
+      en create+update; SPEKE_V2_URL_NOT_CONFIGURED; transición de estado medialive en
+      update; enums sin whitelist (type/preferred_protocol/profile); gating por permisos
+      (medialive/mediapackage solo admin); update not-found 404.
+
+  - id: LIVE-RISK-002
+    area: Schedule jobs
+    risk: Creación/update de schedule-job produce ventanas o recurrencia erróneas.
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_SCH_005_POST_CreateScheduleJobBasic
+      - TC_SCH_009_POST_UpdateScheduleJob_ChangeHour
+      - TC_SCH_015_POST_EndHourBeforeStartHour_OnSameDay
+      - TC_SCH_017_POST_SameonDateAndoffDate_ShouldReject
+      - TC_SCH_018_POST_RecurringWithoutDays_Behavior
+      - TC_SCH_019_POST_RecurringWithAllDays
+    gap: >
+      Falta: persistencia de tz_offset en UTC; endpoint fix-tz-offset (recálculo masivo);
+      solapamiento de jobs (INVALID_DATE_ERROR_OVERLAPPED_DATES); recurrente cruzando
+      medianoche; preservación de campos en update; días específicos (subconjunto);
+      OVER_MAX_DURATION; SCHEDULE_RECORDING_DURATION. Ver F6.
+
+  - id: LIVE-RISK-003
+    area: Recording control
+    risk: Transiciones start/stop de grabación inconsistentes o fuera de sync.
+    score: 100
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_LIV_023_POST_StartRecord
+    gap: >
+      Falta: stop-record sin grabar (NOT_RECORDING); start-record ya grabando
+      (ALREADY_RECORDING) y sin perfiles (NO_AVAILABLE_PROFILES); toggle-recording
+      ENDPOINT COMPLETO (NO_AVAILABLE_PROFILES/CDN_ZONE); callbacks record/start y
+      record/stop + idempotencia. Seguridad: F2 (cross-account en callbacks).
+
+  - id: LIVE-RISK-004
+    area: MediaLive / transcoding
+    risk: Estado de transcoding cloud cambia mal o queda atascado.
+    score: 100
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_LIV_030_POST_MediaLive
+    gap: "Falta: transición START<->STOP, guarda anti-arranque (jobEnabled+channel.state), handleAutoRecording (crea/finaliza EventRecording), forceReload en respuesta."
+
+  - id: LIVE-RISK-005
+    area: Playback access
+    risk: Lógica de access token autoriza/rechaza al viewer equivocado.
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin cobertura de emisión de access token / DRM / paridad header-query."
+
+  - id: LIVE-RISK-006
+    area: EPG sync
+    risk: Reconciliación EPG produce eventos duplicados, faltantes o desordenados.
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin cobertura de epg/sync (NO_FUTURE_EPG_DATA, EPG_NOT_ENABLED). reconcileEpgWithDb = candidato a unit test."
+
+  - id: LIVE-RISK-007
+    area: Restream
+    risk: Start/stop/update de restream deja streams en estado inválido.
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_LIV_045_GET_RestreamList
+    gap: >
+      Solo GET list cubierto. Falta: create (type custom/social + campos requeridos,
+      LIMIT_REACHED), start/stop (LIVE_RESTREAMING_NOT_FOUND), update (revalida combinación
+      type), delete (stop antes de remove). Filtro social-media puede ocultar->404.
+
+  - id: LIVE-RISK-008
+    area: Ad insertion
+    risk: Ad insertion / SGAI corrompe playback o monetización.
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: >
+      Sin cobertura. ad-insertion (INVALID_DURATION, EVENT_IS_NOT_RUNNING, SCTE35 a MediaLive),
+      ad-break (INVALID_DATA colapsa 404+400), sgai (HMAC, envelope error distinto F5).
+
+  - id: LIVE-RISK-009
+    area: Publish token
+    risk: Validación de publish token permite source equivocado o bloquea válido.
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_LIV_024_POST_RefreshToken
+    gap: "Solo refresh happy. Falta: validación de publish token, parsing tcurl, shapes inválidos."
+
+  - id: LIVE-RISK-010
+    area: Access rules
+    risk: Reglas geo/IP/ASN/referer/device/cellular/concurrency persisten mal.
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin tests de persistencia ni allow/deny ni negativos de access rules (create.js:391-540, update.js:919-931)."
+
+  - id: LIVE-RISK-011
+    area: State overwrite
+    risk: Updates parciales sobrescriben campos no relacionados del live-stream.
+    score: 64
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: >
+      BUG (F1): PUT solo {name} resetea logo.position->'top-right', logo.url->'',
+      nowplaying->false, puede vaciar producers. Falta test que envíe update parcial y
+      verifique que esos campos NO cambian respecto al estado previo.
+
+  - id: LIVE-RISK-012
+    area: Delete
+    risk: Borrar un live-stream deja jobs, assets o cache huérfanos.
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_LIV_005_DELETE_Stream
+    gap: "Falta: delete not-found (404 NOT_FOUND); cross-account; integración que verifique cascade de hijos (schedule-jobs, recordings, smil/assets, public/events/<id>.json)."
+
+  - id: LIVE-RISK-013
+    area: List/search
+    risk: Listado devuelve scope, filtros o permisos equivocados.
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - TC_LIV_002_GET_ListStreams
+      - TC_LIV_006_GET_SearchByName
+      - TC_LIV_007_GET_FilterOnline
+      - TC_LIV_008_GET_FilterOffline
+      - TC_LIV_009_GET_FilterByTypeVideoAudio
+      - TC_LIV_010_GET_PaginationLimit
+      - TC_LIV_011_GET_PaginationSkip
+      - TC_LIV_021_GET_FilterFavorites
+      - TC_LIV_022_GET_ListWithParams
+      - "TC_CON_LIV_003 GET /api/live-stream list response schema"
+    gap: "Falta: modo ?count=true (devuelve número), ?monitor=, scoping admin vs no-admin (?account=), visibilidad por módulos (live vs live_audio)."
+
+  - id: LIVE-RISK-014
+    area: Entry points
+    risk: Generación de entry points devuelve URLs stale o inválidas.
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - TC_LIV_032_GET_DetailPublishUrls
+    gap: "Falta: contrato exacto de URLs (CDN zone, account data, estructura), saneamiento de ARNs en detail (F3)."
+
+  - id: LIVE-RISK-015
+    area: Thumbnails/logo
+    risk: Endpoints de thumbnail/logo fallan o exponen assets stale.
+    score: 27
+    priority: P1
+    status: covered
+    covered_by:
+      - TC_THB_001_POST_UploadThumbnail
+      - TC_THB_002_GET_VerifyThumbnailList
+      - TC_THB_003_POST_SetDefaultThumbnail
+      - TC_THB_004_DELETE_RemoveThumbnail
+      - TC_LOG_001_POST_UploadValidLogo
+      - TC_LOG_005_POST_ReplaceLogo
+      - TC_LOG_010_DELETE_RemoveLogo
+      - TC_LOG_012_DELETE_LogoIdempotency
+    gap: null
+
+  - id: LIVE-RISK-016
+    area: Moments
+    risk: Lifecycle de moments roto bajo edición/borrado concurrente.
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "DEPRECADO — todos los endpoints devuelven 410 FEATURE_DEPRECATED. Único test válido: smoke del 410. No invertir cobertura."
+
+  - id: LIVE-RISK-017
+    area: Metadata
+    risk: Create/update/delete de metadata guarda ventanas o IDs erróneos.
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin cobertura. POST metadata (INFO_REQUIRED, ID3 a MediaLive), GET metadata (Firestore now-playing; depende de Firebase)."
+
+  - id: LIVE-RISK-018
+    area: Quiz flow
+    risk: Create/update/send/delete de quiz diverge del evento live.
+    score: 36
+    priority: P1
+    status: covered
+    covered_by:
+      - TC_LIV_GET_quizzes_list_valid
+      - TC_LIV_POST_quizzes_create_valid
+      - TC_LIV_POST_quizzes_create_missing_title
+      - TC_LIV_POST_quizzes_update_title
+      - TC_LIV_POST_quizzes_send_valid
+      - TC_LIV_DELETE_quizzes_valid
+      - TC_LIV_DELETE_quizzes_not_found
+    gap: null
+
+  - id: LIVE-RISK-019
+    area: Audio exclusion
+    risk: Reglas de audio exclusion rompen playback o persisten zonas erróneas.
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin cobertura. CRUD audio_exclusion (doble escritura Mongo+Firestore; media=='null' limpia)."
+
+  - id: LIVE-RISK-020
+    area: DRM token
+    risk: Emisión de DRM token live falla o debilita la protección.
+    score: 50
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin cobertura. POST drm/token (DRM_NOT_CONFIGURED, ERROR_CREATING_TOKEN, branch MediaPackage v1/v2, clamp expireMinutes)."
+
+  - id: LIVE-RISK-021
+    area: AI transcription
+    risk: Flags y estado de transcripción live se guardan mal.
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin cobertura. transcription create (AI_MODULE_NOT_ENABLED, JOBID_NOT_FOUND, envelope `error`) y detail."
+
+  - id: LIVE-RISK-022
+    area: Gracenote / third-party
+    risk: Datos de integración externa se guardan inconsistentes.
+    score: 40
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin cobertura. GET gracenote (INVALID_REQUEST, FORBIDDEN por módulo)."
+
+  - id: LIVE-RISK-023
+    area: Rate-limited operations
+    risk: Toggles o acciones de schedule repetidas crean flips de estado tipo race.
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Falta idempotencia: doble toggle online/offline/bookmark, llamadas repetidas a record. Solo happy simple cubierto."

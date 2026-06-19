@@ -28,6 +28,21 @@ modules:
       Media/Show/Article. BUG LATENTE Q5: update sin `parent` huérfana al hijo.
       P0 abiertos: CAT-RISK-002, 003, 005, 010.
 
+  - name: Live Stream
+    prefix: TC_LIV
+    base_path: /api/live-stream
+    tests_file: live-stream/live-stream.tests.yaml
+    risk_file: live-stream/live-stream.risk.yaml
+    risk_register: doc/risk-register/live-stream.md
+    counts: { smoke: 11, regression: 42, contract: 3, integration: 40, total: 96 }
+    coverage: { risks: 23, covered: 2, partial: 9, uncovered: 12 }
+    hot: >
+      Gran superficie (85 handlers backend). Núcleo CRUD + estado + quizzes +
+      thumb/logo + schedule-job cubiertos; sub-recursos completos (restream,
+      ad-insertion, drm, epg, metadata, audio_exclusion, transcription) SIN tocar.
+      Los 15 riesgos P0 están TODOS abiertos. BUG F1: update parcial pisa
+      logo/nowplaying/producers. Moments (LIVE-RISK-016) DEPRECADO -> 410.
+
 # Plantilla para agregar un módulo nuevo (copiar y completar):
 # - name: <Modulo>
 #   prefix: TC_XXX

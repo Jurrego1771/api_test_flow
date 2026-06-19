@@ -1,0 +1,236 @@
+# =============================================================================
+# QA Knowledge — Live Stream module
+# Mapa rápido de cobertura de tests para la API de Live Stream (sm2).
+# Cubre el recurso /api/live-stream y sus sub-recursos anidados
+# (thumbnail, logo, quizzes, schedule-job, restream, ads, player).
+# Formato: qa-knowledge/SCHEMA.md
+# =============================================================================
+
+module:
+  name: Live Stream
+  prefix: TC_LIV          # sub-prefijos: TC_THB (thumbnail), TC_LOG (logo), TC_SCH (schedule-job)
+  base_path: /api/live-stream
+  risk_file: qa-knowledge/live-stream/live-stream.risk.yaml   # riesgos + estado de cobertura
+  risk_register: doc/risk-register/live-stream.md
+  schema: schemas/live.schema.js
+  backend_source: D:/Dev/Repos/mediastream/sm2/src/server/routes/api/live-stream
+  summary: >
+    Streaming en vivo (video/audio) con muchos sub-recursos y estado en runtime
+    (online/offline, grabación, tokens de publicación). Gran superficie: media,
+    assets estáticos (thumbnail/logo), quizzes interactivos, schedule-job
+    recurrente, restream y ads. Muchos endpoints dependen del entorno.
+
+# -----------------------------------------------------------------------------
+# Endpoints cubiertos (por grupo)
+# -----------------------------------------------------------------------------
+endpoints:
+  - method: POST
+    path: /api/live-stream
+    desc: Crea stream (type video o audio).
+  - method: GET
+    path: /api/live-stream
+    desc: Lista/búsqueda. Filtros - name, online/offline, type, favorites, paginación.
+  - method: GET
+    path: /api/live-stream/:id
+    desc: Detalle (incluye publish URLs).
+  - method: POST
+    path: /api/live-stream/:id
+    desc: Update (name, config parcial, DVR).
+  - method: DELETE
+    path: /api/live-stream/:id
+    desc: Borra stream.
+  - method: POST
+    path: /api/live-stream/:id (estado/acciones)
+    desc: toggle online/offline, toggle-bookmark (favorito), record, refresh publish token.
+  - method: "*"
+    path: /api/live-stream/:id/thumbnail
+    desc: Upload/list/set-default/delete de thumbnails.
+  - method: "*"
+    path: /api/live-stream/:id/logo
+    desc: Upload/posición/URL externa/replace/delete de logo.
+  - method: "*"
+    path: /api/live-stream/:id/quizzes[/:quizId[/send]]
+    desc: CRUD de quizzes + envío.
+  - method: "*"
+    path: /api/live-stream/:id/schedule-job
+    desc: Programación recurrente (on/off date, hours, days).
+  - method: POST
+    path: /api/live-stream/:id (asociaciones)
+    desc: assign player, media-live, assign/remove ad.
+  - method: GET
+    path: /api/live-stream/:id/restream
+    desc: Lista de restream.
+
+# -----------------------------------------------------------------------------
+# Quirks / notas de entorno (LEER antes de tocar tests)
+# -----------------------------------------------------------------------------
+quirks:
+  - id: Q1
+    desc: "Muchos tests hacen test.skip() si la API Live o el recurso no está disponible en el entorno (no son fallos)."
+  - id: Q2
+    desc: "schedule-job puede no estar disponible según entorno; los tests TC_SCH skipean si responde no-OK."
+  - id: Q3
+    type: known-behavior
+    desc: "TC_LOG_008 (upload archivo vacío) marcado @known-behavior — comportamiento aceptado, no falla."
+  - id: Q4
+    desc: "Tests de assign player/ad skipean si no hay players/ads disponibles en la cuenta."
+
+# -----------------------------------------------------------------------------
+# Tests por capa
+# total: 96  (smoke:11  regression:42  contract:3  integration:40)
+# -----------------------------------------------------------------------------
+tests:
+
+  smoke:
+    files:
+      - tests/api/smoke/live/live-crud.smoke.spec.js
+      - tests/api/smoke/live/live-thumbnail.smoke.spec.js
+    purpose: Happy path - CRUD básico responde + flujo de thumbnails + auth.
+    cases:
+      - { name: TC_LIV_001_POST_CreateStreamVideo, op: POST /api/live-stream, desc: "Crea stream de video." }
+      - { name: TC_LIV_002_GET_ListStreams, op: GET /api/live-stream, desc: "Lista streams, responde array." }
+      - { name: TC_LIV_003_GET_DetailStream, op: GET /api/live-stream/:id, desc: "Detalle de un stream creado." }
+      - { name: TC_LIV_005_DELETE_Stream, op: DELETE /api/live-stream/:id, desc: "Borra stream." }
+      - { name: TC_LIV_003b_GET_DetailNotFound, op: GET /api/live-stream/:id, tags: [negative], desc: "id inexistente -> not found." }
+      - { name: TC_THB_001_POST_UploadThumbnail, op: POST /api/live-stream/:id/thumbnail, desc: "Sube un thumbnail." }
+      - { name: TC_THB_002_GET_VerifyThumbnailList, op: GET /api/live-stream/:id, desc: "El thumbnail subido aparece en la lista." }
+      - { name: TC_THB_003_POST_SetDefaultThumbnail, op: POST /api/live-stream/:id/thumbnail, desc: "Marca un thumbnail como default." }
+      - { name: TC_THB_004_DELETE_RemoveThumbnail, op: DELETE /api/live-stream/:id/thumbnail, desc: "Elimina un thumbnail." }
+      - { name: TC_THB_005_POST_UploadNoToken, op: POST /api/live-stream/:id/thumbnail, tags: [negative], desc: "Upload sin token -> 401/403." }
+      - { name: TC_THB_006_DELETE_RemoveNoToken, op: DELETE /api/live-stream/:id/thumbnail, tags: [negative], desc: "Delete sin token -> 401/403." }
+
+  regression:
+    files:
+      - tests/api/regression/live/live-advanced.regression.spec.js
+      - tests/api/regression/live/live-logo.regression.spec.js
+    purpose: CRUD extra, filtros/paginación, estado runtime, asociaciones, logo (assets).
+    cases:
+      # 1b. CRUD adicional
+      - { name: TC_LIV_002_POST_CreateStreamAudio, op: POST /api/live-stream, desc: "Crea stream de audio." }
+      - { name: TC_LIV_004_POST_UpdateNameOnly, op: POST /api/live-stream/:id, desc: "Update solo del nombre." }
+      - { name: TC_LIV_004b_POST_UpdatePartialConfig, op: POST /api/live-stream/:id, desc: "Update parcial de configuración." }
+      # 2. Búsqueda y Filtros
+      - { name: TC_LIV_006_GET_SearchByName, op: "GET /api/live-stream?name=", desc: "Búsqueda por nombre." }
+      - { name: TC_LIV_007_GET_FilterOnline, op: GET /api/live-stream, desc: "Filtra streams online." }
+      - { name: TC_LIV_008_GET_FilterOffline, op: GET /api/live-stream, desc: "Filtra streams offline." }
+      - { name: TC_LIV_021_GET_FilterFavorites, op: GET /api/live-stream, desc: "Filtra favoritos." }
+      - { name: TC_LIV_022_GET_ListWithParams, op: GET /api/live-stream, desc: "Lista con múltiples query params." }
+      - { name: TC_LIV_009_GET_FilterByTypeVideoAudio, op: GET /api/live-stream, desc: "Filtra por type video/audio." }
+      - { name: TC_LIV_010_GET_PaginationLimit, op: "GET /api/live-stream?limit=", desc: "Paginación - limit." }
+      - { name: TC_LIV_011_GET_PaginationSkip, op: "GET /api/live-stream?skip=", desc: "Paginación - skip." }
+      # 3. Estado Online/Offline
+      - { name: TC_LIV_012_POST_ToggleOnline, op: POST /api/live-stream/:id, desc: "Pone stream online." }
+      - { name: TC_LIV_013_POST_ToggleOffline, op: POST /api/live-stream/:id, desc: "Pone stream offline." }
+      # 4. Favoritos
+      - { name: TC_LIV_014_POST_SetFavorite, op: POST /api/live-stream/:id/toggle-bookmark, desc: "Marca como favorito." }
+      - { name: TC_LIV_015_POST_RemoveFavorite, op: POST /api/live-stream/:id/toggle-bookmark, desc: "Quita favorito." }
+      # 5. Grabación
+      - { name: TC_LIV_023_POST_StartRecord, op: POST /api/live-stream/:id/record, desc: "Inicia grabación." }
+      # 6. Token de Publicación
+      - { name: TC_LIV_024_POST_RefreshToken, op: POST /api/live-stream/:id, desc: "Refresca token de publicación." }
+      # 7. Thumbnails y Logo
+      - { name: TC_LIV_025_GET_ThumbList, op: GET /api/live-stream/:id, desc: "Lista de thumbnails." }
+      - { name: TC_LIV_027_028_POST_LogoConfig, op: POST /api/live-stream/:id/logo, desc: "Configura logo." }
+      - { name: TC_LIV_029_DELETE_RemoveLogo, op: DELETE /api/live-stream/:id/logo, desc: "Elimina logo." }
+      # 8. Configuración Avanzada
+      - { name: TC_LIV_039_POST_EnableDVR, op: POST /api/live-stream/:id, desc: "Habilita DVR." }
+      - { name: TC_LIV_026_POST_AssignPlayer, op: POST /api/live-stream/:id, tags: [], desc: "Asigna player (skip si no hay players). Q4" }
+      - { name: TC_LIV_030_POST_MediaLive, op: POST /api/live-stream/:id, desc: "Configura media-live." }
+      - { name: TC_LIV_032_GET_DetailPublishUrls, op: GET /api/live-stream/:id, desc: "Detalle expone publish URLs." }
+      - { name: TC_LIV_033_POST_AssignAd, op: POST /api/live-stream/:id, desc: "Asigna ad (skip si no hay ads). Q4" }
+      - { name: TC_LIV_034_POST_RemoveAd, op: POST /api/live-stream/:id, desc: "Quita ad." }
+      # 9. Schedule y Restream
+      - { name: TC_LIV_044_GET_Schedule, op: GET /api/live-stream/:id/schedule, desc: "Consulta schedule del stream." }
+      - { name: TC_LIV_045_GET_RestreamList, op: GET /api/live-stream/:id/restream, desc: "Lista de restream." }
+      # Logo — Positivos y Persistencia (TC_LOG)
+      - { name: TC_LOG_001_POST_UploadValidLogo, op: POST /api/live-stream/:id/logo, desc: "Sube logo válido." }
+      - { name: TC_LOG_002_GET_VerifyPersistence, op: GET /api/live-stream/:id, desc: "El logo persiste tras subir." }
+      - { name: TC_LOG_003_POST_UpdateLogoPosition, op: POST /api/live-stream/:id/logo, desc: "Actualiza posición del logo." }
+      - { name: TC_LOG_004_POST_SetExternalLogoUrl, op: POST /api/live-stream/:id/logo, desc: "Setea logo por URL externa." }
+      - { name: TC_LOG_005_POST_ReplaceLogo, op: POST /api/live-stream/:id/logo, desc: "Reemplaza logo existente." }
+      # Logo — Límites y Negativos
+      - { name: TC_LOG_006_POST_UploadOverSizeLimit, op: POST /api/live-stream/:id/logo, tags: [negative], desc: "Logo sobre el límite de tamaño -> rechazo." }
+      - { name: TC_LOG_007_POST_UploadInvalidFormat, op: POST /api/live-stream/:id/logo, tags: [negative], desc: "Formato inválido -> rechazo." }
+      - { name: TC_LOG_008_POST_UploadEmptyFile, op: POST /api/live-stream/:id/logo, tags: [known-behavior], quirk_ref: Q3, desc: "Archivo vacío - comportamiento aceptado (no falla)." }
+      - { name: TC_LOG_009_POST_UploadNonExistentLive, op: POST /api/live-stream/:id/logo, tags: [negative], desc: "Logo a live inexistente -> error." }
+      # Logo — Eliminación y Limpieza
+      - { name: TC_LOG_010_DELETE_RemoveLogo, op: DELETE /api/live-stream/:id/logo, desc: "Elimina logo." }
+      - { name: TC_LOG_011_GET_VerifyCleanState, op: GET /api/live-stream/:id, desc: "Estado limpio tras eliminar logo." }
+      - { name: TC_LOG_012_DELETE_LogoIdempotency, op: DELETE /api/live-stream/:id/logo, desc: "Delete idempotente del logo." }
+      # Logo — Seguridad
+      - { name: TC_LOG_013_POST_UploadNoToken, op: POST /api/live-stream/:id/logo, tags: [negative], desc: "Upload sin token -> 401/403." }
+      - { name: TC_LOG_014_DELETE_RemoveNoToken, op: DELETE /api/live-stream/:id/logo, tags: [negative], desc: "Delete sin token -> 401/403." }
+
+  contract:
+    file: tests/api/contract/live/live.contract.spec.js
+    purpose: Validación de schema Zod (detecta breaking changes del backend).
+    schema_ref: schemas/live.schema.js
+    cases:
+      - { name: "TC_CON_LIV_001 POST /api/live-stream response schema", op: POST /api/live-stream, tags: [contract], desc: "Respuesta de create cumple schema." }
+      - { name: "TC_CON_LIV_002 GET /api/live-stream/:id response schema", op: GET /api/live-stream/:id, tags: [contract], desc: "Respuesta de detail cumple schema." }
+      - { name: "TC_CON_LIV_003 GET /api/live-stream list response schema", op: GET /api/live-stream, tags: [contract], desc: "Respuesta de list cumple schema." }
+
+  integration:
+    files:
+      - tests/api/integration/live/live-quizzes.integration.spec.js
+      - tests/api/integration/live/live-schedule.integration.spec.js
+    purpose: Sub-recursos anidados - quizzes (CRUD+send) y schedule-job (CRUD+validaciones+seguridad).
+    cases:
+      # Quizzes — List
+      - { name: TC_LIV_GET_quizzes_list_valid, op: "GET /api/live-stream/:id/quizzes", desc: "Lista quizzes de un live." }
+      - { name: TC_LIV_GET_quizzes_list_with_quiz, op: "GET /api/live-stream/:id/quizzes", desc: "Lista contiene el quiz creado." }
+      - { name: TC_LIV_GET_quizzes_list_not_found, op: "GET /api/live-stream/:id/quizzes", tags: [negative], desc: "Live inexistente -> not found." }
+      - { name: TC_LIV_GET_quizzes_list_no_token, op: "GET /api/live-stream/:id/quizzes", tags: [negative], desc: "Sin token -> 401/403." }
+      # Quizzes — Create
+      - { name: TC_LIV_POST_quizzes_create_valid, op: "POST /api/live-stream/:id/quizzes", desc: "Crea quiz válido." }
+      - { name: TC_LIV_POST_quizzes_create_missing_title, op: "POST /api/live-stream/:id/quizzes", tags: [negative], desc: "Falta title -> error." }
+      - { name: TC_LIV_POST_quizzes_create_missing_questions, op: "POST /api/live-stream/:id/quizzes", tags: [negative], desc: "Faltan questions -> error." }
+      - { name: TC_LIV_POST_quizzes_create_option_missing_correct, op: "POST /api/live-stream/:id/quizzes", tags: [negative], desc: "Opción sin marca de correcta -> error." }
+      - { name: TC_LIV_POST_quizzes_create_no_token, op: "POST /api/live-stream/:id/quizzes", tags: [negative], desc: "Sin token -> 401/403." }
+      # Quizzes — Update
+      - { name: TC_LIV_POST_quizzes_update_title, op: "POST /api/live-stream/:id/quizzes/:quizId", desc: "Actualiza el título del quiz." }
+      - { name: TC_LIV_POST_quizzes_update_not_found, op: "POST /api/live-stream/:id/quizzes/:quizId", tags: [negative], desc: "quizId inexistente -> not found." }
+      # Quizzes — Send
+      - { name: TC_LIV_POST_quizzes_send_valid, op: "POST /api/live-stream/:id/quizzes/:quizId/send", desc: "Envía el quiz a la audiencia." }
+      # Quizzes — Delete
+      - { name: TC_LIV_DELETE_quizzes_valid, op: "DELETE /api/live-stream/:id/quizzes/:quizId", desc: "Borra quiz." }
+      - { name: TC_LIV_DELETE_quizzes_not_found, op: "DELETE /api/live-stream/:id/quizzes/:quizId", tags: [negative], desc: "quizId inexistente -> not found." }
+      - { name: TC_LIV_DELETE_quizzes_no_token, op: "DELETE /api/live-stream/:id/quizzes/:quizId", tags: [negative], desc: "Sin token -> 401/403." }
+      # Schedule-Job — GET
+      - { name: TC_SCH_001_GET_ScheduleJobFromExistingLive, op: "GET /api/live-stream/:id/schedule-job", desc: "Consulta schedule-job de un live existente." }
+      - { name: TC_SCH_002_GET_ScheduleJob_NotFound_FakeId, op: "GET /api/live-stream/:id/schedule-job", tags: [negative], desc: "Live inexistente -> not found." }
+      - { name: TC_SCH_003_GET_ScheduleJob_ResponseHeaders, op: "GET /api/live-stream/:id/schedule-job", desc: "Verifica headers de respuesta." }
+      - { name: TC_SCH_004_GET_ScheduleJob_DataStructureIfPresent, op: "GET /api/live-stream/:id/schedule-job", desc: "Valida estructura si hay datos." }
+      # Schedule-Job — POST
+      - { name: TC_SCH_005_POST_CreateScheduleJobBasic, op: "POST /api/live-stream/:id/schedule-job", desc: "Crea schedule-job básico." }
+      - { name: TC_SCH_007_POST_CreateScheduleJob_MissingRequiredFields, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "Faltan campos requeridos -> rechazo." }
+      - { name: TC_SCH_009_POST_UpdateScheduleJob_ChangeHour, op: "POST /api/live-stream/:id/schedule-job", desc: "Actualiza la hora del job." }
+      - { name: TC_SCH_010_POST_CreateScheduleJob_PastDate_Behavior, op: "POST /api/live-stream/:id/schedule-job", desc: "Comportamiento con fecha pasada." }
+      # Schedule-Job — DELETE
+      - { name: TC_SCH_011_DELETE_ScheduleJobById, op: "DELETE /api/live-stream/:id/schedule-job/:jobId", desc: "Elimina schedule-job por id." }
+      # Schedule-Job — Validaciones de fechas
+      - { name: TC_SCH_015_POST_EndHourBeforeStartHour_OnSameDay, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "Hora fin antes de inicio mismo día -> rechazo." }
+      - { name: TC_SCH_016_POST_InvalidMinuteValue_ShouldReject, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "Minuto inválido -> rechazo." }
+      - { name: TC_SCH_017_POST_SameonDateAndoffDate_ShouldReject, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "on_date == off_date -> rechazo." }
+      - { name: TC_SCH_018_POST_RecurringWithoutDays_Behavior, op: "POST /api/live-stream/:id/schedule-job", desc: "Recurrente sin días - comportamiento." }
+      - { name: TC_SCH_019_POST_RecurringWithAllDays, op: "POST /api/live-stream/:id/schedule-job", desc: "Recurrente con todos los días." }
+      # Schedule-Job — Seguridad
+      - { name: TC_SCH_020_GET_WithoutToken_ShouldReturn401or403, op: "GET /api/live-stream/:id/schedule-job", tags: [negative], desc: "GET sin token -> 401/403." }
+      - { name: TC_SCH_021_POST_WithoutToken_ShouldReturn401or403, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "POST sin token -> 401/403." }
+      - { name: TC_SCH_022_DELETE_WithoutToken_ShouldReturn401or403, op: "DELETE /api/live-stream/:id/schedule-job", tags: [negative], desc: "DELETE sin token -> 401/403." }
+      - { name: TC_SCH_023_GET_WithInvalidToken_ShouldReturn401or403, op: "GET /api/live-stream/:id/schedule-job", tags: [negative], desc: "Token inválido -> 401/403." }
+      # Schedule-Job — Edge Cases
+      - { name: TC_SCH_024_POST_EmptyPayload_ShouldRejectOrAccept, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "Payload vacío - rechaza o acepta (documenta)." }
+      - { name: TC_SCH_025_POST_ExtraUnknownFields_ShouldNotCrash, op: "POST /api/live-stream/:id/schedule-job", desc: "Campos extra desconocidos - no crashea." }
+      - { name: TC_SCH_026_GET_MalformedLiveId_ShouldReturn400or404, op: "GET /api/live-stream/:id/schedule-job", tags: [negative], desc: "liveId malformado -> 400/404." }
+      - { name: TC_SCH_027_GET_JobById_WhenJobDoesNotExist, op: "GET /api/live-stream/:id/schedule-job/:jobId", tags: [negative], desc: "Job inexistente." }
+      - { name: TC_SCH_028_POST_VeryLongStringInDates_ShouldReject, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "String muy largo en fechas -> rechazo." }
+      - { name: TC_SCH_029_GET_ResponseTime_ShouldBeUnder5s, op: "GET /api/live-stream/:id/schedule-job", desc: "Tiempo de respuesta < 5s." }
+      - { name: TC_SCH_030_POST_NullValues_ShouldRejectOrHandle, op: "POST /api/live-stream/:id/schedule-job", tags: [negative], desc: "Valores null - rechaza o maneja." }
+
+# -----------------------------------------------------------------------------
+# Gaps / pendientes
+# -----------------------------------------------------------------------------
+gaps:
+  - desc: "Falta crear live-stream.risk.yaml (mapeo de riesgos del risk-register a esta cobertura)."
+  - desc: "Muchos sub-recursos dependen del entorno (skip) — confirmar cobertura real en un entorno con Live habilitado."
