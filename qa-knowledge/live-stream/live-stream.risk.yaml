@@ -79,11 +79,15 @@ risks:
       - TC_LIV_004_POST_UpdateNameOnly
       - TC_LIV_004b_POST_UpdatePartialConfig
       - "TC_CON_LIV_001 POST /api/live-stream response schema"
+      - TC_LIV_059_POST_Create_InvalidGeo
+      - TC_LIV_060_POST_Create_InvalidCitiesCountry
+      - TC_LIV_061_POST_Update_InvalidGeo
+      - TC_LIV_062_POST_Update_NotFound
     gap: >
-      Falta: geo inválido (INVALID_GEORESTRICTION), geo_cities (INVALID_CITIES_COUNTRY)
-      en create+update; SPEKE_V2_URL_NOT_CONFIGURED; transición de estado medialive en
-      update; enums sin whitelist (type/preferred_protocol/profile); gating por permisos
-      (medialive/mediapackage solo admin); update not-found 404.
+      Cubierto: geo inválido + cities-country inválido (create+update), update not-found 404.
+      Falta: SPEKE_V2_URL_NOT_CONFIGURED; transición de estado medialive en update;
+      enums sin whitelist (type/preferred_protocol/profile); gating por permisos
+      (medialive/mediapackage solo admin).
 
   - id: LIVE-RISK-002
     area: Schedule jobs
@@ -223,7 +227,8 @@ risks:
     status: partial
     covered_by:
       - TC_LIV_005_DELETE_Stream
-    gap: "Falta: delete not-found (404 NOT_FOUND); cross-account; integración que verifique cascade de hijos (schedule-jobs, recordings, smil/assets, public/events/<id>.json)."
+      - TC_LIV_063_DELETE_NotFound
+    gap: "Cubierto: delete not-found (404). Falta: cross-account; integración que verifique cascade de hijos (schedule-jobs, recordings, smil/assets, public/events/<id>.json)."
 
   - id: LIVE-RISK-013
     area: List/search

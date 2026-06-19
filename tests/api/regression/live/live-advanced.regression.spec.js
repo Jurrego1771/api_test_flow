@@ -461,3 +461,54 @@ test.describe('11. Estado de grabación — negativos (LIVE-RISK-003)', () => {
         expect(res.body.data).toBe('LIVE_STREAM_NOT_FOUND');
     });
 });
+
+test.describe('12. Validación geo + not-found (LIVE-RISK-001/012)', () => {
+    test('TC_LIV_059_POST_Create_InvalidGeo @negative', async () => {
+        // geo_restriction activo sin countries/regions/cities -> 400 INVALID_GEORESTRICTION
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const payload = dataFactory.generateLiveStreamPayload({ type: 'video', online: 'false', geo_restriction: 'allow' });
+        const res = await apiClient.post(API_BASE, payload, { form: true });
+
+        expect(res.status).toBe(400);
+        expect(res.body.data).toBe('INVALID_GEORESTRICTION');
+    });
+
+    test('TC_LIV_060_POST_Create_InvalidCitiesCountry @negative', async () => {
+        // geo válido + geo_cities_country con código que no es [A-Z]{2} -> 400 INVALID_CITIES_COUNTRY
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const payload = dataFactory.generateLiveStreamPayload({
+            type: 'video', online: 'false',
+            geo_restriction: 'allow',
+            geo_restriction_countries: 'US',
+            geo_cities_country: 'xx', // minúsculas -> inválido
+        });
+        const res = await apiClient.post(API_BASE, payload, { form: true });
+
+        expect(res.status).toBe(400);
+        expect(res.body.data).toBe('INVALID_CITIES_COUNTRY');
+    });
+
+    test('TC_LIV_061_POST_Update_InvalidGeo @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const stream = await createLiveStream(apiClient);
+        cleaner.register('live-stream', stream._id);
+
+        const res = await apiClient.post(`${API_BASE}/${stream._id}`, { geo_restriction: 'allow' }, { form: true });
+        expect(res.status).toBe(400);
+        expect(res.body.data).toBe('INVALID_GEORESTRICTION');
+    });
+
+    test('TC_LIV_062_POST_Update_NotFound @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const res = await apiClient.post(`${API_BASE}/${FAKE_ID}`, { name: 'qa_nope' }, { form: true });
+        expect(res.status).toBe(404);
+        expect(res.body.data).toBe('NOT_FOUND');
+    });
+
+    test('TC_LIV_063_DELETE_NotFound @negative', async () => {
+        if (!(await ensureLiveApiAvailable(apiClient))) return;
+        const res = await apiClient.delete(`${API_BASE}/${FAKE_ID}`);
+        expect(res.status).toBe(404);
+        expect(res.body.data).toBe('NOT_FOUND');
+    });
+});
