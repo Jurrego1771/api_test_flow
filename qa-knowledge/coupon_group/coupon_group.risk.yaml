@@ -1,0 +1,99 @@
+# =============================================================================
+# QA Knowledge — Coupon Group · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> coupon_group.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Coupon Group
+  prefix: CG-RISK
+  tests_file: qa-knowledge/coupon_group/coupon_group.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 7
+  covered: 1
+  partial: 3
+  uncovered: 3
+  note: >
+    Módulo de coupon_group (grupos de cupones). No existe DELETE ni POST update.
+    Los grupos creados no se pueden eliminar (prefix qa_cpngrp_). Errores de
+    validación retornan HTTP 200 con status:ERROR, data:'...'. 3/7 riesgos
+    uncovered (counter drift, isolation, disable side-effects).
+  p0_open:
+    - { id: CG-RISK-003, status: uncovered, why: "coupon_total/coupon_used_total drift post-create/use sin test." }
+    - { id: CG-RISK-005, status: uncovered, why: "Cross-account group access sin test." }
+    - { id: CG-RISK-007, status: uncovered, why: "Bulk disable websocket/event side-effects sin test." }
+
+risks:
+  - id: CG-RISK-001
+    area: Group creation
+    risk: "Duplicate group names o gateway assignment rules break campaign setup."
+    score: 64
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_CPN_POST_group_create_duplicate_name"
+      - "TC_CPN_POST_group_create_missing_name @negative"
+    gap: "Unique name y missing name cubiertos. Admin-only gateway branch sin test."
+
+  - id: CG-RISK-002
+    area: Bulk disable
+    risk: "Disabling a group actualiza los cupones equivocados o se pierde coupons en el target window."
+    score: 100
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_CPN_POST_group_disable_missing_dates @negative"
+      - "TC_CPN_POST_group_disable_invalid_date_format @negative"
+    gap: "Validación de disable (missing/invalid dates) cubierta. Happy-path disable (con cupones en rango) sin test."
+
+  - id: CG-RISK-003
+    area: Counter drift
+    risk: "coupon_total, coupon_used_total y coupon_valid_total drift de la realidad."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de counter reconciliation post-create/use en coupon-group."
+
+  - id: CG-RISK-004
+    area: List/export
+    risk: "Group list y CSV export discrepan con stored totals o filtros."
+    score: 36
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_CPN_GET_group_list_valid"
+    gap: "List smoke cubierto. CSV export sin test."
+
+  - id: CG-RISK-005
+    area: Account isolation
+    risk: "Una cuenta puede leer o modificar groups de otra cuenta."
+    score: 40
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "TC_CPN_POST_group_create_no_token cubre auth negativo. Cross-account negative sin test."
+
+  - id: CG-RISK-006
+    area: Gateway coupling
+    risk: "Gateway-specific group restrictions se aplican inconsistentemente."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de gateway branch (incomm u otros). Solo name/validation cubiertos."
+
+  - id: CG-RISK-007
+    area: Disable side effects
+    risk: "Bulk disable emite wrong websocket event o reporta wrong totals."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de websocket payload en disable. Success case y zero-result case sin verificar."

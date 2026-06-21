@@ -2,7 +2,6 @@
  * Test Suite: Show Season — Create
  * Endpoint: POST /api/show/:id/season
  * Nomenclatura: TC_SHW_POST_season_<scenario>
- * Ref: .agents/skills/mediastream-api/references/show-season-episode.md
  */
 
 const { test, expect } = require('@playwright/test');

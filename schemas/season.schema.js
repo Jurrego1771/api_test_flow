@@ -1,6 +1,5 @@
 /**
  * Zod schema for Show Season API responses
- * Ref: .agents/skills/mediastream-api/references/show-season-episode.md
  */
 
 const { z } = require("zod");

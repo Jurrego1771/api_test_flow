@@ -1,0 +1,302 @@
+# =============================================================================
+# QA Knowledge — Media module
+# Mapa rápido de cobertura de tests para la API de Media (sm2).
+# Cubre /api/media (create, read, update, delete, sub-recursos, search).
+# =============================================================================
+
+module:
+  name: Media
+  prefix: TC_MED
+  base_path: /api/media
+  risk_file: qa-knowledge/media/media.risk.yaml
+  schema: schemas/media.schema.js
+  backend_source: sm2 route: /api/media
+  summary: >
+    Módulo core de contenido (video/upload/processing/enriched/deletion).
+    POST /api/media requiere { form: true }. Response data puede ser array u objeto.
+    is_published enviado como string 'true'/'false', retornado como boolean.
+    Sub-recursos: meta, subtitle, thumbs, preview, image, upload, drm/token.
+    Search: /api/media/search con filtros title, type, published, etc.
+
+endpoints:
+  - { method: POST, path: /api/media, desc: "Crea media (video/type). Requiere form:true." }
+  - { method: GET, path: /api/media, desc: "Lista media (filtros: all, limit, skip, sort, without_category, filterData)." }
+  - { method: GET, path: /api/media/:id, desc: "Detalle de media." }
+  - { method: POST, path: /api/media/:id, desc: "Update media (partial). Requiere form:true." }
+  - { method: DELETE, path: /api/media/:id, desc: "Borra media." }
+  - { method: GET, path: /api/media/upload, desc: "Obtiene jobId para upload remoto." }
+  - { method: GET, path: /api/media/:id/meta, desc: "Lista metas de media." }
+  - { method: DELETE, path: /api/media/:id/meta/:meta_id, desc: "Borra meta." }
+  - { method: GET, path: /api/media/:id/subtitle, desc: "Lista subtitles." }
+  - { method: DELETE, path: /api/media/:id/subtitle/:sub_id, desc: "Borra subtitle." }
+  - { method: GET, path: /api/media/:id/thumbs, desc: "Lista thumbnails." }
+  - { method: DELETE, path: /api/media/:id/thumb/:thumb_id, desc: "Borra thumbnail." }
+  - { method: POST, path: /api/media/:id/thumbnail/upload, desc: "Upload thumbnail." }
+  - { method: POST, path: /api/media/:id/preview, desc: "Genera preview." }
+  - { method: GET, path: /api/media/:id/preview/upload, desc: "Upload URL de preview." }
+  - { method: GET, path: /api/media/:id/image, desc: "Imagen de media." }
+  - { method: GET, path: /api/media/search, desc: "Search media (title, type, tags, filters)." }
+  - { method: GET, path: /api/media/searchMedias, desc: "Search alternativo." }
+  - { method: GET, path: /api/media/searchMediasAdmin, desc: "Search admin (all). SIN cobertura." }
+  - { method: POST, path: /api/media/:id/drm/token, desc: "DRM token. SIN cobertura." }
+  - { method: POST, path: /api/media/rss/importPlatform, desc: "RSS import. SIN cobertura." }
+  - { method: DELETE, path: /api/media/delete-upload, desc: "Delete upload job. SIN cobertura." }
+
+quirks:
+  - id: Q1
+    type: multipart
+    desc: "POST /api/media requiere { form: true }, no JSON."
+  - id: Q2
+    type: response-shape
+    desc: "Response data puede ser array o objeto según API version."
+  - id: Q3
+    type: boolean-coercion
+    desc: "is_published enviado como string 'true'/'false', retornado como boolean."
+  - id: Q4
+    type: title-autofill
+    desc: "Si title falta, API usa _id como title (TC_MED_003 lo documenta)."
+
+tests:
+  smoke:
+    file: tests/api/smoke/media/media-crud.smoke.spec.js
+    purpose: "Happy path — create, GET, update, delete."
+    cases:
+      - name: TC_MED_001_POST_CreateStandardVideo
+        op: "POST /api/media"
+        desc: "Create video → 200 + OK + _id + title + schema."
+        risk: MEDIA-RISK-001
+        quirk_ref: Q1
+      - name: TC_MED_005_GET_ListDefaultParameters
+        op: "GET /api/media"
+        desc: "GET list → 200 + OK + array + todos publicados."
+        risk: MEDIA-RISK-014
+      - name: TC_MED_008_GET_DetailSuccess
+        op: "GET /api/media/:id"
+        desc: "GET detail → 200 + OK + _id + title + meta + thumbnails."
+        risk: MEDIA-RISK-001
+      - name: TC_MED_009_GET_DetailNotFound
+        op: "GET /api/media/:id (inexistente)"
+        desc: "GET id inexistente → 404 + ERROR + NOT_FOUND."
+        risk: MEDIA-RISK-001
+      - name: TC_MED_010_UPDATE_ChangeTitleOnly
+        op: "POST /api/media/:id"
+        desc: "Update title → valor nuevo + description no affected."
+        risk: MEDIA-RISK-001
+        quirk_ref: Q1
+      - name: TC_MED_013_DELETE_Success
+        op: "DELETE /api/media/:id"
+        desc: "Create → DELETE → GET 404."
+        risk: MEDIA-RISK-019
+        quirk_ref: Q1
+
+  regression:
+    files:
+      - tests/api/regression/media/media-advanced.regression.spec.js
+      - tests/api/regression/media/media-search.regression.spec.js
+    purpose: "Validación, sub-recursos, filtros avanzados, búsqueda."
+    cases:
+      # media-advanced — create/update/read variantes
+      - name: TC_MED_002_POST_CreateFullPayload
+        op: "POST /api/media"
+        desc: "Create con todos los campos → 200 + title + is_published===true."
+        risk: MEDIA-RISK-001
+        quirk_ref: Q1
+      - name: TC_MED_003_POST_MissingTitle
+        op: "POST /api/media (sin title)"
+        desc: "Sin title → API usa _id como title."
+        risk: MEDIA-RISK-001
+        quirk_ref: Q4
+      - name: TC_MED_004_POST_InvalidType @negative
+        op: "POST /api/media"
+        desc: "type:'holograma' → [200,400]."
+        risk: MEDIA-RISK-001
+        quirk_ref: Q1
+      # media-advanced — read variantes
+      - name: TC_MED_005a_GET_ListAllTrue
+        op: "GET /api/media?all=true"
+        desc: "all:true incluye media no publicada."
+        risk: MEDIA-RISK-014
+      - name: TC_MED_005b_GET_ListWithoutCategory
+        op: "GET /api/media?without_category=true"
+        desc: "without_category=true → todos sin categoría."
+      - name: TC_MED_005c_GET_WithoutCategoryAndId
+        op: "GET /api/media?without_category=true&id=:id"
+        desc: "without_category + id específico → vacío si tiene categoría."
+      - name: TC_MED_006_GET_ListValidPagination
+        op: "GET /api/media?limit=5&skip=0 (x2)"
+        desc: "Páginas distintas no tienen overlap."
+        risk: MEDIA-RISK-014
+      - name: TC_MED_007_GET_SortDescending
+        op: "GET /api/media?sort=-date_created"
+        desc: "Sort descending por date_created → order correcto."
+      # media-advanced — update variantes
+      - name: TC_MED_010b_UPDATE_PublishUnpublish @critical
+        op: "POST /api/media/:id (publish/unpublish) + GET /api/media/search"
+        desc: "Publish/unpublish cycle → search público/admin refleja estado correcto."
+        risk: MEDIA-RISK-014
+        quirk_ref: Q1
+      # media-advanced — delete variantes
+      - name: TC_MED_014_DELETE_AlreadyDeleted @negative
+        op: "DELETE /api/media/:id (x2)"
+        desc: "Segundo delete → [200,404]."
+        risk: MEDIA-RISK-019
+      # media-advanced — filtros avanzados
+      - name: TC_MED_014a_FILTER_TitleIs
+        op: "GET /api/media?filterData[0][filter]=title&rule=is&value=:title"
+        desc: "Filter title is → media en resultados."
+        risk: MEDIA-RISK-014
+      - name: TC_MED_014b_FILTER_TitleContains
+        op: "GET /api/media?filterData[0][filter]=title&rule=contains&value=:val"
+        desc: "Filter title contains → media en resultados."
+        risk: MEDIA-RISK-014
+      - name: TC_MED_014c_FILTER_TitleStartsEndsWith
+        op: "GET /api/media?filterData[0][filter]=title&rule=starts_with&value=:val"
+        desc: "Filter title starts_with → media en resultados."
+        risk: MEDIA-RISK-014
+      - name: TC_MED_014d_FILTER_Published
+        op: "GET /api/media?filterData[0][filter]=published&rule=true"
+        desc: "Filter published → solo publicados."
+        risk: MEDIA-RISK-014
+      - name: TC_MED_014e_FILTER_TypeVideo
+        op: "GET /api/media?filterData[0][filter]=type&rule=video"
+        desc: "Filter type:video → solo videos."
+        risk: MEDIA-RISK-014
+      # media-advanced — visibility
+      - name: TC_MED_017a_INDEX_VisibilityMasking @contract
+        op: "GET /api/media?all=false"
+        desc: "Endpoint público solo retorna media publicada."
+        risk: MEDIA-RISK-018
+      - name: TC_MED_018a_INDEX_VisibilityAdmin @contract
+        op: "GET /api/media?all=true"
+        desc: "all=true incluye no publicados."
+        risk: MEDIA-RISK-018
+      # media-advanced — sub-recursos metas
+      - name: TC_MED_META_GET
+        op: "GET /api/media/:id/meta"
+        desc: "GET meta → 200 + OK."
+        risk: MEDIA-RISK-015
+      - name: TC_MED_META_GET_NotFound
+        op: "GET /api/media/666.../meta"
+        desc: "GET meta inexistente → 200 + ERROR + NOT_FOUND."
+        risk: MEDIA-RISK-015
+      - name: TC_MED_META_DELETE
+        op: "DELETE /api/media/:id/meta/:meta_id"
+        desc: "DELETE meta → 200."
+        risk: MEDIA-RISK-015
+      # media-advanced — sub-recursos subtitles
+      - name: TC_MED_SUBTITLE_GET
+        op: "GET /api/media/:id/subtitle"
+        desc: "GET subtitle → 200 + OK."
+        risk: MEDIA-RISK-007
+      - name: TC_MED_SUBTITLE_GET_NotFound
+        op: "GET /api/media/000.../subtitle"
+        desc: "GET subtitle inexistente → [200,404]."
+        risk: MEDIA-RISK-007
+      - name: TC_MED_SUBTITLE_DELETE
+        op: "DELETE /api/media/:id/subtitle/:sub_id"
+        desc: "DELETE subtitle → 200 + ya no aparece en GET."
+        risk: MEDIA-RISK-007
+      # media-advanced — sub-recursos thumbnails
+      - name: TC_MED_THUMBS_GET
+        op: "GET /api/media/:id/thumbs"
+        desc: "GET thumbs → 200 + OK + array."
+        risk: MEDIA-RISK-006
+      - name: TC_MED_THUMBS_GET_NotFound
+        op: "GET /api/media/000.../thumbs"
+        desc: "GET thumbs inexistente → [200,404]."
+        risk: MEDIA-RISK-006
+      - name: TC_MED_THUMB_DELETE
+        op: "DELETE /api/media/:id/thumb/:thumb_id"
+        desc: "DELETE thumb → 200."
+        risk: MEDIA-RISK-006
+      - name: TC_MED_THUMBNAIL_UPLOAD_POST
+        op: "POST /api/media/:id/thumbnail/upload"
+        desc: "Thumbnail upload → 200 + url/upload_url/key."
+        risk: MEDIA-RISK-002
+        quirk_ref: Q1
+      # media-advanced — sub-recursos preview/image/upload
+      - name: TC_MED_PREVIEW_POST
+        op: "POST /api/media/:id/preview"
+        desc: "Preview generation → [200,201,400,422]."
+        risk: MEDIA-RISK-005
+        quirk_ref: Q1
+      - name: TC_MED_PREVIEW_UPLOAD_GET
+        op: "GET /api/media/:id/preview/upload"
+        desc: "Preview upload URL → [200,404,400] + url/key."
+        risk: MEDIA-RISK-005
+      - name: TC_MED_IMAGE_GET
+        op: "GET /api/media/:id/image"
+        desc: "GET image → 200 + OK."
+      - name: TC_MED_IMAGE_GET_NotFound
+        op: "GET /api/media/000.../image"
+        desc: "GET image inexistente → [200,404]."
+      - name: TC_MED_UPLOAD_GET
+        op: "GET /api/media/upload?file_name=&fileUrl=&type=remote"
+        desc: "Upload remote → 200 + jobId. Skip si endpoint no disponible."
+        risk: MEDIA-RISK-002
+      # media-search
+      - name: TC_MED_015_SEARCH_ExactTitle @critical
+        op: "GET /api/media/search?title=:title"
+        desc: "Search exacto por título → media en resultados."
+        risk: MEDIA-RISK-014
+
+  contract:
+    file: tests/api/contract/media/media.contract.spec.js
+    purpose: "Schema Zod — detecta breaking changes en respuestas."
+    schema_ref: schemas/media.schema.js
+    cases:
+      - name: TC_CON_MED_001_POST_Create_response_schema
+        op: "POST /api/media"
+        desc: "Create response cumple createMediaResponseSchema Zod."
+        risk: MEDIA-RISK-018
+      - name: TC_CON_MED_002_GET_Detail_response_schema
+        op: "GET /api/media/:id"
+        desc: "Detail response cumple getMediaResponseSchema Zod."
+        risk: MEDIA-RISK-018
+      - name: TC_CON_MED_003_GET_list_response_schema
+        op: "GET /api/media"
+        desc: "List response cumple listMediaResponseSchema Zod."
+        risk: MEDIA-RISK-018
+
+  integration:
+    files:
+      - tests/api/integration/media/media-lifecycle.integration.spec.js
+      - tests/api/integration/media/media-subresources.integration.spec.js
+    purpose: "Flujo completo lifecycle + sub-recursos."
+    cases:
+      - name: "Flujo: create → update → publish → verify visibility → delete @critical"
+        op: "POST /api/media + POST /api/media/:id + GET /api/media/search + DELETE /api/media/:id"
+        desc: "Ciclo completo: draft → update desc → publish → public search → unpublish → private → DELETE."
+        risk: MEDIA-RISK-001
+      - name: TC_MED_SUBRESOURCES_Placeholder
+        op: "Various subresource endpoints"
+        desc: "Placeholder para tests de sub-recursos adicionales."
+
+gaps:
+  - id: MEDIA-RISK-003
+    risk: MEDIA-RISK-003
+    desc: "Large file/chunk handling — sin test. P0."
+  - id: MEDIA-RISK-008
+    risk: MEDIA-RISK-008
+    desc: "Audio/video tracks CRUD — sin test. P1."
+  - id: MEDIA-RISK-009
+    risk: MEDIA-RISK-009
+    desc: "Chapters CRUD — sin test. P1."
+  - id: MEDIA-RISK-010
+    risk: MEDIA-RISK-010
+    desc: "Highlights lifecycle — sin test. P1."
+  - id: MEDIA-RISK-011
+    risk: MEDIA-RISK-011
+    desc: "Ratings (invalid ranges, cross-account) — sin test. P1."
+  - id: MEDIA-RISK-012
+    risk: MEDIA-RISK-012
+    desc: "Quizzes — sin test. P1."
+  - id: MEDIA-RISK-013
+    risk: MEDIA-RISK-013
+    desc: "DRM token issuance (POST /api/media/:id/drm/token) — sin test. P0."
+  - id: MEDIA-RISK-016
+    risk: MEDIA-RISK-016
+    desc: "RSS import (POST /api/media/rss/importPlatform) — sin test. P0."
+  - id: MEDIA-RISK-020
+    risk: MEDIA-RISK-020
+    desc: "Cross-account negative cases en write endpoints — sin test. P0."

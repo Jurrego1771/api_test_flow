@@ -1,0 +1,66 @@
+# =============================================================================
+# QA Knowledge — Coupon Subgroup module
+# Mapa rápido de cobertura de tests para la API de Coupon Subgroup (sm2).
+# Cubre /api/coupon-subgroup/:group_id (reporte de subgroups dentro de un grupo).
+# =============================================================================
+
+module:
+  name: Coupon Subgroup
+  prefix: TC_CPN
+  base_path: /api/coupon-group/:id
+  risk_file: qa-knowledge/coupon_subgroup/coupon_subgroup.risk.yaml
+  backend_source: sm2 route: /api/coupon-group/:id (retorna subgroups)
+  summary: >
+    Módulo de reporting de subgroups dentro de un coupon_group. NO tiene tests
+    dedicados. TC_CPN_GET_group_subgroups_valid en coupon-group.regression.spec.js
+    golpea GET /api/coupon-group/:id (que retorna subgroups) pero solo verifica
+    que responde con array — no valida counts, filtros, CSV ni scoping.
+    Todos los riesgos uncovered.
+
+endpoints:
+  - { method: GET, path: /api/coupon-group/:id, desc: "Lista subgroups del grupo (con totals enriquecidos). Q3" }
+  - { method: GET, path: /api/coupon-group/:id?code=:code, desc: "Filtro por código. SIN cobertura." }
+  - { method: GET, path: /api/coupon-group/:id?type_code=:type_code, desc: "Filtro por type_code. SIN cobertura." }
+  - { method: GET, path: /api/coupon-group/:id?date_start=&date_end=, desc: "Filtro por fechas. SIN cobertura." }
+  - { method: GET, path: /api/coupon-group/:id?limit=&skip=, desc: "Paginación. SIN cobertura." }
+  - { method: GET, path: /api/coupon-group/:id?export=csv, desc: "CSV export. SIN cobertura." }
+
+quirks:
+  - id: Q1
+    type: subgroups-endpoint
+    desc: "GET /api/coupon-group/:id retorna subgroups, NO el grupo en sí."
+
+tests:
+  smoke: []
+  regression:
+    file: tests/api/regression/cupones/coupon-group.regression.spec.js
+    purpose: "Solo TC_CPN_GET_group_subgroups_valid toca este módulo indirectamente."
+    cases:
+      - name: TC_CPN_GET_group_subgroups_valid
+        op: "GET /api/coupon-group/:id"
+        desc: "GET subgroups → 200 + OK + array. Solo verifica que responde."
+        risk: CSG-RISK-001
+        quirk_ref: Q1
+
+  contract: []
+  integration: []
+
+gaps:
+  - id: CSG-RISK-001
+    risk: CSG-RISK-001
+    desc: "Count enrichment: subgroup totals vs underlying coupons — sin test. P0."
+  - id: CSG-RISK-002
+    risk: CSG-RISK-002
+    desc: "Code/type-code search en subgroup — sin test. TC_CPN_INT_004 es de coupon, no subgroup. P0."
+  - id: CSG-RISK-003
+    risk: CSG-RISK-003
+    desc: "CSV export from subgroup context — sin test. P1."
+  - id: CSG-RISK-004
+    risk: CSG-RISK-004
+    desc: "Cross-account/group scoping — sin test. P0."
+  - id: CSG-RISK-005
+    risk: CSG-RISK-005
+    desc: "Date filtering boundary tests — sin test. P1."
+  - id: CSG-RISK-006
+    risk: CSG-RISK-006
+    desc: "Pagination parity (limit/skip vs count) — sin test. P1."

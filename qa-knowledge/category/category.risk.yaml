@@ -6,14 +6,12 @@
 # Conexión entre archivos (IDs estables, grafo navegable en ambos sentidos):
 #   risk.yaml  risks[].covered_by  ->  tests.yaml cases[].name
 #   tests.yaml cases[].risk        ->  risk.yaml  risks[].id
-# Fuente narrativa completa: doc/risk-register/category.md
 # =============================================================================
 
 module:
   name: Category
   prefix: CAT-RISK
   tests_file: qa-knowledge/category/category.tests.yaml
-  risk_register: doc/risk-register/category.md
   scoring:
     formula: score = impact * likelihood * detectability   # cada dim 1..5
     bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }

@@ -1,0 +1,234 @@
+# =============================================================================
+# QA Knowledge — Customer module
+# Mapa rápido de cobertura de tests para la API de Customer (sm2).
+# Cubre /api/customer (customer identity, login, sessions, purchase, etc.).
+# =============================================================================
+
+module:
+  name: Customer
+  prefix: TC_CST
+  base_path: /api/customer
+  risk_file: qa-knowledge/customer/customer.risk.yaml
+  schema: schemas/customer.schema.js
+  backend_source: sm2 route: /api/customer
+  summary: >
+    Customer identity y soporte (CRUD + auth + sessions + purchase + payment +
+    refund + media progress + profiles). Grande superficie. No hay DELETE:
+    deactivate con status:INACTIVE. GET individual usa ?id= (retorna array).
+    GET not-found → HTTP 200 con []. POST /api/customer/login, /recover-password,
+    /session, /purchase, /refund, /rating, etc. todos sin cobertura. 16/23
+    riesgos uncovered.
+
+endpoints:
+  - { method: GET, path: /api/customer, desc: "Lista customers (filtros: email, limit, skip, status)." }
+  - { method: GET, path: /api/customer?id=:id, desc: "GET individual (retorna array). Inexistente → [] con 200." }
+  - { method: POST, path: /api/customer, desc: "Crea customer (email, password, first_name, last_name)." }
+  - { method: POST, path: /api/customer/:id, desc: "Update customer (partial). Deactivate → status:INACTIVE." }
+  - { method: POST, path: /api/customer/login, desc: "Login. SIN cobertura." }
+  - { method: POST, path: /api/customer/check-password, desc: "Check password. SIN cobertura." }
+  - { method: POST, path: /api/customer/recover-password, desc: "Password recovery. SIN cobertura." }
+  - { method: POST, path: /api/customer/session, desc: "Session create. SIN cobertura." }
+  - { method: DELETE, path: /api/customer/session/:id, desc: "Session delete. SIN cobertura." }
+  - { method: POST, path: /api/customer/purchase, desc: "Purchase create. SIN cobertura." }
+  - { method: POST, path: /api/customer/purchase/:id, desc: "Purchase update. SIN cobertura." }
+  - { method: POST, path: /api/customer/purchase/:id/payment, desc: "Payment create. SIN cobertura." }
+  - { method: POST, path: /api/customer/purchase/:id/payment/:id/check, desc: "Payment check. SIN cobertura." }
+  - { method: POST, path: /api/customer/refund, desc: "Refund create. SIN cobertura." }
+  - { method: GET, path: /api/customer/rating, desc: "Ratings list. SIN cobertura." }
+
+quirks:
+  - id: Q1
+    type: no-delete
+    desc: "No existe DELETE /api/customer/:id. Deactivate: POST /api/customer/:id { status: 'INACTIVE' }."
+  - id: Q2
+    type: get-by-id
+    desc: "GET individual usa GET /api/customer?id=:id (retorna array, no objeto)."
+  - id: Q3
+    type: not-found-array
+    desc: "GET not-found retorna HTTP 200 con { status:OK, data:[] } (NO 404)."
+  - id: Q4
+    type: password-permissive
+    desc: "API puede aceptar creation sin password (permissive validation). TC_CST_POST_create_missing_password lo documenta."
+  - id: Q5
+    type: name-permissive
+    desc: "API puede aceptar creation sin first_name (permissive validation). TC_CST_POST_create_missing_first_name lo documenta."
+
+tests:
+  smoke:
+    file: tests/api/smoke/customer/customer.smoke.spec.js
+    purpose: "Happy path — list, create, GET by id, update, deactivate."
+    cases:
+      - name: TC_CST_GET_list_valid
+        op: "GET /api/customer"
+        desc: "GET list → 200 + OK + array + schema."
+      - name: TC_CST_GET_list_with_limit
+        op: "GET /api/customer?limit=5"
+        desc: "GET list con limit → length <= 5."
+      - name: TC_CST_GET_list_filter_by_email
+        op: "GET /api/customer?email=:email"
+        desc: "Filter por email → customer aparece en resultados tras retry."
+      - name: TC_CST_GET_list_no_token @negative
+        op: "GET /api/customer (sin token)"
+        desc: "Sin token → 401 o 403."
+      - name: TC_CST_GET_by_id_valid
+        op: "GET /api/customer?id=:id"
+        desc: "GET ?id= → 200 + OK + array con _id correcto + schema."
+        risk: CUST-RISK-003
+        quirk_ref: Q2
+      - name: TC_CST_GET_by_id_not_found
+        op: "GET /api/customer?id=000..."
+        desc: "GET id inexistente → HTTP 200 + { data:[] }. Q3"
+        risk: CUST-RISK-023
+        quirk_ref: Q3
+      - name: TC_CST_POST_create_valid
+        op: "POST /api/customer"
+        desc: "Create → 200 + _id + email.match(/^qa_/) + status:ACTIVE + schema."
+        risk: CUST-RISK-003
+      - name: TC_CST_POST_create_with_optional_fields
+        op: "POST /api/customer"
+        desc: "Create con gender, phone → 200 + fields persistidos."
+        risk: CUST-RISK-002
+      - name: TC_CST_POST_create_duplicate_email @negative
+        op: "POST /api/customer"
+        desc: "Duplicate email → 400 + EMAIL_ALREADY_REGISTERED."
+        risk: CUST-RISK-003
+      - name: TC_CST_POST_create_missing_password @negative
+        op: "POST /api/customer"
+        desc: "Sin password → [200,400,500]. API permissive. Q4"
+        risk: CUST-RISK-004
+        quirk_ref: Q4
+      - name: TC_CST_POST_create_missing_first_name @negative
+        op: "POST /api/customer"
+        desc: "Sin first_name → [200,400,422,500]. API permissive. Q5"
+        risk: CUST-RISK-004
+        quirk_ref: Q5
+      - name: TC_CST_POST_create_no_token @negative
+        op: "POST /api/customer (sin token)"
+        desc: "Sin token → 401 o 403."
+      - name: TC_CST_POST_update_name
+        op: "POST /api/customer/:id"
+        desc: "Update first_name → 200 + valor persiste."
+        risk: CUST-RISK-002
+      - name: TC_CST_POST_update_status_inactive
+        op: "POST /api/customer/:id"
+        desc: "Update status:INACTIVE → 200 + status:INACTIVE."
+        risk: CUST-RISK-020
+        quirk_ref: Q1
+      - name: TC_CST_POST_update_persists
+        op: "POST /api/customer/:id + GET ?id="
+        desc: "Update last_name → GET verifica persistencia."
+        risk: CUST-RISK-002
+      - name: TC_CST_POST_update_not_found @negative
+        op: "POST /api/customer/:id (inexistente)"
+        desc: "Update id inexistente → [404,500]."
+        risk: CUST-RISK-023
+      - name: TC_CST_POST_update_no_token @negative
+        op: "POST /api/customer/:id (sin token)"
+        desc: "Sin token → 401 o 403."
+
+  regression:
+    file: tests/api/regression/customer/customer.regression.spec.js
+    purpose: "Validación, status cycle, filtros, pagination, special chars."
+    cases:
+      - name: TC_CUS_REG_001_POST_Create_WeakPassword @negative
+        op: "POST /api/customer"
+        desc: "Password '123' → [200,400]. API puede aceptar. Documenta behavior."
+        risk: CUST-RISK-004
+      - name: TC_CUS_REG_002_POST_Update_StatusCycle
+        op: "POST /api/customer/:id"
+        desc: "ACTIVE→INACTIVE→ACTIVE cycle persiste correctamente."
+        risk: CUST-RISK-020
+      - name: TC_CUS_REG_003_GET_Filter_Email_Exact
+        op: "GET /api/customer?email=:email"
+        desc: "Email exacto → customer en resultados. Parcial → array (behavior varies)."
+        risk: CUST-RISK-016
+      - name: TC_CUS_REG_004_POST_Create_NoToken @negative
+        op: "POST /api/customer (sin token)"
+        desc: "Sin token → 401 o 403."
+      - name: TC_CUS_REG_005_POST_Update_AllOptionalFields
+        op: "POST /api/customer/:id"
+        desc: "Update optional fields (first_name, last_name, gender) persiste."
+        risk: CUST-RISK-002
+      - name: TC_CUS_REG_006_GET_Pagination_Stable
+        op: "GET /api/customer?limit=5&skip=0 (x2)"
+        desc: "Dos requests consecutivos → misma cantidad de items."
+      - name: TC_CUS_REG_007_POST_Create_SpecialCharsInName
+        op: "POST /api/customer"
+        desc: "Nombres con acentos/ñ (José, Muñoz) → persiste correctamente."
+        risk: CUST-RISK-019
+
+  contract:
+    file: tests/api/contract/customer/customer.contract.spec.js
+    purpose: "Schema Zod — detecta breaking changes en respuestas."
+    schema_ref: schemas/customer.schema.js
+    cases:
+      - name: TC_CON_CUS_001_POST_Create_response_schema
+        op: "POST /api/customer"
+        desc: "Create response cumple customerSchema Zod."
+        risk: CUST-RISK-003
+      - name: TC_CON_CUS_002_GET_list_response_schema
+        op: "GET /api/customer"
+        desc: "List response cumple customerListResponseSchema Zod."
+      - name: TC_CON_CUS_003_GET_Detail_response_schema
+        op: "GET /api/customer?id=:id"
+        desc: "Detail response (array) cumple customerListResponseSchema Zod."
+        risk: CUST-RISK-001
+      - name: TC_CON_CUS_004_POST_duplicate_email_error_schema @negative
+        op: "POST /api/customer"
+        desc: "Duplicate email error cumple errorResponseSchema Zod."
+        risk: CUST-RISK-003
+      - name: TC_CON_CUS_005_POST_Update_response_schema
+        op: "POST /api/customer/:id"
+        desc: "Update response cumple customerSchema Zod."
+        risk: CUST-RISK-002
+
+  integration:
+    files:
+      - tests/api/integration/customer-coupon/customer-coupon.integration.spec.js
+      - tests/api/integration/customer-coupon/coupon-limits.integration.spec.js
+    purpose: "Flujos cross-recurso customer→coupon."
+    cases:
+      - name: Flujo_create_customer_create_coupon_verify @critical
+        op: "POST /api/customer + POST /api/coupon + GET /api/coupon/:id"
+        desc: "Customer → coupon → retrieval."
+      - name: Flujo_customer_deactivate_no_afecta_cupones_existentes
+        op: "POST /api/customer + POST /api/coupon + POST /api/customer/:id (deactivate)"
+        desc: "Deactivate customer no afecta cupones existentes."
+      - name: Flujo_custom_code_unico_segundo_intento_falla @negative
+        op: "POST /api/coupon (x2 same custom_code)"
+        desc: "Segundo create con mismo custom_code → rechazo."
+
+gaps:
+  - id: CUST-RISK-001
+    risk: CUST-RISK-001
+    desc: "PII leakage en list/detail — sin test de secret masking. P0."
+  - id: CUST-RISK-005
+    risk: CUST-RISK-005
+    desc: "Login flow (POST /api/customer/login) — sin test. P0."
+  - id: CUST-RISK-006
+    risk: CUST-RISK-006
+    desc: "Password recovery (POST /api/customer/recover-password) — sin test. P0."
+  - id: CUST-RISK-007
+    risk: CUST-RISK-007
+    desc: "Session lifecycle (POST /session, DELETE /session/:id) — sin test. P0."
+  - id: CUST-RISK-009
+    risk: CUST-RISK-009
+    desc: "Purchase linkage (POST /api/customer/purchase) — sin test. P0."
+  - id: CUST-RISK-010
+    risk: CUST-RISK-010
+    desc: "Purchase payment (POST /purchase/:id/payment) — sin test. P0."
+  - id: CUST-RISK-011
+    risk: CUST-RISK-011
+    desc: "Subscription cancel/reconcile — sin test. P0."
+  - id: CUST-RISK-012
+    risk: CUST-RISK-012
+    desc: "Refund linkage (POST /api/customer/refund) — sin test. P0."
+  - id: CUST-RISK-015
+    risk: CUST-RISK-015
+    desc: "Analytics CSV export malformed — sin test. P0."
+  - id: CUST-RISK-018
+    risk: CUST-RISK-018
+    desc: "Cross-account isolation — sin test negativo. P0."
+  - id: CUST-RISK-021
+    risk: CUST-RISK-021
+    desc: "PII masking en CSV exports — sin test. P0."

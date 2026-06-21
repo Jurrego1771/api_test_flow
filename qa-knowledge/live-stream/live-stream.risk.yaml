@@ -6,14 +6,12 @@
 # Conexión (IDs estables, grafo bidireccional):
 #   risk.yaml  risks[].covered_by  ->  tests.yaml cases[].name
 #   tests.yaml cases[].risk        ->  risk.yaml  risks[].id
-# Fuente narrativa completa: doc/risk-register/live-stream.md
 # =============================================================================
 
 module:
   name: Live Stream
   prefix: LIVE-RISK
   tests_file: qa-knowledge/live-stream/live-stream.tests.yaml
-  risk_register: doc/risk-register/live-stream.md
   scoring:
     formula: score = impact * likelihood * detectability   # cada dim 1..5
     bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }

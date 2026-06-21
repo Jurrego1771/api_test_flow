@@ -1,0 +1,143 @@
+# =============================================================================
+# QA Knowledge — Bulk Media · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> bulk_media.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Bulk Media
+  prefix: BM-RISK
+  tests_file: qa-knowledge/bulk_media/bulk_media.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 12
+  covered: 0
+  partial: 0
+  uncovered: 12
+  note: >
+    Bulk update y delete de media records (arbitrary payload, parallel cursor processing).
+    0/12 riesgos cubiertos — NO EXISTEN tests dedicados para bulk/media. Módulo
+    high-risk: partial failure puede dejar mixed state, dotted paths pueden corromper
+    objetos anidados, concurrency con 30 workers puede causar races. P0 cluster:
+    001, 003, 004, 005, 006, 007.
+  p0_open:
+    - { id: BM-RISK-001, status: uncovered, why: "No hay tests de bulk update con arbitrary payload — field whitelist, schema drift, negative payloads." }
+    - { id: BM-RISK-003, status: uncovered, why: "No hay tests de partial failure — cursor parallel, retry, partial commit visibility." }
+    - { id: BM-RISK-004, status: uncovered, why: "No hay tests de dotted-path — nested field paths pueden corromper estructura." }
+    - { id: BM-RISK-005, status: uncovered, why: "No hay tests de bulk delete — trash path, hook side effects, repeat delete." }
+    - { id: BM-RISK-006, status: uncovered, why: "No hay tests de cross-account authZ — foreign ids silently skipped." }
+    - { id: BM-RISK-007, status: uncovered, why: "No hay tests de concurrency — 30 workers, hook races, repeated batches." }
+
+risks:
+  - id: BM-RISK-001
+    area: Bulk update
+    risk: "Arbitrary payload writes corrupt many media records at once."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "POST /api/bulk/media con arbitrary payload — field whitelist, schema drift, negative payloads sin test."
+
+  - id: BM-RISK-002
+    area: Bulk update
+    risk: "Add-to behavior for categories/tags duplicates or mutates relation state incorrectly."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Special merge path — idempotency, duplicate suppression, repeated-run checks sin test."
+
+  - id: BM-RISK-003
+    area: Bulk update
+    risk: "Partial failure leaves mixed state across the selected ids."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Cursor processing parallel — retry behavior, failure injection, partial commit visibility sin test."
+
+  - id: BM-RISK-004
+    area: Bulk update
+    risk: "Nested field paths overwrite unexpected object structure."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Dotted-path validation, nested payload safety — sin test."
+
+  - id: BM-RISK-005
+    area: Bulk delete
+    risk: "Trash path marks items as TRASH but downstream hooks or cleanup may race."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "DELETE /api/bulk/media — delete cleanup, hook side effects, repeat delete safety sin test."
+
+  - id: BM-RISK-006
+    area: Authorization
+    risk: "Cross-account ids are ignored or miscounted and hide access issues."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "authZ negative: foreign-account ids silently skipped, count accuracy — sin test."
+
+  - id: BM-RISK-007
+    area: Concurrency
+    risk: "Parallel processing at 30 workers causes state races in hooks or counters."
+    score: 64
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Stress runs, repeated batches, hook collision checks — sin test."
+
+  - id: BM-RISK-008
+    area: Response contract
+    risk: "Success/failed/total numbers drift from actual mutated records."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Response accuracy, mixed success/failure scenarios — sin test."
+
+  - id: BM-RISK-009
+    area: Payload semantics
+    risk: "One route supports several actions through payload shape and can be misused."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Action-specific contract: categories, is_published, date_recorded — payload disambiguation sin test."
+
+  - id: BM-RISK-010
+    area: Batch size
+    risk: "Large selections or slow saves time out and leave stale state."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Large-batch smoke, timeout handling, retry observations — sin test."
+
+  - id: BM-RISK-011
+    area: Auditability
+    risk: "Bulk changes are hard to trace record by record after execution."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Log coverage, event correlation, change sampling — sin test."
+
+  - id: BM-RISK-012
+    area: Contract drift
+    risk: "Client actions using /api/bulk/media break when request body expectations change."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Request body shape checks, regression against UI call sites — sin test."

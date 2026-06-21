@@ -66,6 +66,3 @@ allure-report/
 
 # Reporters
 reporters/
-
-# Skills lock
-skills-lock.json

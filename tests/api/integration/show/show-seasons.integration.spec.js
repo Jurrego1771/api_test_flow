@@ -6,7 +6,6 @@
  *   POST   /api/show/:id/season/:seasonId  (update)
  *   DELETE /api/show/:id/season/:seasonId
  * Nomenclatura: TC_SHW_<METHOD>_season_<scenario>
- * Ref: .agents/skills/mediastream-api/references/show-season-episode.md
  */
 
 const { test, expect } = require('@playwright/test');

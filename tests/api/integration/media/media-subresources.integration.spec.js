@@ -7,7 +7,6 @@
  *   POST   /api/media/:id/metadata    (queues AI job)
  *   POST   /api/media/:id/transcription  (triggers processing — auth/not-found only)
  * Nomenclatura: TC_MED_<METHOD>_<resource>_<scenario>
- * Ref: .agents/skills/mediastream-api/references/media-id.md
  */
 
 const { test, expect } = require('@playwright/test');

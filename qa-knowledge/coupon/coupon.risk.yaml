@@ -1,0 +1,162 @@
+# =============================================================================
+# QA Knowledge — Coupon · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> coupon.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Coupon
+  prefix: CUP-RISK
+  tests_file: qa-knowledge/coupon/coupon.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 12
+  covered: 1
+  partial: 6
+  uncovered: 5
+  note: >
+    Módulo de cupones (coupon family). POST /api/coupon requiere { multipart: true }
+    y grupo existente. GET not-found retorna HTTP 200 con status:ERROR, data:null.
+    custom_code único por cuenta. 5/12 riesgos uncovered (generation, gateway,
+    atomics, counters, isolation). Tests en: smoke/cupones, regression/cupones,
+    contract/coupon, integration/customer-coupon.
+  p0_open:
+    - { id: CUP-RISK-001, status: uncovered, why: "Bulk generation (quantity>1) sin test." }
+    - { id: CUP-RISK-002, status: partial,   why: "max_use enforcement (reusable limits) vía GET; no hay test de uso real (apply/redeem endpoint no investigado)." }
+    - { id: CUP-RISK-003, status: uncovered, why: "Gateway-specific (incomm) validation sin test dedicado." }
+    - { id: CUP-RISK-004, status: uncovered, why: "Coupon use() race condition sin test." }
+    - { id: CUP-RISK-005, status: uncovered, why: "Group counters drift post-save sin test." }
+    - { id: CUP-RISK-006, status: uncovered, why: "Subgroup counters drift sin test." }
+    - { id: CUP-RISK-007, status: partial,   why: "Delete used vs unused coupon basic; behavior diferenciado sin test." }
+    - { id: CUP-RISK-009, status: partial,   why: "Update drift (type transition, metadata merge) sin test dedicado." }
+    - { id: CUP-RISK-011, status: uncovered, why: "Cross-account isolation sin test." }
+
+risks:
+  - id: CUP-RISK-001
+    area: Coupon generation
+    risk: "Bulk generation crea códigos duplicados o malformed."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de generación bulk (quantity > 1). TC-006/TC-007 crean de a uno."
+
+  - id: CUP-RISK-002
+    area: Reusable coupons
+    risk: "Límites max_use o max_use_per_customer no se enforcean correctamente."
+    score: 100
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_CPN_INT_001_MaxUse_Persisted_After_Create @critical"
+      - "TC_CPN_REG_001_POST_PercentOver100_Boundary @negative @boundary"
+      - "TC_CPN_REG_002_POST_MaxUseZero_Behavior @boundary"
+    gap: "max_use field persistence cubierto (vía GET). Uso real del cupón (apply/redeem endpoint) no investigado — ver coupon-limits.integration.spec.js NOTE."
+
+  - id: CUP-RISK-003
+    area: Gateway constraints
+    risk: "Incomm coupons aceptan discount types o validity rules inválidos."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de gateway incomm branch. discount_type validation parcialmente cubierto (TC_CPN_REG_001)."
+
+  - id: CUP-RISK-004
+    area: Usage atomics
+    risk: "Coupon use() race — estado used/valid queda wrong."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de concurrent coupon use. Idempotencia de uso no cubierta."
+
+  - id: CUP-RISK-005
+    area: Group counters
+    risk: "coupon_total/coupon_used_total se desincronizan de los cupones reales."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de counter reconciliation en coupon-group post-create/use."
+
+  - id: CUP-RISK-006
+    area: Subgroup counters
+    risk: "CouponSubgroup totals drift de los cupones subyacentes."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de subgroup counter enrichment. TC_CPN_GET_group_subgroups_valid lista subgroups pero no valida counts."
+
+  - id: CUP-RISK-007
+    area: Delete safety
+    risk: "Borrar cupón usado o parcialmente usado rompe billing history."
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC-012"
+      - "TC-009"
+      - "TC_CPN_REG_003_POST_IsReusableFalse_CustomerMaxUseGt1 @negative"
+    gap: "Delete basic cubierto (TC-012). Comportamiento diferenciado para used vs unused coupon sin test."
+
+  - id: CUP-RISK-008
+    area: Detail validation
+    risk: "Coupon detail retorna wrong validity state para used o gateway-validated coupons."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_CPN_INT_002_CustomerMaxUse_Persisted_After_Create"
+      - "TC_CPN_INT_003_PercentField_Persisted_After_Create"
+    gap: "Detail fields persistence cubierto. Validity state para used coupons sin test."
+
+  - id: CUP-RISK-009
+    area: Update drift
+    risk: "Update cambia validity, type o metadata sin preservar business rules."
+    score: 64
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_CPN_INT_005_UpdateLimits_Reflected_On_Get"
+      - "TC-008"
+    gap: "Update de límites cubierto (TC_CPN_INT_005). Type transition y metadata merge sin test dedicado."
+
+  - id: CUP-RISK-010
+    area: List/export
+    risk: "Coupon list, count y CSV export discrepan entre sí o con la DB."
+    score: 36
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC-002"
+      - "TC-004"
+    gap: "TC-002 filtra por custom_code; TC-004 pagination. CSV export sin test."
+
+  - id: CUP-RISK-011
+    area: Account isolation
+    risk: "Una cuenta puede leer/mutar cupones de otra cuenta."
+    score: 40
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test cross-account (coupon ni coupon_group)."
+
+  - id: CUP-RISK-012
+    area: Naming/code reuse
+    risk: "Custom codes colliden o se aceptan cuando no deberían."
+    score: 48
+    priority: P1
+    status: covered
+    covered_by:
+      - "TC_CPN_REG_005_POST_DuplicateCustomCode_Rejected @negative"
+      - "TC_CPN_INT_004_SearchByCode_ReturnsCorrectCoupon"
+      - "TC-008"
+      - "Flujo: custom_code único por cuenta — segundo intento falla @negative"
+    gap: null

@@ -1,0 +1,261 @@
+# =============================================================================
+# QA Knowledge — Customer · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> customer.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Customer
+  prefix: CUST-RISK
+  tests_file: qa-knowledge/customer/customer.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 23
+  covered: 3
+  partial: 4
+  uncovered: 16
+  note: >
+    Módulo de customer identity y soporte. Grande superficie: CRUD + login +
+    password recovery + sessions + devices + purchase/payment + refund +
+    media progress + profiles + analytics export. No hay DELETE (deactivate
+    con status:INACTIVE). GET individual usa ?id= (retorna array). GET not-found
+    retorna HTTP 200 con array vacío (no 404). Cobertura actual: CRUD básico,
+    status cycle, email uniqueness, schema validation. 16/23 riesgos uncovered.
+  p0_open:
+    - { id: CUST-RISK-001, status: uncovered, why: "PII leakage en list/detail responses — sin test de secret masking o excluded fields." }
+    - { id: CUST-RISK-002, status: partial,   why: "Partial update overwrite fields — TC_CUS_REG_005 cubre optional fields update." }
+    - { id: CUST-RISK-004, status: uncovered, why: "Password validation/hashing broken — weak password test no valida hashing." }
+    - { id: CUST-RISK-005, status: uncovered, why: "Login/session flows — sin test de POST /api/customer/login." }
+    - { id: CUST-RISK-006, status: uncovered, why: "Password recovery flow — sin test de POST /api/customer/recover-password." }
+    - { id: CUST-RISK-007, status: uncovered, why: "Session lifecycle (create/detail/delete) — sin test de POST /api/customer/session." }
+    - { id: CUST-RISK-009, status: uncovered, why: "Purchase linkage corruption — sin test de POST /api/customer/purchase." }
+    - { id: CUST-RISK-010, status: uncovered, why: "Purchase payment state inconsistency — sin test de POST purchase/payment." }
+    - { id: CUST-RISK-011, status: uncovered, why: "Subscription cancel/reconcile provider — sin test." }
+    - { id: CUST-RISK-012, status: uncovered, why: "Refund linkage to payment — sin test de POST /api/customer/refund." }
+    - { id: CUST-RISK-015, status: uncovered, why: "Analytics CSV export malformed/wrong scope — sin test." }
+    - { id: CUST-RISK-018, status: uncovered, why: "Cross-account isolation — sin test negativo cross-account." }
+    - { id: CUST-RISK-021, status: uncovered, why: "PII leakage en CSV exports — sin test de masking fields." }
+
+risks:
+  - id: CUST-RISK-001
+    area: Customer read
+    risk: "Sensitive customer data expuesta en list/detail responses (password leaks, tokens)."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de secret masking, excluded fields o role differences en respuestas."
+
+  - id: CUST-RISK-002
+    area: Customer create/update
+    risk: "Partial updates sobrescriben campos no relacionados del customer."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_CUS_REG_005_POST_Update_AllOptionalFields"
+      - "TC_CST_POST_update_persists"
+    gap: "Optional fields update cubiertos. Regression de campos no tocados por update parcial sin test."
+
+  - id: CUST-RISK-003
+    area: Email uniqueness
+    risk: "Duplicate customer emails son permitidos o bloqueados incorrectamente."
+    score: 80
+    priority: P0
+    status: covered
+    covered_by:
+      - "TC_CST_POST_create_duplicate_email"
+      - "TC_CON_CUS_004_POST_duplicate_email_error_schema @negative"
+    gap: null
+
+  - id: CUST-RISK-004
+    area: Password handling
+    risk: "Password validation o hashing está roto."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by:
+      - "TC_CUS_REG_001_POST_Create_WeakPassword"
+    gap: "Weak password cubierto (acepta 123). No hay test de hashing, password requirements enforcement o missing password validation."
+
+  - id: CUST-RISK-005
+    area: Login/authorization
+    risk: "Login o session flows aceptan credenciales inválidas."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de POST /api/customer/login. Auth flows completamente uncovered."
+
+  - id: CUST-RISK-006
+    area: Password recovery
+    risk: "Recover-password permite resets no autorizados o leak de token state."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de POST /api/customer/recover-password."
+
+  - id: CUST-RISK-007
+    area: Session lifecycle
+    risk: "Customer sessions no son revocadas o expiran incorrectamente."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de POST /api/customer/session ni DELETE /api/customer/session/:id."
+
+  - id: CUST-RISK-008
+    area: Device lifecycle
+    risk: "Device CRUD corrompe playback/device history."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de device CRUD."
+
+  - id: CUST-RISK-009
+    area: Purchase linkage
+    risk: "Customer purchase records corrompidos o cross-linked incorrectamente."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "customer-coupon.integration.spec.js toca customer→coupon. Sin test de POST /api/customer/purchase."
+
+  - id: CUST-RISK-010
+    area: Purchase payment
+    risk: "Purchase payment updates crean billing state inconsistente."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de POST /api/customer/purchase/:id/payment ni /payment/:id/check."
+
+  - id: CUST-RISK-011
+    area: Subscription lifecycle
+    risk: "Subscription delete/cancel no reconcilia estado del provider."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de subscription cancel/reconcile."
+
+  - id: CUST-RISK-012
+    area: Refund handling
+    risk: "Refund requests o records no se linkean al payment correcto."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de POST /api/customer/refund."
+
+  - id: CUST-RISK-013
+    area: Media progress
+    risk: "Playback progress se pierde, sobrescribe o tiene scope incorrecto."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de media progress CRUD."
+
+  - id: CUST-RISK-014
+    area: Customer profiles
+    risk: "Profile CRUD o list expone wrong profile data."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de profile CRUD."
+
+  - id: CUST-RISK-015
+    area: Analytics export
+    risk: "CSV/analytics endpoints retornan wrong scope o malformed output."
+    score: 64
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de analytics export."
+
+  - id: CUST-RISK-016
+    area: Metadata filtering
+    risk: "Advanced metadata y nested query filters se comportan inconsistentemente."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_CUS_REG_003_GET_Filter_Email_Exact"
+    gap: "Email filter exacto/parcial cubierto. metadata.* y social/external filters sin test."
+
+  - id: CUST-RISK-017
+    area: Federation / external identity
+    risk: "Federation y external identity fields se mapean o filtran incorrectamente."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de federationId, external_id, external[]."
+
+  - id: CUST-RISK-018
+    area: Account scope
+    risk: "Una cuenta puede acceder o mutar customers de otra cuenta."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test negativo cross-account en customer endpoints."
+
+  - id: CUST-RISK-019
+    area: Validation
+    risk: "Birthday, email, phone, social fields y metadata limits validan inconsistentemente."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_CST_POST_create_duplicate_email"
+      - "TC_CUS_REG_007_POST_Create_SpecialCharsInName"
+    gap: "Special chars y email uniqueness cubiertos. Birthday, phone, social fields sin test negativo dedicado."
+
+  - id: CUST-RISK-020
+    area: Delete/deactivate
+    risk: "Deleted/deactivated customers aparecen en active flows."
+    score: 48
+    priority: P1
+    status: covered
+    covered_by:
+      - "TC_CUS_REG_002_POST_Update_StatusCycle"
+    gap: null
+
+  - id: CUST-RISK-021
+    area: Data masking in exports
+    risk: "CSV exports leak PII o sensitive metadata inesperadamente."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de PII masking en CSV exports."
+
+  - id: CUST-RISK-022
+    area: Rate/limit guards
+    risk: "Validation limit rules rechazan payloads válidos o permiten oversized."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de validateChartsLimit branches."
+
+  - id: CUST-RISK-023
+    area: Error handling
+    risk: "400/404/500 behavior inconsistente across customer sub-resources."
+    score: 36
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_CST_GET_by_id_not_found"
+      - "TC_CST_POST_update_not_found"
+    gap: "GET not-found (array vacío) y POST update not-found cubiertos. Otros sub-recursos sin test."

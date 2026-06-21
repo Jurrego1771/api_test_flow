@@ -2,14 +2,12 @@
 # QA Knowledge — Show · RIESGOS + COBERTURA
 # Vista machine-readable del risk-register cruzada contra la cobertura real.
 # Conexión: risks[].covered_by <-> show.tests.yaml cases[].name (IDs estables).
-# Fuente narrativa: doc/risk-register/show.md
 # =============================================================================
 
 module:
   name: Show
   prefix: SHW
   tests_file: qa-knowledge/show/show.tests.yaml
-  risk_register: doc/risk-register/show.md
   scoring:
     note: "El risk-register de show usa Priority (P0..P2) + Layer, sin score numérico."
     bands: { P0: critico, P1: alto, P2: medio }

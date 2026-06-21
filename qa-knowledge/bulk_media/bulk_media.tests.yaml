@@ -1,0 +1,87 @@
+# =============================================================================
+# QA Knowledge — Bulk Media · TESTS
+# Mapa de cobertura por capa. Conexión: cases[].name <-> bulk_media.risk.yaml risks[].id.
+# Fuente: NO EXISTEN tests dedicados para bulk/media en la suite.
+# =============================================================================
+
+module:
+  name: Bulk Media
+  prefix: TC_BM
+  base_path: /api/bulk/media
+  endpoints:
+    - op: "POST /api/bulk/media"
+      desc: "Bulk update de media records (categories, is_published, date_recorded, arbitrary fields) — sin test"
+    - op: "DELETE /api/bulk/media"
+      desc: "Bulk trash/delete de media records — sin test"
+
+quirks: []
+
+tests:
+  smoke:
+    file: null
+    purpose: "NO EXISTEN tests de smoke para bulk/media."
+    cases: []
+
+  regression:
+    file: null
+    purpose: "NO EXISTEN tests de regression para bulk/media."
+    cases: []
+
+  contract:
+    file: null
+    purpose: "NO EXISTEN tests de contract para bulk/media."
+    cases: []
+
+  integration:
+    file: null
+    purpose: "NO EXISTEN tests de integration para bulk/media."
+    cases: []
+
+gaps:
+  - id: BM-GAP-001
+    risk: BM-RISK-001
+    desc: "Bulk update con arbitrary payload — field whitelist, schema drift, negative payloads. Sin test."
+
+  - id: BM-GAP-002
+    risk: BM-RISK-002
+    desc: "Add-to categories/tags — idempotency, duplicate suppression, repeated-run checks. Sin test."
+
+  - id: BM-GAP-003
+    risk: BM-RISK-003
+    desc: "Partial failure (cursor parallel) — retry behavior, failure injection, partial commit visibility. Sin test."
+
+  - id: BM-GAP-004
+    risk: BM-RISK-004
+    desc: "Dotted-path nested field overwrite — dotted-path validation, nested payload safety. Sin test."
+
+  - id: BM-GAP-005
+    risk: BM-RISK-005
+    desc: "Bulk delete/trash — hook side effects, repeat delete safety. Sin test."
+
+  - id: BM-GAP-006
+    risk: BM-RISK-006
+    desc: "Cross-account authZ — foreign-account ids silently skipped, count accuracy. Sin test."
+
+  - id: BM-GAP-007
+    risk: BM-RISK-007
+    desc: "Concurrency stress — 30 workers, hook races, repeated batches. Sin test."
+
+  - id: BM-GAP-008
+    risk: BM-RISK-008
+    desc: "Response contract accuracy — success/failed/total counts vs actual mutated records. Sin test."
+
+  - id: BM-GAP-009
+    risk: BM-RISK-009
+    desc: "Payload disambiguation (categories vs is_published vs date_recorded) — action-specific contract. Sin test."
+
+  - id: BM-GAP-010
+    risk: BM-RISK-010
+    desc: "Large batch timeout — large-batch smoke, timeout handling. Sin test."
+
+  - id: BM-GAP-011
+    risk: BM-RISK-011
+    desc: "Auditability — log coverage, event correlation, change sampling. Sin test."
+
+  - id: BM-GAP-012
+    risk: BM-RISK-012
+    desc: "Contract drift — request body shape regression vs UI call sites. Sin test."

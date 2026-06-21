@@ -2,7 +2,7 @@
 
 > **Leyenda:** ✅ Completo | 🔄 Parcial | ❌ Faltante | ⬛ Fuera de scope QA externo
 >
-> **Columnas:** `Documentado` = referencia en `.agents/skills/mediastream-api/references/` | `Tests` = batería en `tests/`
+> **Columnas:** `Documentado` = endpoint documentado en la referencia de la API | `Tests` = batería en `tests/`
 
 _Última actualización: 2026-04-03 (media-subresources, live-quizzes, customer)_
 
@@ -277,8 +277,6 @@ _Última actualización: 2026-04-03 (media-subresources, live-quizzes, customer)
 ---
 
 ## 11. Embed (URLs de reproducción)
-
-> Referencia: `.agents/skills/mediastream-embed/`
 
 ### 11.1 VOD Embed `/embed/:mediaId`
 

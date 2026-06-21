@@ -1,0 +1,147 @@
+# =============================================================================
+# QA Knowledge — Thumbnail · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> thumbnail.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Thumbnail
+  prefix: TH-RISK
+  tests_file: qa-knowledge/thumbnail/thumbnail.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 12
+  covered: 0
+  partial: 2
+  uncovered: 10
+  note: >
+    Thumbnail para media y live-stream. Solo hay tests de live-stream (6 tests en
+    live-thumbnail.smoke.spec.js). Media thumbnails NO tienen tests. 10/12 riesgos
+    uncovered. P0 cluster: 001, 003, 004, 005, 006, 007, 011 uncovered.
+    Live-stream cubierto partial (upload + list + default + delete + auth).
+  p0_open:
+    - { id: TH-RISK-001, status: partial,   why: "Upload token coverage exists via TC_THB_001; invalid file name/size/expiration sin test." }
+    - { id: TH-RISK-003, status: uncovered, why: "Media thumbnails no tienen tests. Route selection, model routing sin cover." }
+    - { id: TH-RISK-004, status: partial,   why: "Set default cubierto por TC_THB_003; one-default invariant sin test negativo." }
+    - { id: TH-RISK-005, status: uncovered, why: "State drift entre thumbnails array y archivo — sin test." }
+    - { id: TH-RISK-006, status: partial,   why: "Delete coverage exists via TC_THB_004; regex matching, boundary cases sin negativo." }
+    - { id: TH-RISK-007, status: uncovered, why: "Concurrency: repeat upload, simultaneous default change — sin test." }
+    - { id: TH-RISK-011, status: uncovered, why: "Cross-account access — sin authZ negative tests." }
+
+risks:
+  - id: TH-RISK-001
+    area: Upload token
+    risk: "Upload token generation fails or returns unusable upload targets."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_THB_001_POST_UploadThumbnail"
+    gap: "Invalid file name, expired target, provider failures, invalid size — sin test negativo."
+
+  - id: TH-RISK-002
+    area: File validation
+    risk: "Invalid file type/size slips through or rejects valid images."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "mime type, size boundaries, empty file, malformed request — sin test."
+
+  - id: TH-RISK-003
+    area: Scope routing
+    risk: "Media and live-stream thumbnail flows are mixed up or routed to the wrong model."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Media thumbnails (POST /api/media/:id/thumb) — sin tests. Route selection, account isolation sin cover."
+
+  - id: TH-RISK-004
+    area: Default selection
+    risk: "Default thumbnail flag is set incorrectly or left inconsistent."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_THB_003_POST_SetDefaultThumbnail"
+    gap: "One-default invariant (solo un default a la vez), revert behavior, multiple defaults — sin test negativo."
+
+  - id: TH-RISK-005
+    area: State drift
+    risk: "thumbnails array and stored file state diverge after upload/update/delete."
+    score: 64
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "DB/file parity, update hooks, orphan checks — sin test."
+
+  - id: TH-RISK-006
+    area: Delete
+    risk: "Thumbnail deletion removes or hides the wrong asset."
+    score: 64
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_THB_004_DELETE_RemoveThumbnail"
+    gap: "delete-by-id funciona en happy path. regex matching, boundary cases sin negativo."
+
+  - id: TH-RISK-007
+    area: Concurrency
+    risk: "Concurrent thumbnail uploads or default changes race and leave mixed state."
+    score: 64
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Repeat upload, simultaneous default change, stress smoke — sin test."
+
+  - id: TH-RISK-008
+    area: Live-stream reload
+    risk: "Thumbnail changes do not publish reload events to clients."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "websocket/event publish, reload signal, stale UI detection — sin test."
+
+  - id: TH-RISK-009
+    area: Media integration
+    risk: "Media thumbnail creation breaks meta-dependent thumbnail generation."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Media thumbnails (POST /api/media/:id/thumb) sin tests — meta selection, size inference, original/non-original paths uncovered."
+
+  - id: TH-RISK-010
+    area: Response contract
+    risk: "API response shape changes and breaks the client upload flow."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Contract tests para upload/delete response shapes — sin test."
+
+  - id: TH-RISK-011
+    area: Authorization
+    risk: "Cross-account access is not blocked consistently."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "authZ negative: foreign id handling, cross-account — solo auth smoke (TC_THB_005/006) cubierto. Gap completo sin cover."
+
+  - id: TH-RISK-012
+    area: Cleanup
+    risk: "Deleted thumbnail files or records remain orphaned."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_THB_004_DELETE_RemoveThumbnail"
+    gap: "Delete cleanup verificado en TC_THB_004 (espera 45s + verify gone). Orphan checks más profundos sin test."

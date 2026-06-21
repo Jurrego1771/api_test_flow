@@ -1,0 +1,276 @@
+# =============================================================================
+# QA Knowledge — Coupon module
+# Mapa rápido de cobertura de tests para la API de Coupon (sm2).
+# Cubre /api/coupon (creación, búsqueda, uso de cupones).
+# =============================================================================
+
+module:
+  name: Coupon
+  prefix: TC_CPN
+  base_path: /api/coupon
+  risk_file: qa-knowledge/coupon/coupon.risk.yaml
+  schema: schemas/coupon.schema.js
+  backend_source: sm2 route: /api/coupon
+  summary: >
+    Cupones con group, custom_code, discount_type (percent/fixed), is_reusable,
+    max_use, customer_max_use. POST requiere { multipart: true } + grupo existente.
+    GET not-found retorna HTTP 200 con status:ERROR, data:null (quirk).
+    custom_code único por cuenta. apply/redeem endpoint no investigado.
+
+endpoints:
+  - { method: GET, path: /api/coupon, desc: "Lista cupones (filtros: custom_code, page, limit)." }
+  - { method: POST, path: /api/coupon, desc: "Crea cupón. Requiere { multipart: true } + group existente." }
+  - { method: GET, path: /api/coupon/:id, desc: "Detalle. Inexistente → HTTP 200, status:ERROR, data:null." }
+  - { method: POST, path: /api/coupon/:id, desc: "Update cupón. Requiere { multipart: true }." }
+  - { method: GET, path: /api/coupon/:id/search, desc: "Búsqueda por código." }
+  - { method: DELETE, path: /api/coupon/:id, desc: "Borra cupón." }
+
+quirks:
+  - id: Q1
+    type: multipart
+    desc: "POST /api/coupon requiere { multipart: true }, no JSON ni form."
+  - id: Q2
+    type: not-found-shape
+    desc: "GET /api/coupon/:id para inexistente retorna HTTP 200 con status:ERROR, data:null (NO 404)."
+  - id: Q3
+    type: create-response
+    desc: "Response de create puede omitir campos como max_use, percent — verificar con GET. TC_CPN_INT_001/002/003 lo documentan."
+  - id: Q4
+    type: requires-group
+    desc: "Crear cupón requiere grupo existente — obtener con GET /api/coupon-group."
+  - id: Q5
+    type: custom-code
+    desc: "custom_code debe ser único por cuenta. Duplicado → COUPON_CODE_ALREADY_EXISTS."
+
+tests:
+  smoke:
+    file: tests/api/smoke/cupones/cupones.smoke.spec.js
+    purpose: "Happy path — list, create, GET, delete."
+    cases:
+      - name: TC-001_GET_lista_basica
+        op: "GET /api/coupon"
+        desc: "GET list → 200 + OK + array."
+      - name: TC-003_Validar_estructura
+        op: "GET /api/coupon"
+        desc: "List item contiene _id, group, code, date_created."
+      - name: TC-010_Obtener_cupon_por_ID
+        op: "GET /api/coupon/:id"
+        desc: "GET by id → 200 + _id + code. Poll hasta 8s por async indexing."
+        risk: CUP-RISK-008
+        quirk_ref: Q2
+      - name: TC-006_Crear_cupon_no_reutilizable
+        op: "POST /api/coupon"
+        desc: "Create no-reusable → 200 + code + _id."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+      - name: TC-013_Error_cupon_inexistente
+        op: "GET /api/coupon/:id (inexistente)"
+        desc: "GET id 000... → HTTP 200, status:ERROR, data:null."
+        risk: CUP-RISK-002
+        quirk_ref: Q2
+      - name: TC-012_Crear_y_eliminar_cupon
+        op: "POST /api/coupon + DELETE /api/coupon/:id"
+        desc: "Create → DELETE → 200 + OK."
+        risk: CUP-RISK-007
+        quirk_ref: Q1
+
+  regression:
+    files:
+      - tests/api/regression/cupones/coupon-group.regression.spec.js
+      - tests/api/regression/cupones/coupon-limits.regression.spec.js
+      - tests/api/regression/cupones/cupones-advanced.regression.spec.js
+    purpose: "Validación de límites, creación, búsqueda, duplicate codes."
+    cases:
+      # coupon-group.regression.spec.js
+      - name: TC_CPN_GET_group_list_valid
+        op: "GET /api/coupon-group"
+        desc: "GET coupon-group list → 200 + OK + array."
+      - name: TC_CPN_GET_group_list_no_token @negative
+        op: "GET /api/coupon-group (sin token)"
+        desc: "Sin token → 401 o 403."
+      - name: TC_CPN_POST_group_create_valid
+        op: "POST /api/coupon-group"
+        desc: "Create group → 200 + OK + _id + name."
+      - name: TC_CPN_POST_group_create_stores_name_correctly
+        op: "POST /api/coupon-group"
+        desc: "Create group → name persisted correctly."
+      - name: TC_CPN_POST_group_create_missing_name @negative
+        op: "POST /api/coupon-group"
+        desc: "Create sin name → HTTP 200, status:ERROR, data:NAME_IS_REQUIRED. Q2"
+        risk: CG-RISK-001
+      - name: TC_CPN_POST_group_create_duplicate_name @negative
+        op: "POST /api/coupon-group"
+        desc: "Create duplicate name → HTTP 200, status:ERROR, data:NAME_MUST_BE_UNIQUE. Q2"
+        risk: CG-RISK-001
+      - name: TC_CPN_POST_group_create_no_token @negative
+        op: "POST /api/coupon-group (sin token)"
+        desc: "Sin token → 401 o 403."
+        risk: CG-RISK-005
+      - name: TC_CPN_GET_group_subgroups_valid
+        op: "GET /api/coupon-group/:id"
+        desc: "GET subgroups del group → 200 + OK + array."
+      - name: TC_CPN_GET_group_subgroups_not_found
+        op: "GET /api/coupon-group/:id (inexistente)"
+        desc: "Group inexistente → 200 o 404."
+      - name: TC_CPN_POST_group_disable_missing_dates @negative
+        op: "POST /api/coupon-group/:id/disable"
+        desc: "Disable sin dates → HTTP 400 + ERROR."
+        risk: CG-RISK-002
+      - name: TC_CPN_POST_group_disable_invalid_date_format @negative
+        op: "POST /api/coupon-group/:id/disable"
+        desc: "Disable con formato inválido → HTTP 400 + ERROR."
+        risk: CG-RISK-002
+      - name: TC_CPN_POST_group_disable_no_token @negative
+        op: "POST /api/coupon-group/:id/disable (sin token)"
+        desc: "Sin token → 401 o 403."
+        risk: CG-RISK-005
+      # coupon-limits.regression.spec.js
+      - name: TC_CPN_REG_001_POST_PercentOver100_Boundary @negative @boundary
+        op: "POST /api/coupon"
+        desc: "percent > 100 → rechazo (400/422) o normalización a ≤100."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+      - name: TC_CPN_REG_002_POST_MaxUseZero_Behavior @boundary
+        op: "POST /api/coupon"
+        desc: "max_use:0 → acepta o rechaza."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+      - name: TC_CPN_REG_003_POST_IsReusableFalse_CustomerMaxUseGt1 @negative
+        op: "POST /api/coupon"
+        desc: "is_reusable:false con customer_max_use > 1 → rechazo."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+      - name: TC_CPN_REG_004_POST_FixedDiscountMissingAmount @negative
+        op: "POST /api/coupon"
+        desc: "discount_type:fixed sin amount → rechazo."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+      - name: TC_CPN_REG_005_POST_DuplicateCustomCode_Rejected @negative
+        op: "POST /api/coupon"
+        desc: "custom_code duplicado → 400/409/422 + ERROR."
+        risk: CUP-RISK-012
+        quirk_ref: Q1
+      - name: TC_CPN_REG_006_POST_PercentZero_Boundary @boundary
+        op: "POST /api/coupon"
+        desc: "percent:0 → acepta (descuento 0%)."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+      - name: TC_CPN_REG_007_POST_NegativeMaxUse @negative @boundary
+        op: "POST /api/coupon"
+        desc: "max_use negativo → rechazo o normalización a ≥0."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+      - name: TC_CPN_REG_008_GET_NotFound_Quirk @negative
+        op: "GET /api/coupon/:id (inexistente)"
+        desc: "HTTP 200 + status:ERROR + data:null. Q2"
+        risk: CUP-RISK-002
+        quirk_ref: Q2
+      # cupones-advanced.regression.spec.js
+      - name: TC-002_filtro_custom_code
+        op: "GET /api/coupon?custom_code=:code&limit=100"
+        desc: "Filtro por custom_code → cupón creado aparece en resultados."
+        risk: CUP-RISK-010
+      - name: TC-004_paginacion
+        op: "GET /api/coupon?page=1&limit=5 + page=2"
+        desc: "Paginación page/limit → ambos responden 200."
+        risk: CUP-RISK-010
+      - name: TC-011_Buscar_cupon_por_codigo
+        op: "GET /api/coupon/:code/search"
+        desc: "Search por código → 200 + OK + data."
+        risk: CUP-RISK-012
+      - name: TC-007_Crear_cupon_reutilizable
+        op: "POST /api/coupon"
+        desc: "Create reusable con custom_code → code === custom_code."
+        risk: CUP-RISK-009
+        quirk_ref: Q1
+      - name: TC-008_Error_codigo_duplicado @negative
+        op: "POST /api/coupon"
+        desc: "Duplicate custom_code → 400 + ERROR + COUPON_CODE_ALREADY_EXISTS."
+        risk: CUP-RISK-012
+        quirk_ref: Q1
+      - name: TC-009_Error_datos_invalidos @negative
+        op: "POST /api/coupon"
+        desc: "Payload completamente inválido → [400,500] + ERROR."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+
+  contract:
+    file: tests/api/contract/coupon/coupon.contract.spec.js
+    purpose: "Schema Zod — detecta breaking changes en respuestas."
+    schema_ref: schemas/coupon.schema.js
+    cases:
+      - name: TC_CON_CPN_001_POST_Create_response_schema
+        op: "POST /api/coupon"
+        desc: "Create response cumple createCouponResponseSchema Zod."
+        risk: CUP-RISK-002
+        quirk_ref: Q1
+      - name: TC_CON_CPN_002_GET_list_response_schema
+        op: "GET /api/coupon"
+        desc: "List response cumple listCouponResponseSchema Zod."
+      - name: TC_CON_CPN_003_GET_Detail_response_schema
+        op: "GET /api/coupon/:id"
+        desc: "Detail response cumple getCouponResponseSchema Zod."
+        risk: CUP-RISK-008
+      - name: TC_CON_CPN_004_GET_NotFound_error_schema @negative
+        op: "GET /api/coupon/:id (inexistente)"
+        desc: "Error response cumple errorResponseSchema Zod. HTTP 200 + status:ERROR + data:null."
+        risk: CUP-RISK-002
+        quirk_ref: Q2
+
+  integration:
+    files:
+      - tests/api/integration/customer-coupon/coupon-limits.integration.spec.js
+      - tests/api/integration/customer-coupon/customer-coupon.integration.spec.js
+    purpose: "Flujos cross-recurso (customer→coupon), límites, búsqueda."
+    cases:
+      - name: TC_CPN_INT_001_MaxUse_Persisted_After_Create @critical
+        op: "POST /api/coupon + GET /api/coupon/:id"
+        desc: "max_use field persiste tras create (verificado con GET). Q3"
+        risk: CUP-RISK-002
+      - name: TC_CPN_INT_002_CustomerMaxUse_Persisted_After_Create
+        op: "POST /api/coupon + GET /api/coupon/:id"
+        desc: "customer_max_use field persiste tras create."
+        risk: CUP-RISK-008
+      - name: TC_CPN_INT_003_PercentField_Persisted_After_Create
+        op: "POST /api/coupon + GET /api/coupon/:id"
+        desc: "percent field persiste tras create (verificado con GET). Q3"
+        risk: CUP-RISK-008
+      - name: TC_CPN_INT_004_SearchByCode_ReturnsCorrectCoupon
+        op: "POST /api/coupon + GET /api/coupon/:code/search"
+        desc: "Crear con custom_code → search retorna el mismo cupón."
+        risk: CUP-RISK-012
+      - name: TC_CPN_INT_005_UpdateLimits_Reflected_On_Get
+        op: "POST /api/coupon/:id + GET /api/coupon/:id"
+        desc: "Update max_use → GET refleja el nuevo valor."
+        risk: CUP-RISK-009
+      - name: Flujo_create_customer_create_coupon_verify @critical
+        op: "POST /api/customer + POST /api/coupon + GET /api/coupon/:id"
+        desc: "Customer → coupon → retrieval. Cupón accesible por ID post-create."
+      - name: Flujo_customer_deactivate_no_afecta_cupones_existentes
+        op: "POST /api/customer + POST /api/coupon + POST /api/customer/:id (deactivate)"
+        desc: "Desactivar customer no afecta cupones existentes."
+      - name: Flujo_custom_code_unico_segundo_intento_falla @negative
+        op: "POST /api/coupon (x2 same custom_code)"
+        desc: "Segundo create con mismo custom_code → rechazo [400,409,422]."
+        risk: CUP-RISK-012
+        quirk_ref: Q1
+
+gaps:
+  - id: CUP-RISK-001
+    risk: CUP-RISK-001
+    desc: "Bulk generation (quantity > 1) — sin test. P0."
+  - id: CUP-RISK-003
+    risk: CUP-RISK-003
+    desc: "Gateway incomm validation — sin test dedicado. P0."
+  - id: CUP-RISK-004
+    risk: CUP-RISK-004
+    desc: "Coupon use() race condition — sin test. P0."
+  - id: CUP-RISK-005
+    risk: CUP-RISK-005
+    desc: "Group counter drift post-save — sin test. P0."
+  - id: CUP-RISK-006
+    risk: CUP-RISK-006
+    desc: "Subgroup counter drift — sin test. P0."
+  - id: CUP-RISK-011
+    risk: CUP-RISK-011
+    desc: "Cross-account coupon isolation — sin test. P0."

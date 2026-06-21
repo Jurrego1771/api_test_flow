@@ -14,7 +14,6 @@
  *   Options structure: [{ text, isCorrect }]           (each question needs ≥1 isCorrect:true)
  *
  * Nomenclatura: TC_LIV_<METHOD>_quizzes_<scenario>
- * Ref: .agents/skills/mediastream-api/references/live-stream-id.md
  */
 
 const { test, expect } = require('@playwright/test');

@@ -3,7 +3,6 @@
 # Mapa rápido de cobertura de tests para la API de Live Stream (sm2).
 # Cubre el recurso /api/live-stream y sus sub-recursos anidados
 # (thumbnail, logo, quizzes, schedule-job, restream, ads, player).
-# Formato: qa-knowledge/SCHEMA.md
 # =============================================================================
 
 module:
@@ -11,7 +10,6 @@ module:
   prefix: TC_LIV          # sub-prefijos: TC_THB (thumbnail), TC_LOG (logo), TC_SCH (schedule-job)
   base_path: /api/live-stream
   risk_file: qa-knowledge/live-stream/live-stream.risk.yaml   # riesgos + estado de cobertura
-  risk_register: doc/risk-register/live-stream.md
   schema: schemas/live.schema.js
   backend_source: D:/Dev/Repos/mediastream/sm2/src/server/routes/api/live-stream
   summary: >

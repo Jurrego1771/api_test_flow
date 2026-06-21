@@ -1,0 +1,83 @@
+# =============================================================================
+# QA Knowledge — Article · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> article.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Article
+  prefix: ART-RISK
+  tests_file: qa-knowledge/article/article.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 5
+  covered: 2
+  partial: 0
+  uncovered: 3
+  note: >
+    Módulo de artículos (cms). Base path /api/article. ENDPOINT PUEDE RETORNAR
+    404 en dev/staging con ciertos tokens (ART-001 known bug). Todos los tests
+    usan ensureEndpointAvailable como guard. Solo smoke + integration; no hay
+    regression ni contract dedicados. 3 riesgos siguen uncovered.
+  p0_open:
+    - { id: ART-RISK-001, status: covered,   why: "Known bug: endpoint 404 en algunos entornos. TC_ART_S_001 usa ensureEndpointAvailable." }
+    - { id: ART-RISK-003, status: uncovered, why: "No hay test contract dedicado para schema de respuesta. TC_ART_S_007 valida inline con articleSchema." }
+    - { id: ART-RISK-004, status: uncovered, why: "TC_ART_S_006 crea con is_published:true pero no hay test negativo de is_published fuera de enum." }
+    - { id: ART-RISK-005, status: uncovered, why: "Tags y keywords persistence sin test dedicado. TC_ART_GET_search_by_title_and_tags saltado." }
+
+risks:
+  - id: ART-RISK-001
+    area: Availability
+    risk: "Endpoint /api/article retorna 404 en dev/staging con ciertos tokens (known bug)."
+    score: 50
+    priority: P0
+    status: covered
+    covered_by:
+      - "TC_ART_S_001_POST_Create_HappyPath @critical"
+    gap: null
+
+  - id: ART-RISK-002
+    area: Content creation
+    risk: "Crear artículo con HTML content (xss vector) o content muy largo."
+    score: 24
+    priority: P1
+    status: covered
+    covered_by:
+      - "TC_ART_POST_create_valid"
+      - "TC_ART_POST_update_title_and_synopsis"
+    gap: "TC_ART_POST_create_valid usa generateArticlePayload (faker), no HTML explícito. No hay test con HTML maligno."
+
+  - id: ART-RISK-003
+    area: Contract
+    risk: "Response schema cambia y rompe clientes."
+    score: 24
+    priority: P1
+    status: uncovered
+    covered_by:
+      - "TC_ART_S_007_ResponseSchema"
+    gap: "TC_ART_S_007 valida inline con articleSchema Zod, pero no es un test de contract dedicado. Falta test de contract explícito en capa contract/."
+
+  - id: ART-RISK-004
+    area: Validation
+    risk: "is_published: true en creation pasa o es ignorado."
+    score: 24
+    priority: P1
+    status: uncovered
+    covered_by:
+      - "TC_ART_S_006_POST_Create_WithIsPublished"
+    gap: "TC_ART_S_006 cubre is_published:true → resulta true. Falta test negativo: is_published:'invalid-string' o valor fuera de enum."
+
+  - id: ART-RISK-005
+    area: Tags persistence
+    risk: "Tags y keywords no persisten correctamente o se pierden en update."
+    score: 27
+    priority: P2
+    status: uncovered
+    covered_by:
+      - "TC_ART_GET_search_by_title_and_tags"
+    gap: "TC_ART_GET_search_by_title_and_tags está skippeado (búsqueda por tags no implementada o inconsistente). Tags persistence no tiene test activo."

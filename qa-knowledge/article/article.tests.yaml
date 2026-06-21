@@ -1,0 +1,161 @@
+# =============================================================================
+# QA Knowledge — Article module
+# Mapa rápido de cobertura de tests para la API de Article (sm2).
+# Cubre /api/article.
+# =============================================================================
+
+module:
+  name: Article
+  prefix: TC_ART
+  base_path: /api/article
+  risk_file: qa-knowledge/article/article.risk.yaml
+  schema: schemas/article.schema.js
+  backend_source: sm2 route: /api/article
+  summary: >
+    Módulo de artículos CMS. Solo smoke + integration; sin regression ni contract
+    dedicados. ENDPOINT PUEDE RETORNAR 404 en dev/staging → todos los tests
+    usan ensureEndpointAvailable como guard. Soft delete: GET tras DELETE retorna
+    200. BUGS conhecidos: without_category filter no funciona (fixme),
+    synopsis no se limpia con empty string (fixme).
+
+endpoints:
+  - { method: GET, path: /api/article, desc: "Lista artículos (filtros: limit, skip, published, count, without_category, id)." }
+  - { method: GET, path: /api/article/:id, desc: "Detalle de artículo. Soft delete: GET post-delete puede retornar 200." }
+  - { method: POST, path: /api/article, desc: "Crea artículo." }
+  - { method: POST, path: /api/article/:id, desc: "Update artículo (campos title, synopsis, categories, is_published, tags, keywords)." }
+  - { method: DELETE, path: /api/article/:id, desc: "Borra artículo (soft delete). Idempotente → 200 para inexistente." }
+  - { method: GET, path: /api/article/search, desc: "Búsqueda por title + titleRules. Tags search NO funciona (saltado)." }
+  - { method: POST, path: /api/article/:id/preview, desc: "Genera preview AI." }
+
+quirks:
+  - id: Q1
+    type: availability
+    desc: "Endpoint puede retornar 404 en dev/staging con ciertos tokens. Usar ensureEndpointAvailable en todos los tests."
+  - id: Q2
+    type: soft-delete
+    desc: "Article usa soft delete: GET tras DELETE aún retorna 200/OK. TC_ART_DELETE_article_by_id espera [404,200]."
+  - id: Q3
+    type: filter-bug
+    desc: "BUG: without_category=true incluye artículos que SÍ tienen categorías. TC_ART_GET_list_without_category marcado fixme."
+  - id: Q4
+    type: field-clear-bug
+    desc: "BUG: synopsis no se limpia con empty string '' en update. TC_ART_POST_update_clear_synopsis marcado fixme."
+  - id: Q5
+    type: response-shape
+    desc: "Response body.data puede ser array o objeto según el endpoint/version."
+
+tests:
+  smoke:
+    file: tests/api/smoke/article/article.smoke.spec.js
+    purpose: "Happy path básico — create, GET, DELETE, schema validation."
+    cases:
+      - name: TC_ART_S_001_POST_Create_HappyPath @critical
+        op: "POST /api/article"
+        desc: "Create article con payload válido → 200 + OK + _id + title igual al enviado."
+        risk: ART-RISK-001
+        quirk_ref: Q1
+      - name: TC_ART_S_002_GET_ById @critical
+        op: "GET /api/article/:id"
+        desc: "GET by id → 200 + OK + _id coincide."
+        risk: ART-RISK-001
+        quirk_ref: Q1
+      - name: TC_ART_S_003_GET_List
+        op: "GET /api/article?limit=5"
+        desc: "GET list → 200 + OK + array + length <= 5."
+        risk: ART-RISK-001
+        quirk_ref: Q1
+      - name: TC_ART_S_004_DELETE_HappyPath @critical
+        op: "DELETE /api/article/:id"
+        desc: "Create → DELETE → status 200 o 204."
+        risk: ART-RISK-001
+        quirk_ref: Q1
+      - name: TC_ART_S_005_GET_NotFound @negative
+        op: "GET /api/article/:id (id inexistente)"
+        desc: "GET con id 000000000000000000000000 → 200 o 404 con ERROR status."
+        risk: ART-RISK-001
+        quirk_ref: Q1
+      - name: TC_ART_S_006_POST_Create_WithIsPublished
+        op: "POST /api/article"
+        desc: "Create con is_published:true → article.is_published === true."
+        risk: ART-RISK-004
+        quirk_ref: Q1
+      - name: TC_ART_S_007_ResponseSchema
+        op: "POST /api/article + articleSchema.safeParse"
+        desc: "Response de create cumple articleSchema Zod (validación inline de contract)."
+        risk: ART-RISK-003
+        quirk_ref: Q1
+
+  regression: []
+    # No hay regression layer para article — los edge cases están en integration.
+
+  contract: []
+    # No hay archivo en tests/api/contract/article/ — contract inline en smoke TC_ART_S_007.
+
+  integration:
+    file: tests/api/integration/article/article.integration.spec.js
+    purpose: "CRUD completo, filtros, búsqueda, preview, auth, bugs documentados."
+    cases:
+      - name: TC_ART_POST_create_valid
+        op: "POST /api/article"
+        desc: "Create con author + is_published:true → 200 + OK + title + is_published=true. Valida schema."
+        risk: ART-RISK-002
+      - name: TC_ART_POST_create_missing_title @negative
+        op: "POST /api/article"
+        desc: "Create sin title → 400 + ERROR status."
+      - name: TC_ART_GET_detail_by_id
+        op: "GET /api/article/:id"
+        desc: "Detail → _id y title coinciden con lo creado."
+      - name: TC_ART_POST_update_title_and_synopsis
+        op: "POST /api/article/:id"
+        desc: "Update title + synopsis → 200 + valores actualizados en response."
+      - name: TC_ART_GET_update_persist_title_synopsis
+        op: "POST /api/article/:id + GET /api/article/:id"
+        desc: "Update → GET verifica title y synopsis persistidos."
+      - name: TC_ART_GET_list_pagination
+        op: "GET /api/article?limit=5&skip=0&published=not-published"
+        desc: "List con paginación → 200 + OK + array. Valida listArticleResponseSchema."
+      - name: TC_ART_GET_list_count_flag
+        op: "GET /api/article?count=true"
+        desc: "List con count=true → retorna número en data.total o data.count."
+      - name: TC_ART_GET_list_without_category @fixme
+        op: "GET /api/article?without_category=true"
+        desc: "BUG Q3: filter without_category incluye artículos con categoría."
+        quirk_ref: Q3
+      - name: TC_ART_GET_list_without_category_by_id @fixme
+        op: "GET /api/article?without_category=true&id=:id"
+        desc: "BUG Q3: filter without_category no funciona con parámetro id."
+        quirk_ref: Q3
+      - name: TC_ART_GET_search_by_title_and_tags @skip
+        op: "GET /api/article/search?title=:title&titleRules=contains"
+        desc: "Search por title → id del artículo creado aparece en resultados. Saltado (tags search no funciona)."
+      - name: TC_ART_POST_preview_valid
+        op: "POST /api/article/:id/preview"
+        desc: "Preview → 200/400/500 (acepta cualquier status, solo verifica que endpoint responde)."
+      - name: TC_ART_DELETE_article_by_id
+        op: "DELETE /api/article/:id"
+        desc: "Create → DELETE → 200 + OK. Soft delete: GET post-delete puede retornar 200 (Q2)."
+        quirk_ref: Q2
+      - name: TC_ART_DELETE_article_not_found @negative
+        op: "DELETE /api/article/:id (inexistente)"
+        desc: "DELETE con id 000000000000000000000000 → 400 o 404 + ERROR."
+      - name: TC_ART_POST_update_clear_synopsis @fixme
+        op: "POST /api/article/:id (synopsis='')"
+        desc: "BUG Q4: synopsis='' no se limpia; campo retiene valor original."
+        quirk_ref: Q4
+      - name: TC_ART_GET_list_no_token
+        op: "GET /api/article (sin token)"
+        desc: "Sin token → 401 o 403."
+      - name: TC_ART_GET_list_invalid_token
+        op: "GET /api/article (token inválido)"
+        desc: "Token inválido → 401 o 403."
+
+gaps:
+  - id: ART-RISK-003-gap
+    risk: ART-RISK-003
+    desc: "No hay test de contract dedicado en tests/api/contract/article/. TC_ART_S_007 valida inline pero no corre en la capa contract."
+  - id: ART-RISK-004-gap
+    risk: ART-RISK-004
+    desc: "No hay test negativo para is_published con valor inválido (ej. is_published:'string', is_published:123)."
+  - id: ART-RISK-005-gap
+    risk: ART-RISK-005
+    desc: "Tags persistence no tiene test activo. TC_ART_GET_search_by_title_and_tags está skippeado."
