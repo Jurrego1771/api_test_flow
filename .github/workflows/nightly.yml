@@ -1,9 +1,9 @@
-name: 🌙 Nightly — Suite Completa
+name: 🌙 Nightly — Smoke diario + Full (domingo)
 
 on:
   schedule:
-    - cron: '0 6 * * 1-6'  # lun–sáb 06:00 UTC: smoke + contract + regression
-    - cron: '0 6 * * 0'    # domingo 06:00 UTC: suite completa (+ integration)
+    - cron: '0 6 * * 1-6'  # lun–sáb 06:00 UTC: smoke + contract (ligero, ~5-10 min)
+    - cron: '0 6 * * 0'    # domingo 06:00 UTC: suite completa (+ regression + integration)
   workflow_dispatch:
     inputs:
       project:
@@ -14,6 +14,11 @@ on:
         description: 'Workers paralelos (default: 4)'
         required: false
         default: '4'
+
+# Evita que dos corridas de nightly se solapen y choquen al publicar en gh-pages.
+concurrency:
+  group: nightly
+  cancel-in-progress: false
 
 jobs:
   full-suite:
@@ -54,15 +59,15 @@ jobs:
           # workflow_dispatch con proyecto específico
           npx playwright test --project="$PROJECT" --workers="$WORKERS"
         elif [ "$DAY" = "7" ]; then
-          # Domingo: suite completa
+          # Domingo: suite completa (regression + integration)
           # integration corre con 2 workers para evitar race conditions en media IDs
           echo "🗓️  Domingo — suite completa"
           npx playwright test --project=smoke --project=contract --project=regression --workers="$WORKERS"
           npx playwright test --project=integration --workers=2
         else
-          # Lun–sáb: rápido (~30 min)
-          echo "🗓️  Lun–sáb — smoke + contract + regression"
-          npx playwright test --project=smoke --project=contract --project=regression --workers="$WORKERS"
+          # Lun–sáb: smoke diario ligero (~5-10 min)
+          echo "🗓️  Lun–sáb — smoke + contract"
+          npx playwright test --project=smoke --project=contract --workers="$WORKERS"
         fi
       env:
         BASE_URL: ${{ secrets.BASE_URL }}
