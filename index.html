@@ -1,34 +1,124 @@
 <!DOCTYPE html>
-<html dir="ltr" lang="en">
+<html lang="es">
 <head>
-    <meta charset="utf-8">
-    <title>Allure Report</title>
-    <link rel="icon" href="favicon.ico">
-    <link rel="stylesheet" type="text/css" href="styles.css">
-    <link rel="stylesheet" type="text/css" href="plugin/screen-diff/styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Test Flow · Reportes QA · Mediastream</title>
+  <link rel="icon" href="favicon.ico" />
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --panel-hover: #1c2330;
+      --border: #2d333b;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #2f81f7;
+      --green: #3fb950;
+      --moon: #d29922;
+      --prod: #db61a2;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 50% -10%, #15203250, transparent), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 64px 20px;
+    }
+    header { text-align: center; margin-bottom: 48px; max-width: 720px; }
+    h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
+    h1 .emoji { margin-right: 8px; }
+    header p { color: var(--muted); margin-top: 12px; font-size: 1.05rem; line-height: 1.5; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 920px;
+    }
+    .card {
+      display: block;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      text-decoration: none;
+      color: inherit;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:hover { transform: translateY(-3px); background: var(--panel-hover); border-color: var(--accent); }
+    .card .tag {
+      display: inline-block;
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      padding: 3px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .card h2 { font-size: 1.25rem; display: flex; align-items: center; gap: 8px; }
+    .card .desc { color: var(--muted); font-size: .92rem; margin-top: 8px; line-height: 1.5; }
+    .card .cadence { color: var(--muted); font-size: .82rem; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .card .go { color: var(--accent); font-size: .9rem; font-weight: 600; margin-top: 14px; display: inline-flex; align-items: center; gap: 6px; }
+    .t-smoke  { background: #1f6f3320; color: var(--green); }
+    .t-nightly{ background: #6f520020; color: var(--moon); }
+    .t-prod   { background: #6f1f4a20; color: var(--prod); }
+    footer { margin-top: 56px; color: var(--muted); font-size: .85rem; text-align: center; line-height: 1.6; }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
 </head>
 <body>
-    <div id="alert"></div>
-    <div id="content">
-        <span class="spinner">
-            <span class="spinner__circle"></span>
-        </span>
-    </div>
-    <div id="popup"></div>
-    <script src="app.js"></script>
-    <script src="plugin/behaviors/index.js"></script>
-    <script src="plugin/packages/index.js"></script>
-    <script src="plugin/screen-diff/index.js"></script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FVWC4GKEYS"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'G-FVWC4GKEYS', {
-          'allureVersion': '2.37.0',
-          'reportUuid': 'fb4e1647-4974-4912-bd0a-43f80c9aab04',
-          'single_file': false
-        });
-    </script>
+  <header>
+    <h1><span class="emoji">🧪</span>API Test Flow — Reportes QA</h1>
+    <p>Automatización de pruebas de la API REST de <strong>Mediastream</strong> (Playwright).
+       Elegí un entorno para ver su último reporte.</p>
+  </header>
+
+  <main class="grid">
+    <a class="card" href="smoke/">
+      <span class="tag t-smoke">dev · cada push</span>
+      <h2>🚀 Smoke + Contract</h2>
+      <p class="desc">Happy paths y validación de contratos Zod. Corre en cada push a <code>main</code>/<code>develop</code>.</p>
+      <p class="cadence">Reporte Playwright HTML · actualizado en cada push</p>
+      <span class="go">Ver reporte →</span>
+    </a>
+
+    <a class="card" href="nightly/">
+      <span class="tag t-nightly">dev · diario</span>
+      <h2>🌙 Nightly</h2>
+      <p class="desc">Smoke + contract lun–sáb; suite completa (+regression +integration) los domingos.</p>
+      <p class="cadence">Reporte Allure con historial · 06:00 UTC</p>
+      <span class="go">Ver reporte →</span>
+    </a>
+
+    <a class="card" href="prod-us/">
+      <span class="tag t-prod">prod · US</span>
+      <h2>🏭 Prod US</h2>
+      <p class="desc">Suite destructiva contra la cuenta QA en <code>platform.mediastre.am</code> (todos los módulos).</p>
+      <p class="cadence">Reporte Allure · lun/mié/sáb + manual</p>
+      <span class="go">Ver reporte →</span>
+    </a>
+
+    <a class="card" href="prod-eu/">
+      <span class="tag t-prod">prod · EU</span>
+      <h2>🏭 Prod EU</h2>
+      <p class="desc">Cuenta QA en <code>eu.platform.mediastre.am</code>. Excluye <code>article</code>/<code>epg</code>/<code>show</code> (no disponibles).</p>
+      <p class="cadence">Reporte Allure · lun/mié/sáb + manual</p>
+      <span class="go">Ver reporte →</span>
+    </a>
+  </main>
+
+  <footer>
+    <p>Repositorio: <a href="https://github.com/Jurrego1771/api_test_flow">github.com/Jurrego1771/api_test_flow</a></p>
+    <p>Cada reporte se publica en su subcarpeta desde GitHub Actions. Esta página es solo un índice.</p>
+  </footer>
 </body>
 </html>
