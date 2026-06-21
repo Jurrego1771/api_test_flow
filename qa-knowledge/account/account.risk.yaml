@@ -1,0 +1,201 @@
+# =============================================================================
+# QA Knowledge — Account · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> account.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Account
+  prefix: ACCNT-RISK
+  tests_file: qa-knowledge/account/account.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 18
+  covered: 0
+  partial: 0
+  uncovered: 18
+  note: >
+    Módulo cross-cutting de account settings (login options, payment providers,
+    social integrations, CDN, billing, whitelists, feature flags). 0/18 riesgos
+    cubiertos — NO EXISTEN tests dedicados para account en la suite. Módulo
+    dangerous: updates afectan casi todos los otros módulos. P0 cluster:
+    001, 002, 003, 004, 005, 006, 011, 012, 014, 016.
+  p0_open:
+    - { id: ACCNT-RISK-001, status: uncovered, why: "No hay tests de account response ni secret masking." }
+    - { id: ACCNT-RISK-002, status: uncovered, why: "No hay tests de update isolation — partial update puede mutar campos no relacionados." }
+    - { id: ACCNT-RISK-003, status: uncovered, why: "No hay tests de password change flow." }
+    - { id: ACCNT-RISK-004, status: uncovered, why: "No hay tests de IP whitelist validation." }
+    - { id: ACCNT-RISK-005, status: uncovered, why: "No hay tests de payment provider config (stripe/kushki/mp/paypal/tiaxa/ventipay)." }
+    - { id: ACCNT-RISK-006, status: uncovered, why: "No hay tests de feature flags (module enable/disable)." }
+    - { id: ACCNT-RISK-011, status: uncovered, why: "No hay tests de whitelist negative/positive ni range checks." }
+    - { id: ACCNT-RISK-012, status: uncovered, why: "No hay tests de billing settings ni provider subtrees." }
+    - { id: ACCNT-RISK-014, status: uncovered, why: "No hay tests de permission bypass — admin-only branches." }
+    - { id: ACCNT-RISK-016, status: uncovered, why: "No hay tests de cross-module blast radius — account update rompe otros módulos." }
+
+risks:
+  - id: ACCNT-RISK-001
+    area: Account read
+    risk: "Account payload leaks sensitive fields or omits required runtime data."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "GET /api/account response shape, secret masking, role-based differences — sin test."
+
+  - id: ACCNT-RISK-002
+    area: Core update
+    risk: "Partial update mutates unrelated account settings."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Field isolation, regression on untouched settings — sin test."
+
+  - id: ACCNT-RISK-003
+    area: Password change
+    risk: "Password update flow accepts weak or invalid passwords, or fails to persist securely."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "POST /api/account/password — password validation, hashing, user-save behavior — sin test."
+
+  - id: ACCNT-RISK-004
+    area: Login whitelist
+    risk: "IP whitelist is applied incorrectly and blocks admins or allows invalid clients."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "POST /api/account/login_ip_whitelist — whitelist validation, public IP checks, admin exceptions — sin test."
+
+  - id: ACCNT-RISK-005
+    area: Payment config
+    risk: "Payment provider credentials are stored or updated incorrectly."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "stripe/kushki/mp/paypal/tiaxa/ventipay provider branches — sin test."
+
+  - id: ACCNT-RISK-006
+    area: Feature flags
+    risk: "Enabling/disabling account modules leaves inconsistent state across consumers."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Module flag update tests, dependent branch coverage — sin test."
+
+  - id: ACCNT-RISK-007
+    area: Social integrations
+    risk: "Social token/connection updates leak secrets or corrupt integration state."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Social token/connection branches, secret masking, update merge — sin test."
+
+  - id: ACCNT-RISK-008
+    area: Zoom accounts
+    risk: "Zoom account metadata or tokens are exposed or overwritten incorrectly."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Zoom token masking, account mapping, enabled flags — sin test."
+
+  - id: ACCNT-RISK-009
+    area: Google Analytics
+    risk: "GA tracking ID validation accepts bad input or strips valid data."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "GA tracking ID format validation, whitespace trimming, null handling — sin test."
+
+  - id: ACCNT-RISK-010
+    area: CDN / playback defaults
+    risk: "Default player skin, logo URLs, and playback defaults are saved incorrectly."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Player skin, logo, media defaults — sin test."
+
+  - id: ACCNT-RISK-011
+    area: Whitelists
+    risk: "Login whitelist change can brick admin access or fail to validate client IP."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Whitelist negative/positive tests, range checks — sin test. Ligado a ACCNT-RISK-004."
+
+  - id: ACCNT-RISK-012
+    area: Billing settings
+    risk: "Billing and provider subtrees accept malformed or partial config."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "DGI, payments, provider branches, secret fields — sin test."
+
+  - id: ACCNT-RISK-013
+    area: External integrations
+    risk: "Third-party integration settings are persisted with wrong ownership or scope."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Account scope, required fields, per-provider updates — sin test."
+
+  - id: ACCNT-RISK-014
+    area: Permission bypass
+    risk: "Non-admin users can mutate admin-only configuration branches."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Role-based negative tests, admin-only branches — sin test."
+
+  - id: ACCNT-RISK-015
+    area: Data normalization
+    risk: "Empty strings, nulls, and trimming behavior corrupt stored settings."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Null/empty/trim edge cases across account fields — sin test."
+
+  - id: ACCNT-RISK-016
+    area: Cross-module blast radius
+    risk: "A bad account update breaks other modules that depend on these settings."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Dependency-aware regression checks — sin test. Módulo cross-cutting, impact en media/playlist/show/etc."
+
+  - id: ACCNT-RISK-017
+    area: Recommended shows default
+    risk: "Recommended shows default update mutates the wrong config or fails mid-way."
+    score: 24
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Conditional update path, integration flag dependency — sin test."
+
+  - id: ACCNT-RISK-018
+    area: Error handling
+    risk: "Validation or DB errors are masked or returned with wrong status."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "400/404/500 mapping, duplicate Mailchimp branch — sin test."

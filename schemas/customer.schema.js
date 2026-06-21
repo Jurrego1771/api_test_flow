@@ -1,6 +1,5 @@
 /**
  * Zod schema for Customer API responses
- * Ref: .agents/skills/mediastream-api/references/customer.md
  */
 
 const { z } = require("zod");

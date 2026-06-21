@@ -7,7 +7,6 @@
  *   NOTE: No DELETE endpoint — customers are deactivated via status: "INACTIVE"
  *   NOTE: No GET /:id endpoint — use GET /api/customer?id=:id
  * Nomenclatura: TC_CST_<METHOD>_<resource>_<scenario>
- * Ref: .agents/skills/mediastream-api/references/customer.md
  */
 
 const { test, expect } = require('@playwright/test');

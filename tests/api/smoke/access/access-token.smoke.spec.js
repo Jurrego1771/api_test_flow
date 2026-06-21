@@ -2,7 +2,6 @@
  * Test Suite: Access Token — Issue
  * Endpoint: POST /api/access/issue
  * Nomenclatura: TC_AT_POST_issue_<scenario>
- * Ref: .agents/skills/mediastream-api/references/access-token.md
  *
  * NOTAS:
  * - Respuesta no estándar: { status, message, access_token } en lugar de { status, data }

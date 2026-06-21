@@ -2,7 +2,6 @@
 # QA Knowledge — Ad module
 # Mapa rápido de cobertura de tests para la API de Ad (sm2).
 # Cubre /api/ad (config de delivery/monetización, multi-type).
-# Formato: qa-knowledge/SCHEMA.md
 # =============================================================================
 
 module:
@@ -10,7 +9,6 @@ module:
   prefix: TC_AD
   base_path: /api/ad
   risk_file: qa-knowledge/ad/ad.risk.yaml
-  risk_register: doc/risk-register/ad.md
   schema: schemas/ad.schema.js
   backend_source: D:/Dev/Repos/mediastream/sm2/src/server/routes/api/ad/   # create.js, update.js, index.js, detail.js, delete.js, search.js, transcode.js
   summary: >

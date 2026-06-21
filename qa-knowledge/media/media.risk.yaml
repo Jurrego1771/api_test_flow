@@ -1,0 +1,263 @@
+# =============================================================================
+# QA Knowledge — Media · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> media.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Media
+  prefix: MEDIA-RISK
+  tests_file: qa-knowledge/media/media.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 20
+  covered: 4
+  partial: 6
+  uncovered: 10
+  note: >
+    Módulo core de contenido (video/upload/processing/enriched/deletion). Cubre
+    POST /api/media (form:true), sub-recursos (meta, subtitle, thumbs, preview,
+    image, upload), y search. Gran superficie con muchos sub-recursos. P0 cluster:
+    upload (002/003), transcode (004), DRM (013), import/RSS (016), access (017),
+    deletion (019), authorization (020). 10/20 riesgos uncovered.
+  p0_open:
+    - { id: MEDIA-RISK-002, status: partial,   why: "Upload session happy path cubierto; invalid size/name, S3/chunked, expiration sin test." }
+    - { id: MEDIA-RISK-003, status: uncovered, why: "Large file/chunk handling — sin test." }
+    - { id: MEDIA-RISK-004, status: partial,   why: "Transcode state transitions cubierto partial; terminal state verification sin test." }
+    - { id: MEDIA-RISK-006, status: partial,   why: "Thumbnails partial; default selection, crop, multiple thumbs sin test dedicated." }
+    - { id: MEDIA-RISK-007, status: partial,   why: "Subtitles partial; main/secondary language validation, duration limits sin test." }
+    - { id: MEDIA-RISK-008, status: uncovered, why: "Tracks CRUD (audio/video) — sin test." }
+    - { id: MEDIA-RISK-009, status: uncovered, why: "Chapters CRUD — sin test." }
+    - { id: MEDIA-RISK-010, status: uncovered, why: "Highlights lifecycle — sin test." }
+    - { id: MEDIA-RISK-011, status: uncovered, why: "Ratings — sin test." }
+    - { id: MEDIA-RISK-012, status: uncovered, why: "Quizzes — sin test." }
+    - { id: MEDIA-RISK-013, status: uncovered, why: "DRM token issuance (POST /api/media/:id/drm/token) — sin test." }
+    - { id: MEDIA-RISK-015, status: partial,   why: "Metadata partial; schema validation cubierto, updateModels/relation integrity sin test." }
+    - { id: MEDIA-RISK-016, status: uncovered, why: "RSS import (POST /api/media/rss/importPlatform) — sin test." }
+    - { id: MEDIA-RISK-019, status: partial,   why: "Delete partial; orphan checks para uploads/thumbs/meta sin test." }
+    - { id: MEDIA-RISK-020, status: partial,   why: "Auth cross-account parcialmente cubierto; ownership leakage sin test." }
+
+risks:
+  - id: MEDIA-RISK-001
+    area: Create/Update/Delete
+    risk: "Invalid payloads o partial updates corrupten media state."
+    score: 60
+    priority: P0
+    status: covered
+    covered_by:
+      - "TC_MED_001_POST_CreateStandardVideo"
+      - "TC_MED_002_POST_CreateFullPayload"
+      - "TC_MED_004_POST_InvalidType @negative"
+      - "TC_MED_010_UPDATE_ChangeTitleOnly"
+      - "TC_CON_MED_001"
+      - "TC_CON_MED_002"
+      - "TC_CON_MED_003"
+      - "Flujo: create → update → publish → verify visibility → delete @critical"
+    gap: null
+
+  - id: MEDIA-RISK-002
+    area: Upload
+    risk: "Upload session/token generation falla o retorna bad URLs/keys."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_MED_UPLOAD_GET"
+      - "TC_MED_THUMBNAIL_UPLOAD_POST"
+    gap: "Happy path cubierto. Invalid size/name, S3/chunked paths, expiration sin test negativo."
+
+  - id: MEDIA-RISK-003
+    area: Upload
+    risk: "Large file/chunk handling rompe o deja orphaned upload jobs."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de chunk boundaries, retry, cancel/delete-upload, idempotency."
+
+  - id: MEDIA-RISK-004
+    area: Transcoding/meta
+    risk: "Meta creation/transcode state se desincroniza."
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_MED_META_GET"
+      - "TC_MED_META_DELETE"
+      - "Flujo: create → update → publish → verify visibility → delete @critical"
+    gap: "State transitions cubiertos partial. Terminal state verification sin test."
+
+  - id: MEDIA-RISK-005
+    area: Preview
+    risk: "Preview generation falla para invalid position o file type."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_MED_PREVIEW_POST"
+      - "TC_MED_PREVIEW_UPLOAD_GET"
+    gap: "Invalid position, async start, error codes sin test dedicado."
+
+  - id: MEDIA-RISK-006
+    area: Thumbnails
+    risk: "Thumbnail upload/update/delete retorna inconsistent default image."
+    score: 36
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_MED_THUMBS_GET"
+      - "TC_MED_THUMB_DELETE"
+      - "TC_MED_THUMBNAIL_UPLOAD_POST"
+    gap: "Default selection, crop, multiple thumbs sin test dedicado."
+
+  - id: MEDIA-RISK-007
+    area: Subtitles
+    risk: "Subtitle create/update/delete mismatches language o auto-generated flow."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_MED_SUBTITLE_GET"
+      - "TC_MED_SUBTITLE_DELETE"
+    gap: "Main/secondary language validation, duration limits, create paths sin test."
+
+  - id: MEDIA-RISK-008
+    area: Tracks
+    risk: "Audio/video track CRUD rompe track ordering o metadata linkage."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de tracks create/update/delete/index."
+
+  - id: MEDIA-RISK-009
+    area: Chapters
+    risk: "Chapter CRUD permite invalid ranges o duplicate markers."
+    score: 27
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de chapters."
+
+  - id: MEDIA-RISK-010
+    area: Highlights
+    risk: "Highlight lifecycle retorna stale o broken references."
+    score: 27
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de highlights."
+
+  - id: MEDIA-RISK-011
+    area: Ratings
+    risk: "Rating endpoints permiten invalid ranges o cross-account contamination."
+    score: 27
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de ratings."
+
+  - id: MEDIA-RISK-012
+    area: Quizzes
+    risk: "Quiz configuration o update flow rompe content interaction."
+    score: 24
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de quizzes."
+
+  - id: MEDIA-RISK-013
+    area: DRM token
+    risk: "DRM token issuance falla o expone contenido incorrectamente."
+    score: 50
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de POST /api/media/:id/drm/token."
+
+  - id: MEDIA-RISK-014
+    area: Search
+    risk: "Search endpoints retornan wrong scope, pagination, o slow queries."
+    score: 48
+    priority: P1
+    status: covered
+    covered_by:
+      - "TC_MED_015_SEARCH_ExactTitle"
+      - "TC_MED_014a_FILTER_TitleIs"
+      - "TC_MED_014b_FILTER_TitleContains"
+      - "TC_MED_014c_FILTER_TitleStartsEndsWith"
+      - "TC_MED_014e_FILTER_TypeVideo"
+      - "TC_MED_014d_FILTER_Published"
+    gap: null
+
+  - id: MEDIA-RISK-015
+    area: Metadata
+    risk: "Metadata creation/update/model mapping rompe downstream consumers."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_MED_META_GET"
+      - "TC_MED_META_DELETE"
+    gap: "Schema validation cubierto. updateModels y relation integrity sin test."
+
+  - id: MEDIA-RISK-016
+    area: Import/RSS
+    risk: "Platform import o remote import produce malformed media records."
+    score: 40
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de POST /api/media/rss/importPlatform."
+
+  - id: MEDIA-RISK-017
+    area: Access rules
+    risk: "Media access flags se persisten incorrectamente."
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_MED_001_POST_CreateStandardVideo"
+      - "TC_MED_002_POST_CreateFullPayload"
+    gap: "Access flags (geo, cellular, referer, closed_access) parcialmente cubiertos. Full validation sin test."
+
+  - id: MEDIA-RISK-018
+    area: Response contract
+    risk: "API shape cambia inesperadamente y rompe clientes."
+    score: 64
+    priority: P0
+    status: covered
+    covered_by:
+      - "TC_CON_MED_001"
+      - "TC_CON_MED_002"
+      - "TC_CON_MED_003"
+    gap: null
+
+  - id: MEDIA-RISK-019
+    area: Deletion
+    risk: "Delete flows remueven media pero dejan dependent assets orphaned."
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_MED_013_DELETE_Success"
+      - "Flujo: create → update → publish → verify visibility → delete @critical"
+    gap: "Delete básico cubierto. Orphan checks para uploads, thumbs, meta sin test dedicado."
+
+  - id: MEDIA-RISK-020
+    area: Authorization
+    risk: "Unauthorized access a write endpoints o media ownership leakage."
+    score: 75
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_CON_MED_001"
+      - "TC_CON_MED_002"
+      - "TC_CON_MED_003"
+      - "TC_MED_001_POST_CreateStandardVideo"
+    gap: "Contract y smoke CRUD cubiertos. Cross-account negative cases sin test dedicado."

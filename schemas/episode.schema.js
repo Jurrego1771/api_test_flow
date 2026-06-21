@@ -1,6 +1,5 @@
 /**
  * Zod schema for Show Episode API responses
- * Ref: .agents/skills/mediastream-api/references/show-season-episode.md
  *
  * NOTE: Episode is returned at root level (no { status, data } wrapper)
  */

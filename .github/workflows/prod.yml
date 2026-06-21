@@ -5,7 +5,7 @@ name: 🏭 Prod — Nightly (lun/mié/sáb) + Full (manual)
 #    US + EU contra la cuenta QA. Misma suite que el nightly de dev (sin integration).
 #    EU excluye módulos no disponibles con los tests actuales (article, epg, show:
 #    show migró a microservicio gRPC api.eu.../show con contrato distinto — ver
-#    IGNORE_GLOB del step EU). Escribe/borra en la cuenta QA dedicada.
+#    matrix.include, fuente de verdad por ambiente). Escribe/borra en la cuenta QA dedicada.
 #  - MANUAL  (workflow_dispatch): safe (read-only @prod-safe) | nightly | full
 #    (suite COMPLETA + integration). Para regresión crítica puntual.
 #
@@ -30,6 +30,11 @@ on:
         required: false
         default: '4'
 
+# Una sola corrida de prod a la vez: no saturar prod ni chocar en gh-pages.
+concurrency:
+  group: prod
+  cancel-in-progress: false
+
 jobs:
   prod:
     timeout-minutes: 90
@@ -43,8 +48,17 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 1   # secuencial: no saturar prod ni mezclar reportes
+      # Disponibilidad de módulos por ambiente — ÚNICA fuente de verdad.
+      # ignore_glob -> testIgnore en playwright.config.js (excluye módulos no disponibles).
+      #   EU excluye article/epg (no habilitados → 403) y show (migró a microservicio
+      #   gRPC api.eu.../show con contrato distinto; el monolito /api/show cuelga → 502).
+      #   US corre todo. Para sumar un ambiente nuevo, agregá una entrada aquí.
       matrix:
-        region: [us, eu]
+        include:
+          - region: us
+            ignore_glob: ''
+          - region: eu
+            ignore_glob: '**/article/**,**/epg/**,**/show/**'
 
     steps:
       - name: 🎯 Resolver modo + si esta región corre
@@ -107,12 +121,7 @@ jobs:
           BASE_URL: ${{ matrix.region == 'us' && secrets.US_BASE_URL || secrets.EU_BASE_URL }}
           API_TOKEN: ${{ matrix.region == 'us' && secrets.US_API_TOKEN || secrets.EU_API_TOKEN }}
           QA_ACCOUNT: 'true'
-          # EU: excluir módulos no disponibles con los tests actuales.
-          #   article, epg -> módulos no habilitados en la cuenta EU (403).
-          #   show -> migró a microservicio gRPC (api.eu.../show) con contrato distinto;
-          #           el monolito /api/show cuelga (502). Los tests actuales no aplican.
-          # US: sin exclusión (todo disponible).
-          IGNORE_GLOB: ${{ matrix.region == 'eu' && '**/article/**,**/epg/**,**/show/**' || '' }}
+          IGNORE_GLOB: ${{ matrix.ignore_glob }}   # ver matrix.include (fuente de verdad por ambiente)
 
       - name: 🧪 Full — suite completa destructiva (cuenta QA)
         if: steps.gate.outputs.run == 'true' && steps.gate.outputs.mode == 'full'
@@ -124,7 +133,7 @@ jobs:
           BASE_URL: ${{ matrix.region == 'us' && secrets.US_BASE_URL || secrets.EU_BASE_URL }}
           API_TOKEN: ${{ matrix.region == 'us' && secrets.US_API_TOKEN || secrets.EU_API_TOKEN }}
           QA_ACCOUNT: 'true'
-          IGNORE_GLOB: ${{ matrix.region == 'eu' && '**/article/**,**/epg/**,**/show/**' || '' }}
+          IGNORE_GLOB: ${{ matrix.ignore_glob }}   # ver matrix.include (fuente de verdad por ambiente)
 
       - name: 📤 Upload artifacts
         if: always() && steps.gate.outputs.run == 'true'

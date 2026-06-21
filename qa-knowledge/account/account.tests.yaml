@@ -1,0 +1,117 @@
+# =============================================================================
+# QA Knowledge — Account · TESTS
+# Mapa de cobertura por capa. Conexión: cases[].name <-> account.risk.yaml risks[].id.
+# Fuente: NO EXISTEN tests dedicados para account en la suite.
+# =============================================================================
+
+module:
+  name: Account
+  prefix: TC_ACCNT
+  base_path: /api/account
+  endpoints:
+    - op: "GET /api/account"
+      desc: "Obtiene account profile y settings — sin test"
+    - op: "POST /api/account"
+      desc: "Actualización parcial de account settings — sin test"
+    - op: "POST /api/account/password"
+      desc: "Cambio de password — sin test"
+    - op: "POST /api/account/login_ip_whitelist"
+      desc: "Gestión de IP whitelist — sin test"
+    - op: "POST /api/media/login_ip_whitelist"
+      desc: "IP whitelist (ruta alternativa?) — sin test"
+
+quirks: []
+
+tests:
+  smoke:
+    file: null
+    purpose: "NO EXISTEN tests de smoke para account."
+    cases: []
+
+  regression:
+    file: null
+    purpose: "NO EXISTEN tests de regression para account."
+    cases: []
+
+  contract:
+    file: null
+    purpose: "NO EXISTEN tests de contract para account."
+    cases: []
+
+  integration:
+    file: null
+    purpose: "NO EXISTEN tests de integration para account."
+    cases: []
+
+gaps:
+  - id: ACCNT-GAP-001
+    risk: ACCNT-RISK-001
+    desc: "GET /api/account response contract + secret masking — sin tests."
+
+  - id: ACCNT-GAP-002
+    risk: ACCNT-RISK-002
+    desc: "Partial update isolation (campos no relacionados no se mutan) — sin tests."
+
+  - id: ACCNT-GAP-003
+    risk: ACCNT-RISK-003
+    desc: "Password change flow (POST /api/account/password) — sin tests."
+
+  - id: ACCNT-GAP-004
+    risk: ACCNT-RISK-004
+    desc: "IP whitelist validation positive/negative — sin tests."
+
+  - id: ACCNT-GAP-005
+    risk: ACCNT-RISK-005
+    desc: "Payment provider config (stripe/kushki/mp/paypal/tiaxa/ventipay) — sin tests."
+
+  - id: ACCNT-GAP-006
+    risk: ACCNT-RISK-006
+    desc: "Feature flags enable/disable — sin tests."
+
+  - id: ACCNT-GAP-007
+    risk: ACCNT-RISK-007
+    desc: "Social token/connection branches + secret masking — sin tests."
+
+  - id: ACCNT-GAP-008
+    risk: ACCNT-RISK-008
+    desc: "Zoom account metadata/tokens + masking — sin tests."
+
+  - id: ACCNT-GAP-009
+    risk: ACCNT-RISK-009
+    desc: "GA tracking ID validation (format, whitespace, null) — sin tests."
+
+  - id: ACCNT-GAP-010
+    risk: ACCNT-RISK-010
+    desc: "CDN/playback defaults (player skin, logo, media defaults) — sin tests."
+
+  - id: ACCNT-GAP-011
+    risk: ACCNT-RISK-012
+    desc: "Billing settings y provider subtrees (DGI, etc.) — sin tests."
+
+  - id: ACCNT-GAP-012
+    risk: ACCNT-RISK-013
+    desc: "External integrations (account scope, ownership) — sin tests."
+
+  - id: ACCNT-GAP-013
+    risk: ACCNT-RISK-014
+    desc: "Permission bypass: non-admin a branches admin-only — sin tests."
+
+  - id: ACCNT-GAP-014
+    risk: ACCNT-RISK-015
+    desc: "Data normalization (empty strings, nulls, trimming) — sin tests."
+
+  - id: ACCNT-GAP-015
+    risk: ACCNT-RISK-016
+    desc: "Cross-module blast radius (account update rompe media/playlist/show) — sin integration tests."
+
+  - id: ACCNT-GAP-016
+    risk: ACCNT-RISK-017
+    desc: "Recommended shows default update path — sin tests."
+
+  - id: ACCNT-GAP-017
+    risk: ACCNT-RISK-018
+    desc: "Error handling (400/404/500 mapping, Mailchimp duplicate) — sin tests."
+
+  - id: ACCNT-GAP-018
+    risk: ACCNT-RISK-011
+    desc: "Login whitelist negative (IP ranges, invalid IP format) — sin tests."

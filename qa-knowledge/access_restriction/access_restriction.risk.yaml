@@ -1,0 +1,138 @@
+# =============================================================================
+# QA Knowledge — Access Restriction · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> access_restriction.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Access Restriction
+  prefix: AR-RISK
+  tests_file: qa-knowledge/access_restriction/access_restriction.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 10
+  covered: 2
+  partial: 0
+  uncovered: 8
+  note: >
+    Módulo de control de acceso a contenido. CRUD + reglas geo/IP sobre media.
+    Base path largo: /api/settings/advanced-access-restrictions.
+    POST/DELETE requieren MIDDLEWARE.AUTH (session cookie), no API token.
+    Cobertura actual: smoke (listado + ids inválidos) + regression (CRUD write
+    parcial, condicionado a sesión) + contract (list schema) + integration
+    (AR→Media assignment, condicionado). 8/10 riesgos siguen uncovered.
+  p0_open:
+    - { id: AR-RISK-001, status: uncovered, why: "Sin test de create sin name -> 400 NAME_IS_REQUIRED." }
+    - { id: AR-RISK-002, status: partial,   why: "Geo rule en regression requiere session auth (skip en CI con API token)." }
+    - { id: AR-RISK-003, status: partial,   why: "IP rule en regression requiere session auth (skip en CI con API token)." }
+    - { id: AR-RISK-005, status: uncovered, why: "Sin test de múltiples reglas en mismo AR con session auth." }
+    - { id: AR-RISK-007, status: partial,   why: "DELETE AR cubierto; AR en uso por media -> cascade/differential behavior sin verificar." }
+    - { id: AR-RISK-008, status: uncovered, why: "apply_to_sub_categories no tiene test de herencia a categorías hijas." }
+    - { id: AR-RISK-009, status: uncovered, why: "Error body schema (400/404) no tiene cobertura contract dedicated." }
+    - { id: AR-RISK-010, status: partial,   why: "AllRestrictionsEnabled en regression requiere session auth (skip en CI)." }
+
+risks:
+  - id: AR-RISK-001
+    area: Validation
+    risk: "Create AR sin campo `name` → error 400 NAME_IS_REQUIRED."
+    score: 40
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "TC_AR_REG_W001_POST_Create_MissingName tiene skip condicional (session auth); no corre en CI con API token."
+
+  - id: AR-RISK-002
+    area: Geo rules
+    risk: "Geo rule con lista de países inválidos se acepta o rompe."
+    score: 40
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_AR_REG_W002_POST_Create_GeoRule @critical"
+    gap: "TC_AR_REG_W002 corre solo con session auth; skip en CI (API token). Geo validation negativo (países invented) sin cubrir."
+
+  - id: AR-RISK-003
+    area: IP rules
+    risk: "IP rule con CIDR inválido (ej. 999.999.999.0/99) se acepta o rompe."
+    score: 40
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_AR_REG_W003_POST_Create_IPRule"
+    gap: "TC_AR_REG_W003 corre solo con session auth; skip en CI. CIDR inválido negativo sin cubrir."
+
+  - id: AR-RISK-004
+    area: AR → Media integration
+    risk: "Aplicar AR a media y verificar acceso (efecto real)."
+    score: 36
+    priority: P1
+    status: covered
+    covered_by:
+      - "TC_INT_AR_001_Flujo_CreateAR_AssignToMedia_Verify @critical"
+      - "TC_INT_AR_002_Flujo_RemoveAR_VerifyCleanup @critical"
+      - "TC_INT_AR_003_Flujo_DeleteAR_MediaFieldCleared @critical"
+      - "TC_INT_AR_004_Flujo_GeoRestriction_MediaAssignment"
+    gap: null
+
+  - id: AR-RISK-005
+    area: Multiple rules
+    risk: "AR con múltiples reglas (geo + ip simultáneas) se comporta correctamente."
+    score: 24
+    priority: P1
+    status: uncovered
+    covered_by:
+      - "TC_AR_REG_W004_POST_Create_MultipleRules"
+    gap: "TC_AR_REG_W004 corre solo con session auth; no corre en CI."
+
+  - id: AR-RISK-006
+    area: Contract
+    risk: "Response schema de GET/POST/DELETE rompe y rompe clientes."
+    score: 40
+    priority: P0
+    status: covered
+    covered_by:
+      - "TC_CON_AR_003_GET_list_response_schema"
+    gap: "POST/DELETE contract (TC_CON_AR_001/002) skippeados por falta de session auth."
+
+  - id: AR-RISK-007
+    area: Delete AR in use
+    risk: "DELETE AR asignado a media deja orphan ref o cascada inesperadamente."
+    score: 24
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_AR_REG_W006_DELETE_AR @critical"
+    gap: "DELETE AR simple cubierto. Comportamiento diferencial (cascade, orphan, field-clear) al borrar AR en uso por media → TC_INT_AR_003 verifica estado post-delete pero no valida cleanup definitively."
+
+  - id: AR-RISK-008
+    area: Category inheritance
+    risk: "`apply_to_sub_categories: true` no hereda correctamente a categorías hijas."
+    score: 27
+    priority: P2
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de herencia a categorías hijas (requiere crear category tree + AR + verificar hijos)."
+
+  - id: AR-RISK-009
+    area: Error schema
+    risk: "Body de error (400/404) no cumple schema o cambia sin aviso."
+    score: 24
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "No hay test de contract dedicado a error bodies. Smoke TC_AR_NEG_010/011 verifican status pero no schema."
+
+  - id: AR-RISK-010
+    area: All restrictions
+    risk: "AR con todas las restricciones habilitadas (closed_access + aes + drm) persiste correctamente."
+    score: 24
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_AR_REG_W005_POST_Create_AllRestrictionsEnabled"
+    gap: "TC_AR_REG_W005 corre solo con session auth; skip en CI."

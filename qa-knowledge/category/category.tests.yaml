@@ -9,7 +9,6 @@ module:
   prefix: TC_CAT
   base_path: /api/category
   risk_file: qa-knowledge/category/category.risk.yaml   # riesgos + estado de cobertura
-  risk_register: doc/risk-register/category.md          # fuente narrativa completa
   schema: schemas/category.schema.js
   backend_source: D:/Dev/Repos/mediastream/sm2/src/server/routes/api/category
   summary: >

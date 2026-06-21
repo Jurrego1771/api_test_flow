@@ -4,6 +4,11 @@ on:
   push:
     branches: [ main, develop ]
 
+# Pushes rápidos sobre la misma rama: cancela la corrida vieja y deja solo la última.
+concurrency:
+  group: push-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   smoke-contract:
     timeout-minutes: 15

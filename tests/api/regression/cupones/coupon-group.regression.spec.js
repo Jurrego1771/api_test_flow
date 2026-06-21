@@ -2,7 +2,6 @@
  * Test Suite: Coupon Group API
  * Endpoints: GET/POST /api/coupon-group · GET /api/coupon-group/:id · POST /api/coupon-group/:id/disable
  * Nomenclatura: TC_CPN_<METHOD>_group_<scenario>
- * Ref: .agents/skills/mediastream-api/references/coupon.md
  *
  * NOTAS DE LA API:
  * - No existe DELETE ni POST update para coupon-group

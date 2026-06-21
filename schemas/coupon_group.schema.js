@@ -1,6 +1,5 @@
 /**
  * Zod schema for Coupon Group API responses
- * Ref: .agents/skills/mediastream-api/references/coupon.md
  */
 
 const { z } = require("zod");

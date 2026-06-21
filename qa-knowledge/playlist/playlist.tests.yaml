@@ -1,0 +1,310 @@
+# =============================================================================
+# QA Knowledge — Playlist · TESTS
+# Mapa de cobertura por capa. Conexión: cases[].name <-> playlist.risk.yaml risks[].id.
+# Fuente: tests/api/{smoke,regression,contract,integration}/playlist/
+# =============================================================================
+
+module:
+  name: Playlist
+  prefix: TC_PL
+  base_path: /api/playlist
+  endpoints:
+    - op: "GET /api/playlist"
+      desc: "Listado con filtros (limit, offset, slug, featured, category, account)"
+    - op: "POST /api/playlist"
+      desc: "Creación de playlist (manual/smart/series/playout)"
+    - op: "GET /api/playlist/:id"
+      desc: "Detalle de playlist por ID"
+    - op: "POST /api/playlist/:id"
+      desc: "Actualización parcial (name, description, type, medias, access_rules, featured, no_ad)"
+    - op: "DELETE /api/playlist/:id"
+      desc: "Eliminación de playlist"
+    - op: "POST /api/playlist/:id/image"
+      desc: "Subida de imagen (multipart) — sin test"
+    - op: "DELETE /api/playlist/:id/image"
+      desc: "Eliminación de imagen — sin test"
+    - op: "POST /api/playlist/:id/access-token"
+      desc: "Generación de access token — NO EXISTE en sm2 (tests skip)"
+    - op: "DELETE /api/playlist/:id/access-token/:token"
+      desc: "Eliminación de access token — NO EXISTE en sm2 (tests skip)"
+
+quirks:
+  - id: Q1
+    desc: "API lee req.body.medias dentro de switch(type) case 'manual', NO req.body.rules.manual.medias para asociar. El test usa { medias: [id] }."
+    severity: high
+  - id: Q2
+    desc: "?medias=true filtra por IDs ( interprets as id='true' → 0 results). Correcto: ?all=true sin param de medias."
+    severity: medium
+  - id: Q3
+    desc: "rules.manual.medias acepta empty array en creación."
+    severity: low
+  - id: Q4
+    desc: "Smart playlists evalúan reglas en tiempo real — no cachear resultados en tests."
+    severity: medium
+  - id: Q5
+    desc: "POST /api/playlist/:id/access-token y DELETE /api/playlist/:id/access-token/:token NO existen en sm2. 5 tests skip."
+    severity: critical
+
+tests:
+  smoke:
+    file: tests/api/smoke/playlist/playlist-crud.smoke.spec.js
+    purpose: "Happy path — CRUD básico, respuesta 200, 404, 400"
+    cases:
+      - name: "[PL-SMOKE-001] GET lista retorna 200 con schema válido"
+        op: "GET /api/playlist"
+        desc: "Lista playlists y retorna schema válido con array en data."
+        risk: "PL-RISK-012"
+        tags: [contract]
+
+      - name: "[PL-SMOKE-002] GET lista respeta parámetro limit"
+        op: "GET /api/playlist?limit=3&offset=0"
+        desc: "Lista con limit=3 retorna máximo 3 elementos."
+        risk: "PL-RISK-012"
+
+      - name: "[PL-SMOKE-003] POST crea playlist manual mínima"
+        op: "POST /api/playlist"
+        desc: "Crea playlist manual con campos mínimos, type='manual', retorna 200 + _id."
+        risk: "PL-RISK-001"
+        quirk_ref: Q3
+
+      - name: "[PL-SMOKE-004] GET detalle retorna campos obligatorios y schema válido"
+        op: "GET /api/playlist/:id"
+        desc: "GET detalle retorna _id, name, type, account y pasa schema Zod."
+        risk: "PL-RISK-013"
+        tags: [contract]
+
+      - name: "[PL-SMOKE-005] GET retorna 404 para playlist inexistente"
+        op: "GET /api/playlist/000000000000000000000000"
+        desc: "GET con ID inexistente retorna 404 + data:NOT_FOUND."
+
+      - name: "[PL-SMOKE-006] DELETE elimina playlist y verifica 404 en GET"
+        op: "DELETE /api/playlist/:id"
+        desc: "DELETE elimina y GET subsecuente retorna 404."
+        risk: "PL-RISK-017"
+
+      - name: "[PL-SMOKE-007-NEG] POST devuelve error cuando falta el campo name"
+        op: "POST /api/playlist"
+        desc: "POST sin name retorna 400 o 500 + status:ERROR."
+        risk: "PL-RISK-015"
+        tags: [negative]
+
+  regression:
+    file: tests/api/regression/playlist/playlist-advanced.regression.spec.js
+    purpose: "Tipos playlist, validaciones negativas, actualización, reglas de negocio, access tokens"
+    cases:
+      - name: "[PL-FUNC-001.1.2] Crea playlist Smart con criterios de filtrado"
+        op: "POST /api/playlist"
+        desc: "Crea playlist type=smart con rules.smart.sort_by/limit, retorna 200 + type='smart'."
+        risk: "PL-RISK-004"
+        quirk_ref: Q4
+
+      - name: "[PL-FUNC-001.1.3] Crea playlist Series con estructura de temporadas"
+        op: "POST /api/playlist"
+        desc: "Crea playlist type=series con seasons/episodes, retorna 200 + type='series'."
+        risk: "PL-RISK-005"
+
+      - name: "[PL-FUNC-001.1.4] Crea playlist Playout con múltiples reglas"
+        op: "POST /api/playlist"
+        desc: "Crea playlist type=playout con rules de playout, retorna 200 + type='playout'."
+        risk: "PL-RISK-006"
+
+      - name: "[PL-BRULE-002.2.7] Crea playlist Manual con featured=true"
+        op: "POST /api/playlist"
+        desc: "Crea playlist manual con featured:true, verifica persistencia."
+        risk: "PL-RISK-001"
+
+      - name: "[PL-NEG] 400 o 500 cuando falta el campo name"
+        op: "POST /api/playlist"
+        desc: "POST sin name retorna error."
+        risk: "PL-RISK-015"
+        tags: [negative]
+
+      - name: "[PL-NEG] 400 o 500 cuando falta el campo type"
+        op: "POST /api/playlist"
+        desc: "POST sin type retorna error."
+        risk: "PL-RISK-015"
+        tags: [negative]
+
+      - name: "[PL-NEG] 400 o 500 con type con valor inválido"
+        op: "POST /api/playlist"
+        desc: "POST con type='invalid_type' retorna error."
+        risk: "PL-RISK-015"
+        tags: [negative]
+
+      - name: "[PL-FUNC-001.1.5] Actualiza nombre y descripción"
+        op: "POST /api/playlist/:id"
+        desc: "PATCH name+description, verifica persistencia del nuevo valor."
+        risk: "PL-RISK-002"
+
+      - name: "[PL-BRULE-002.2.7] Actualiza flags featured y no_ad"
+        op: "POST /api/playlist/:id"
+        desc: "Actualiza featured:true y no_ad:true, verifica valores persistidos."
+        risk: "PL-RISK-002"
+
+      - name: "[PL-FUNC-001.3 / UC-PL-006] Aplica restricciones geográficas vía access_rules"
+        op: "POST /api/playlist/:id"
+        desc: "Actualiza access_rules.geo y retorna 200."
+        risk: "PL-RISK-007"
+
+      - name: "[PL-FUNC-001.1.5] Actualiza medias: agrega y vacía rules.manual.medias"
+        op: "POST /api/playlist/:id"
+        desc: "Agrega media vía {medias:[id]} y limpia con medias:[]. Verifica rules.manual.medias."
+        risk: "PL-RISK-002"
+        risk: "PL-RISK-003"
+        quirk_ref: Q1
+
+      - name: "[PL-NEG] 404 al eliminar playlist inexistente"
+        op: "DELETE /api/playlist/000000000000000000000000"
+        desc: "DELETE con ID inexistente retorna 404."
+        tags: [negative]
+
+      - name: "[BR-PL-002] El slug se genera automáticamente al crear la playlist"
+        op: "GET /api/playlist/:id"
+        desc: "GET detalle de playlist recién creada tiene slug no-null y tipo string."
+        risk: "PL-RISK-001"
+
+      - name: "[BR-PL-005] El type es mutable: actualizar con type diferente sí lo cambia"
+        op: "POST /api/playlist/:id"
+        desc: "Update con type='smart' cambia el tipo de manual a smart (sm2 es mutable)."
+        risk: "PL-RISK-001"
+
+      - name: "[PL-FUNC-001.2.1] Media asociada vía update aparece en GET?all=true"
+        op: "GET /api/playlist/:id?all=true"
+        desc: "Media asociada aparece en detail.medias con ?all=true."
+        risk: "PL-RISK-003"
+        quirk_ref: Q2
+
+      - name: "[PL-FUNC-001.2.3] Al vaciar rules.manual.medias, medias ya no aparece"
+        op: "GET /api/playlist/:id?medias=true"
+        desc: "After clearing medias via PATCH rules.manual.medias=[], GET ?medias=true returns empty."
+        risk: "PL-RISK-003"
+        quirk_ref: Q2
+
+      - name: "[PL-FUNC-001.3.1] Genera access token con nombre/email"
+        op: "POST /api/playlist/:id/access-token"
+        desc: "SKIP — endpoint no existe en sm2."
+        tags: [critical]
+        quirk_ref: Q5
+
+      - name: "[PL-FUNC-001.3.1] El token generado aparece en el detalle de la playlist"
+        op: "GET /api/playlist/:id"
+        desc: "SKIP — endpoint no existe en sm2."
+        tags: [critical]
+        quirk_ref: Q5
+
+      - name: "[PL-FUNC-001.3.3] Elimina access token exitosamente y ya no aparece en detalle"
+        op: "DELETE /api/playlist/:id/access-token/:token"
+        desc: "SKIP — endpoint no existe en sm2."
+        tags: [critical]
+        quirk_ref: Q5
+
+      - name: "[PL-NEG] 400 al crear token sin nombre"
+        op: "POST /api/playlist/:id/access-token"
+        desc: "SKIP — endpoint no existe en sm2."
+        tags: [negative]
+        quirk_ref: Q5
+
+      - name: "[BR-PL-010] Los tokens generados son únicos entre sí"
+        op: "POST /api/playlist/:id/access-token"
+        desc: "SKIP — endpoint no existe en sm2."
+        quirk_ref: Q5
+
+  contract:
+    file: tests/api/contract/playlist/playlist.contract.spec.js
+    purpose: "Schema Zod — create/GET/list response shapes"
+    schema_ref: schemas/playlist.schema
+    cases:
+      - name: "TC_CON_PL_001 POST /api/playlist response schema"
+        op: "POST /api/playlist"
+        desc: "POST create retorna schema Zod válido de createPlaylistResponseSchema."
+        risk: "PL-RISK-013"
+        tags: [contract]
+
+      - name: "TC_CON_PL_002 GET /api/playlist/:id response schema"
+        op: "GET /api/playlist/:id"
+        desc: "GET detalle retorna schema Zod válido de getPlaylistResponseSchema."
+        risk: "PL-RISK-013"
+        tags: [contract]
+
+      - name: "TC_CON_PL_003 GET /api/playlist list response schema"
+        op: "GET /api/playlist"
+        desc: "GET lista retorna schema Zod válido de listPlaylistResponseSchema."
+        risk: "PL-RISK-013"
+        tags: [contract]
+
+  integration:
+    file: tests/api/integration/playlist/playlist-media-flow.integration.spec.js
+    purpose: "Flujo completo playlist → media association → clear → verify"
+    cases:
+      - name: "Flujo: create playlist → associate media → verify → clear → verify empty"
+        op: "POST /api/playlist + POST /api/playlist/:id + GET /api/playlist/:id"
+        desc: "Crea media + playlist, asocia vía {medias:[id]}, verifica en ?all=true, limpia con medias:[], verifica empty."
+        risk: "PL-RISK-003"
+        risk: "PL-RISK-017"
+        tags: [critical]
+        quirk_ref: Q1
+
+gaps:
+  - id: PL-GAP-001
+    risk: PL-RISK-001
+    desc: "Tipos playlist (smart/series/playout) con rule shape malformed — sin test negativo."
+
+  - id: PL-GAP-002
+    risk: PL-RISK-004
+    desc: "Smart playlist filter semantics (title/categories/tags/date_range/duration/views) — sin negative."
+
+  - id: PL-GAP-003
+    risk: PL-RISK-005
+    desc: "Series playlist malformed/inconsistent seasons-episodes — sin negative."
+
+  - id: PL-GAP-004
+    risk: PL-RISK-006
+    desc: "Playout playlist rule ordering/limit/sort output — sin test."
+
+  - id: PL-GAP-005
+    risk: PL-RISK-007
+    desc: "Access rules: IP, referer, cellular, device, closed_access, advanced restrictions — sin test."
+
+  - id: PL-GAP-006
+    risk: PL-RISK-008
+    desc: "Access tokens: /access-token endpoint no existe en sm2 — gap estructural. 5 tests skip."
+
+  - id: PL-GAP-007
+    risk: PL-RISK-009
+    desc: "Category scoping con account isolation — sin test dedicado."
+
+  - id: PL-GAP-008
+    risk: PL-RISK-010
+    desc: "Image upload (POST /api/playlist/:id/image) — sin test."
+
+  - id: PL-GAP-009
+    risk: PL-RISK-011
+    desc: "Image delete (DELETE /api/playlist/:id/image) — sin test."
+
+  - id: PL-GAP-010
+    risk: PL-RISK-012
+    desc: "Search/list filters (slug, featured, category, custom) + pagination negative — sin test."
+
+  - id: PL-GAP-011
+    risk: PL-RISK-013
+    desc: "Smart/series/playout response schemas — sin contract test dedicado."
+
+  - id: PL-GAP-012
+    risk: PL-RISK-014
+    desc: "Cross-account/cross-user authorization negative — sin test."
+
+  - id: PL-GAP-013
+    risk: PL-RISK-015
+    desc: "Slug trimming, boolean strings, date parsing, invalid IDs — sin negative."
+
+  - id: PL-GAP-014
+    risk: PL-RISK-016
+    desc: "Smart keyword decoding (decodeURIComponent, special chars) — sin test."
+
+  - id: PL-GAP-015
+    risk: PL-RISK-017
+    desc: "Post-delete orphan checks (tokens, images, media associations) — sin test."
+
+  - id: PL-GAP-016
+    risk: PL-RISK-018
+    desc: "Email notification (notify flag, template contract) — sin test. Ligado a GAP-006."

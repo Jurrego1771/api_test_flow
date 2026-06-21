@@ -1,0 +1,110 @@
+# =============================================================================
+# QA Knowledge — Coupon Group module
+# Mapa rápido de cobertura de tests para la API de Coupon Group (sm2).
+# Cubre /api/coupon-group (creación, listado, subgroups, bulk disable).
+# =============================================================================
+
+module:
+  name: Coupon Group
+  prefix: TC_CPN
+  base_path: /api/coupon-group
+  risk_file: qa-knowledge/coupon_group/coupon_group.risk.yaml
+  schema: schemas/coupon_group.schema.js
+  backend_source: sm2 route: /api/coupon-group
+  summary: >
+    Coupon groups (raíz de campañas de cupones). No existe DELETE ni POST update.
+    Los grupos creados en tests no se pueden eliminar (prefix qa_cpngrp_).
+    Errores de validación retornan HTTP 200 con status:ERROR, data:'...' (NO 400).
+
+endpoints:
+  - { method: GET, path: /api/coupon-group, desc: "Lista grupos con totals." }
+  - { method: POST, path: /api/coupon-group, desc: "Crea grupo (coupon_group_name). No hay update ni delete." }
+  - { method: GET, path: /api/coupon-group/:id, desc: "Lista subgroups del grupo (NO el grupo en sí)." }
+  - { method: POST, path: /api/coupon-group/:id/disable, desc: "Bulk disable de cupones en rango de fechas." }
+
+quirks:
+  - id: Q1
+    type: no-delete
+    desc: "No existe DELETE ni POST update para coupon-group. Los grupos quedan en el sistema."
+  - id: Q2
+    type: validation-200
+    desc: "Errores de validación retornan HTTP 200 con status:ERROR, data:'CODIGO' (NO 400/422)."
+  - id: Q3
+    type: subgroups-endpoint
+    desc: "GET /api/coupon-group/:id retorna subgroups, NO el grupo mismo."
+
+tests:
+  smoke: []
+    # No smoke dedicado para coupon-group. TC_CPN_GET_group_list_valid en regression.
+
+  regression:
+    file: tests/api/regression/cupones/coupon-group.regression.spec.js
+    purpose: "CRUD de grupos, subgroups, bulk disable, validación, auth."
+    cases:
+      - name: TC_CPN_GET_group_list_valid
+        op: "GET /api/coupon-group"
+        desc: "GET list → 200 + OK + array + schema."
+        risk: CG-RISK-004
+      - name: TC_CPN_GET_group_list_no_token @negative
+        op: "GET /api/coupon-group (sin token)"
+        desc: "Sin token → 401 o 403."
+        risk: CG-RISK-005
+      - name: TC_CPN_POST_group_create_valid
+        op: "POST /api/coupon-group"
+        desc: "Create group → 200 + OK + _id + name."
+        risk: CG-RISK-001
+      - name: TC_CPN_POST_group_create_stores_name_correctly
+        op: "POST /api/coupon-group"
+        desc: "Create → name persisted correctly in response."
+        risk: CG-RISK-001
+      - name: TC_CPN_POST_group_create_missing_name @negative
+        op: "POST /api/coupon-group"
+        desc: "Create sin name → HTTP 200 + ERROR + NAME_IS_REQUIRED. Q2"
+        risk: CG-RISK-001
+      - name: TC_CPN_POST_group_create_duplicate_name @negative
+        op: "POST /api/coupon-group"
+        desc: "Create duplicate name → HTTP 200 + ERROR + NAME_MUST_BE_UNIQUE. Q2"
+        risk: CG-RISK-001
+      - name: TC_CPN_POST_group_create_no_token @negative
+        op: "POST /api/coupon-group (sin token)"
+        desc: "Sin token → 401 o 403."
+        risk: CG-RISK-005
+      - name: TC_CPN_GET_group_subgroups_valid
+        op: "GET /api/coupon-group/:id"
+        desc: "GET subgroups → 200 + OK + array. Q3"
+        risk: CSG-RISK-001
+      - name: TC_CPN_GET_group_subgroups_not_found
+        op: "GET /api/coupon-group/:id (inexistente)"
+        desc: "Group inexistente → 200 o 404."
+      - name: TC_CPN_POST_group_disable_missing_dates @negative
+        op: "POST /api/coupon-group/:id/disable"
+        desc: "Disable sin dates → HTTP 400 + ERROR."
+        risk: CG-RISK-002
+      - name: TC_CPN_POST_group_disable_invalid_date_format @negative
+        op: "POST /api/coupon-group/:id/disable"
+        desc: "Disable con date inválido → HTTP 400 + ERROR."
+        risk: CG-RISK-002
+      - name: TC_CPN_POST_group_disable_no_token @negative
+        op: "POST /api/coupon-group/:id/disable (sin token)"
+        desc: "Sin token → 401 o 403."
+        risk: CG-RISK-005
+
+  contract: []
+    # Sin tests de contract dedicados para coupon_group.
+
+  integration: []
+    # Sin capa integration dedicada para coupon_group.
+
+gaps:
+  - id: CG-RISK-003
+    risk: CG-RISK-003
+    desc: "Counter drift (coupon_total, coupon_used_total) post-create/use — sin test. P0."
+  - id: CG-RISK-005
+    risk: CG-RISK-005
+    desc: "Cross-account group access — sin test. P0."
+  - id: CG-RISK-007
+    risk: CG-RISK-007
+    desc: "Bulk disable websocket/event side-effects — sin test. P1."
+  - id: CG-RISK-006
+    risk: CG-RISK-006
+    desc: "Gateway-specific branch (incomm) — sin test. P1."

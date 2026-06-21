@@ -1,0 +1,228 @@
+# =============================================================================
+# QA Knowledge — Playlist · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> playlist.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Playlist
+  prefix: PL-RISK
+  tests_file: qa-knowledge/playlist/playlist.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 18
+  covered: 3
+  partial: 5
+  uncovered: 10
+  note: >
+    Playlist con 4 tipos (manual/smart/series/playout), access_rules, access_tokens,
+    image upload/delete. 10/18 riesgos abiertos. Acceso token (PL-RISK-008)
+    tiene endpoint dedicado (/access-token) que NO existe en sm2 — los tests skip.
+    Smart y series playlists sin negative coverage. P0 abiertos: 001, 002, 004,
+    005, 006, 007, 008, 009, 013, 014.
+  p0_open:
+    - { id: PL-RISK-001, status: partial,   why: "Tipos cubiertos happy-path; rule shape negativos sin test." }
+    - { id: PL-RISK-002, status: partial,   why: "Actualización parcial cubierta basic; merge semantics sin regression." }
+    - { id: PL-RISK-004, status: partial,   why: "Smart playlist create cubierto; filter semantics negativos sin test." }
+    - { id: PL-RISK-005, status: partial,   why: "Series playlist create cubierto; malformed/inconsistent sin negative." }
+    - { id: PL-RISK-006, status: partial,   why: "Playout playlist create cubierto; rule ordering/output sin test." }
+    - { id: PL-RISK-007, status: partial,   why: "Access rules solo geo cubierto; IP/referer/cellular/device/advanced sin test." }
+    - { id: PL-RISK-008, status: uncovered, why: "Access tokens — /access-token endpoint NO existe en sm2. Tests skip." }
+    - { id: PL-RISK-009, status: uncovered, why: "Category scoping — filter por account/user category sin test dedicado." }
+    - { id: PL-RISK-013, status: partial,   why: "Contract tests para manual; smart/series/playout schemas sin coverage." }
+    - { id: PL-RISK-014, status: uncovered, why: "Cross-account/cross-user authorization — sin test negativo." }
+
+risks:
+  - id: PL-RISK-001
+    area: Playlist type
+    risk: "Wrong type or rule shape is persisted for manual/smart/series/playout playlists."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "[PL-SMOKE-003] POST crea playlist manual mínima"
+      - "[PL-FUNC-001.1.2] Crea playlist Smart con criterios de filtrado"
+      - "[PL-FUNC-001.1.3] Crea playlist Series con estructura de temporadas"
+      - "[PL-FUNC-001.1.4] Crea playlist Playout con múltiples reglas"
+      - "[BR-PL-005] El type es mutable: actualizar con type diferente sí lo cambia"
+    gap: "Tipo inválido (enum), rule shape malformed, tipo en update sin type field — sin test negativo."
+
+  - id: PL-RISK-002
+    area: Playlist create/update
+    risk: "Partial updates overwrite unrelated fields or reset rule blocks."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "[PL-FUNC-001.1.5] Actualiza nombre y descripción"
+      - "[PL-FUNC-001.1.5] Actualiza medias: agrega y vacía rules.manual.medias"
+      - "[PL-BRULE-002.2.7] Actualiza flags featured y no_ad"
+    gap: "Update sin field — verify que campos omitidos no se resetean. Merge semantics sin regression suite."
+
+  - id: PL-RISK-003
+    area: Media association
+    risk: "Manual playlist media list is stored incorrectly or in the wrong order."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "[PL-FUNC-001.1.5] Actualiza medias: agrega y vacía rules.manual.medias"
+      - "[PL-FUNC-001.2.1] Media asociada vía update aparece en GET?all=true"
+      - "[PL-FUNC-001.2.3] Al vaciar rules.manual.medias, medias ya no aparece"
+      - "Flujo: create playlist → associate media → verify → clear → verify empty"
+    gap: "Orden de medias, duplicados, null handling sin test negativo."
+
+  - id: PL-RISK-004
+    area: Smart playlists
+    risk: "Smart filters are applied incorrectly and produce wrong media sets."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "[PL-FUNC-001.1.2] Crea playlist Smart con criterios de filtrado"
+    gap: "Filter semantics (title/categories/tags/date_range/duration/views) negativos sin test. Real-time evaluation (no cache) sin test de no-cache."
+
+  - id: PL-RISK-005
+    area: Series playlists
+    risk: "Seasons/episodes are malformed or inconsistent with media references."
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - "[PL-FUNC-001.1.3] Crea playlist Series con estructura de temporadas"
+    gap: "Season numbering, episode refs, invalid media ids, empty states sin test negativo."
+
+  - id: PL-RISK-006
+    area: Playout playlists
+    risk: "Playout rule ordering or aggregation returns the wrong media sequence."
+    score: 60
+    priority: P0
+    status: partial
+    covered_by:
+      - "[PL-FUNC-001.1.4] Crea playlist Playout con múltiples reglas"
+    gap: "Rule ordering, limit, sort, deterministic output sin test negativo o de verificación de orden."
+
+  - id: PL-RISK-007
+    area: Access restrictions
+    risk: "Playlist access rules are persisted or interpreted incorrectly."
+    score: 80
+    priority: P0
+    status: partial
+    covered_by:
+      - "[PL-FUNC-001.3 / UC-PL-006] Aplica restricciones geográficas vía access_rules"
+    gap: "IP, referer, cellular, device, closed access, advanced restrictions — sin test."
+
+  - id: PL-RISK-008
+    area: Access tokens
+    risk: "Access token creation, storage, or notification flow leaks or corrupts tokens."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "POST /api/playlist/:id/access-token NO existe en sm2. 5 tests skip en playlist-advanced.regression.spec.js. Gap estructural."
+
+  - id: PL-RISK-009
+    area: Category scoping
+    risk: "Category filters bypass user/account restrictions or return wrong playlists."
+    score: 64
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Filter por category_name/id con account isolation — sin test dedicado. Solo smoke básico GET /api/playlist."
+
+  - id: PL-RISK-010
+    area: Image upload
+    risk: "Playlist image upload returns bad URLs or fails on file validation."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Image upload/delete — sin test. Nota: el endpoint POST /api/playlist/:id/image requiere multipart."
+
+  - id: PL-RISK-011
+    area: Image delete
+    risk: "Playlist image deletion leaves stale references or fails silently."
+    score: 27
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "DELETE /api/playlist/:id/image — sin test."
+
+  - id: PL-RISK-012
+    area: Search/list
+    risk: "List endpoint returns wrong scope, wrong filters, or wrong pagination."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "[PL-SMOKE-001] GET lista retorna 200 con schema válido"
+      - "[PL-SMOKE-002] GET lista respeta parámetro limit"
+    gap: "slug, featured, category, custom filters, offset, negative cases sin test."
+
+  - id: PL-RISK-013
+    area: Response contract
+    risk: "API response shape changes across playlist types or endpoints."
+    score: 64
+    priority: P0
+    status: partial
+    covered_by:
+      - "[PL-SMOKE-001] GET lista retorna 200 con schema válido"
+      - "[PL-SMOKE-004] GET detalle retorna campos obligatorios y schema válido"
+      - "TC_CON_PL_001 POST /api/playlist response schema"
+      - "TC_CON_PL_002 GET /api/playlist/:id response schema"
+      - "TC_CON_PL_003 GET /api/playlist list response schema"
+    gap: "Schema Zod para smart/series/playout response — sin test de contract dedicado. Manual solo."
+
+  - id: PL-RISK-014
+    area: Authorization
+    risk: "Cross-account or cross-user playlist access leakage."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Auth negative: playlist de otro account accesible, user category scoping — sin test."
+
+  - id: PL-RISK-015
+    area: Validation
+    risk: "Invalid dates, IDs, slugs, or boolean strings are accepted incorrectly."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "[PL-SMOKE-007-NEG] POST devuelve error cuando falta el campo name"
+      - "[PL-NEG] 400 o 500 cuando falta el campo type"
+      - "[PL-NEG] 400 o 500 con type con valor inválido"
+    gap: "Slug trimming, boolean strings, date parsing, invalid IDs — sin test negativo."
+
+  - id: PL-RISK-016
+    area: Smart keyword decoding
+    risk: "Encoded tags/categories/filters decode incorrectly and alter matching."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "decodeURIComponent coverage, special-character cases — sin test."
+
+  - id: PL-RISK-017
+    area: Delete
+    risk: "Delete removes playlist but leaves related state behind or returns misleading success."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "[PL-SMOKE-006] DELETE elimina playlist y verifica 404 en GET"
+    gap: "Orphan checks (tokens, images, media associations) post-delete — sin test."
+
+  - id: PL-RISK-018
+    area: Email notification
+    risk: "Access token notification emails are sent with wrong URL/token or not sent when required."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Email notification path (notify flag, template) — sin test. Ligado a PL-RISK-008 (access tokens no existen)."

@@ -7,7 +7,6 @@
  *   POST   /api/show/:id/season/:seasonId/episode/:episodeId (update)
  *   DELETE /api/show/:id/season/:seasonId/episode/:episodeId (delete)
  * Nomenclatura: TC_SHW_<METHOD>_episode_<scenario>
- * Ref: .agents/skills/mediastream-api/references/show-season-episode.md
  *
  * QUIRKS DE LA API (igual que seasons):
  * - CREATE / GET by ID / UPDATE → episode en root, sin wrapper { status, data }

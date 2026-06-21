@@ -1,0 +1,89 @@
+# =============================================================================
+# QA Knowledge — Coupon Subgroup · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> coupon_subgroup.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Coupon Subgroup
+  prefix: CSG-RISK
+  tests_file: qa-knowledge/coupon_subgroup/coupon_subgroup.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 6
+  covered: 0
+  partial: 1
+  uncovered: 5
+  note: >
+    Módulo de coupon_subgroup (reporte de subgroups dentro de un coupon_group).
+    NO tiene tests dedicados. TC_CPN_GET_group_subgroups_valid en coupon-group.regression.spec.js
+    golpea GET /api/coupon-group/:id (que retorna subgroups) pero no valida counts,
+    filtros ni CSV. Todos los riesgos (6/6) uncovered o partial.
+  p0_open:
+    - { id: CSG-RISK-001, status: uncovered, why: "Count enrichment: subgroup totals vs underlying coupons sin test." }
+    - { id: CSG-RISK-002, status: partial,   why: "Code/type-code search parcialmente cubierto por TC_CPN_INT_004_SearchByCode (coupon, no subgroup)." }
+    - { id: CSG-RISK-003, status: uncovered, why: "CSV export from subgroup context sin test." }
+    - { id: CSG-RISK-004, status: uncovered, why: "Cross-account/group scoping sin test." }
+    - { id: CSG-RISK-005, status: uncovered, why: "Date filtering boundary tests sin test." }
+    - { id: CSG-RISK-006, status: uncovered, why: "Pagination parity (limit/skip vs count) sin test." }
+
+risks:
+  - id: CSG-RISK-001
+    area: Count enrichment
+    risk: "Subgroup totals no matchean con los cupones subyacentes."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de count reconciliation en subgroup. TC_CPN_GET_group_subgroups_valid solo verifica que responde."
+
+  - id: CSG-RISK-002
+    area: Search filters
+    risk: "Code o type-code search retorna wrong subgroups."
+    score: 64
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_CPN_INT_004_SearchByCode_ReturnsCorrectCoupon"
+    gap: "TC_CPN_INT_004 busca por coupon code (coupon, no subgroup). Subgroup-level code/type-code filter sin test."
+
+  - id: CSG-RISK-003
+    area: CSV export
+    risk: "CSV coupon export desde subgroup context pierde o desordena fields."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de CSV desde subgroup. Ni coupon-group.regression.spec.js ni coupon-limits.integration.spec.js tocan CSV."
+
+  - id: CSG-RISK-004
+    area: Group scoping
+    risk: "Subgroups de otro grupo o cuenta leak en la respuesta."
+    score: 40
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de cross-account ni cross-group scoping en subgroups."
+
+  - id: CSG-RISK-005
+    area: Date filtering
+    risk: "created/available date filters incluyen o excluyen wrong subgroups."
+    score: 36
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de date filter boundaries en subgroup."
+
+  - id: CSG-RISK-006
+    area: Pagination
+    risk: "Limit/skip y count behavior drift del visible subgroup set."
+    score: 27
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de pagination parity en subgroup."

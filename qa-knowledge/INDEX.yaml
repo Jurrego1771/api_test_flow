@@ -5,14 +5,13 @@
 #   1. Leer este INDEX.yaml
 #   2. Elegir módulo por `name` / `hot` / `endpoints`
 #   3. Leer el `file` de ese módulo (autocontenido)
-# Formato de cada archivo de módulo: ver qa-knowledge/SCHEMA.md
 # =============================================================================
 
 version: 1
 root: qa-knowledge/
 
 # Cada módulo expone DOS archivos conectados por IDs estables:
-#   tests_file -> qué se prueba (cases)        ver SCHEMA.md
+#   tests_file -> qué se prueba (cases)
 #   risk_file  -> qué riesgos hay + cobertura  (covered_by <-> case.name)
 modules:
   - name: Category
@@ -20,7 +19,6 @@ modules:
     base_path: /api/category
     tests_file: category/category.tests.yaml
     risk_file: category/category.risk.yaml
-    risk_register: doc/risk-register/category.md
     counts: { smoke: 11, regression: 24, contract: 3, integration: 2, total: 40 }
     coverage: { risks: 11, covered: 4, partial: 3, uncovered: 4 }
     hot: >
@@ -33,7 +31,6 @@ modules:
     base_path: /api/live-stream
     tests_file: live-stream/live-stream.tests.yaml
     risk_file: live-stream/live-stream.risk.yaml
-    risk_register: doc/risk-register/live-stream.md
     counts: { smoke: 11, regression: 60, contract: 3, integration: 41, total: 115 }
     coverage: { risks: 23, covered: 2, partial: 10, uncovered: 11 }
     hot: >
@@ -48,7 +45,6 @@ modules:
     base_path: /api/ad
     tests_file: ad/ad.tests.yaml
     risk_file: ad/ad.risk.yaml
-    risk_register: doc/risk-register/ad.md
     counts: { smoke: 12, regression: 31, contract: 3, integration: 0, total: 46 }
     coverage: { risks: 14, covered: 3, partial: 4, uncovered: 7 }
     hot: >
@@ -64,7 +60,6 @@ modules:
     base_path: /api/show
     tests_file: show/show.tests.yaml
     risk_file: show/show.risk.yaml
-    risk_register: doc/risk-register/show.md
     counts: { smoke: 15, regression: 22, contract: 2, integration: 44, total: 83 }
     coverage: { risks: 11, covered: 11, partial: 0, uncovered: 0 }
     hot: >
@@ -72,13 +67,172 @@ modules:
       (F1/Q3): GET by-id sigue 200 tras borrar; el cascade solo se ve en el
       LISTADO. Tests de cascade corregidos para verificar vía listado.
 
+  - name: Access Restriction
+    prefix: TC_AR
+    base_path: /api/settings/advanced-access-restrictions
+    tests_file: access_restriction/access_restriction.tests.yaml
+    risk_file: access_restriction/access_restriction.risk.yaml
+    counts: { smoke: 3, regression: 10, contract: 3, integration: 5, total: 21 }
+    coverage: { risks: 10, covered: 2, partial: 5, uncovered: 3 }
+    hot: >
+      Control de acceso (geo, IP, flags) aplicado a media. POST/DELETE requieren
+      session auth (no API token) → write tests skip en CI. 8/10 riesgos abiertos.
+      P0: AR-001 (create sin name), AR-002/003 (geo/IP inválido), AR-006 (contract).
+      AR→Media integration (004) bien cubierto (5 tests). Gaps: apply_to_sub_categories,
+      error schema 400/404, geo/IP negativos.
+
+  - name: Article
+    prefix: TC_ART
+    base_path: /api/article
+    tests_file: article/article.tests.yaml
+    risk_file: article/article.risk.yaml
+    counts: { smoke: 7, regression: 0, contract: 0, integration: 16, total: 23 }
+    coverage: { risks: 5, covered: 2, partial: 0, uncovered: 3 }
+    hot: >
+      Módulo de artículos CMS. Solo smoke + integration; sin regression ni contract
+      dedicados. ENDPOINT PUEDE RETORNAR 404 en dev/staging (ART-001 known bug).
+      3/5 riesgos abiertos. BUGS: without_category filter no funciona (Q3),
+      synopsis no se limpia con '' (Q4), soft delete (Q2). ART-002 (HTML content)
+      cubierto, ART-005 (tags) saltado.
+
+  - name: Schedule
+    prefix: TC_SCH
+    base_path: /api/live-stream/:id/schedule-job
+    tests_file: schedule/schedule.tests.yaml
+    risk_file: schedule/schedule.risk.yaml
+    counts: { smoke: 10, regression: 12, contract: 4, integration: 0, total: 26 }
+    coverage: { risks: 15, covered: 3, partial: 4, uncovered: 8 }
+    hot: >
+      Schedule jobs sobre live-stream (materialización EventScheduleJob -> EventSchedule).
+      8/15 riesgos uncovered. P0 abiertos: SCHED-RISK-001 (concurrent overlap),
+      SCHED-RISK-003 (fix-tz-offset bulk), SCHED-RISK-004 (EPG sync), SCHED-RISK-007
+      (recurrence DST), SCHED-RISK-008/009 (delete cleanup/fast-channel race),
+      SCHED-RISK-010 (cross-account), SCHED-RISK-012 (search/list consistency).
+      type usa 'onetime'|'recurring' (NO 'once'/'recurrent'). Materialization async.
+
+  - name: Coupon
+    prefix: TC_CPN
+    base_path: /api/coupon
+    tests_file: coupon/coupon.tests.yaml
+    risk_file: coupon/coupon.risk.yaml
+    counts: { smoke: 6, regression: 22, contract: 4, integration: 8, total: 40 }
+    coverage: { risks: 12, covered: 1, partial: 6, uncovered: 5 }
+    hot: >
+      Cupones con group, custom_code, discount_type, reusable. POST requiere { multipart: true }.
+      5/12 riesgos uncovered: bulk generation (CUP-RISK-001), gateway incomm (003),
+      usage atomics (004), group/subgroup counters (005/006), account isolation (011).
+      Tests: smoke/cupones, regression/cupones, contract/coupon, integration/customer-coupon.
+
+  - name: Coupon Group
+    prefix: CG-RISK
+    base_path: /api/coupon-group
+    tests_file: coupon_group/coupon_group.tests.yaml
+    risk_file: coupon_group/coupon_group.risk.yaml
+    counts: { smoke: 0, regression: 12, contract: 0, integration: 0, total: 12 }
+    coverage: { risks: 7, covered: 1, partial: 3, uncovered: 3 }
+    hot: >
+      Grupos de cupones. No hay DELETE ni UPDATE. Errores retornan HTTP 200 + ERROR (no 400).
+      3/7 riesgos uncovered: CG-RISK-003 (counter drift), CG-RISK-005 (cross-account),
+      CG-RISK-007 (disable websocket). TC_CPN_GET_group_subgroups_valid toca subgroups.
+
+  - name: Coupon Subgroup
+    prefix: CSG-RISK
+    base_path: /api/coupon-group/:id
+    tests_file: coupon_subgroup/coupon_subgroup.tests.yaml
+    risk_file: coupon_subgroup/coupon_subgroup.risk.yaml
+    counts: { smoke: 0, regression: 1, contract: 0, integration: 0, total: 1 }
+    coverage: { risks: 6, covered: 0, partial: 1, uncovered: 5 }
+    hot: >
+      Reporting de subgroups dentro de un coupon_group. NO tiene tests dedicados.
+      6/6 riesgos uncovered o partial. TC_CPN_GET_group_subgroups_valid solo verifica
+      que el endpoint responde. P0: count enrichment, search filters, group scoping.
+
+  - name: Customer
+    prefix: TC_CST
+    base_path: /api/customer
+    tests_file: customer/customer.tests.yaml
+    risk_file: customer/customer.risk.yaml
+    counts: { smoke: 17, regression: 7, contract: 5, integration: 3, total: 32 }
+    coverage: { risks: 23, covered: 3, partial: 4, uncovered: 16 }
+    hot: >
+      Módulo customer identity + soporte (login, sessions, purchase, payment, refund,
+      media progress). Grande superficie. No hay DELETE (deactivate status:INACTIVE).
+      GET individual usa ?id= (retorna array). GET not-found → 200+[]. 16/23 riesgos
+      uncovered. P0 abiertos: login (005), password recovery (006), session (007),
+      purchase (009/010), subscription (011), refund (012), PII leakage (001/021),
+      cross-account (018).
+
+  - name: Media
+    prefix: TC_MED
+    base_path: /api/media
+    tests_file: media/media.tests.yaml
+    risk_file: media/media.risk.yaml
+    counts: { smoke: 6, regression: 35, contract: 3, integration: 2, total: 46 }
+    coverage: { risks: 20, covered: 4, partial: 6, uncovered: 10 }
+    hot: >
+      Módulo core de contenido (video/upload/processing/enriched/deletion). POST requiere
+      { form:true }. Sub-recursos: meta, subtitle, thumbs, preview, image, upload.
+      10/20 riesgos uncovered. P0 abiertos: chunked upload (003), transcode (004),
+      DRM token (013), RSS import (016), access flags (017), deletion orphan (019),
+      cross-account auth (020). Tracks/chapters/highlights/ratings/quizzes sin cobertura.
+
+  - name: Playlist
+    prefix: TC_PL
+    base_path: /api/playlist
+    tests_file: playlist/playlist.tests.yaml
+    risk_file: playlist/playlist.risk.yaml
+    counts: { smoke: 7, regression: 22, contract: 3, integration: 1, total: 33 }
+    coverage: { risks: 18, covered: 3, partial: 5, uncovered: 10 }
+    hot: >
+      Playlist con 4 tipos (manual/smart/series/playout), access_rules, image, access_tokens.
+      10/18 riesgos abiertos. /access-token endpoint NO existe en sm2 (5 tests skip).
+      P0 abiertos: 001, 002, 004, 005, 006, 007, 008, 009, 013, 014. Image upload/delete
+      sin test. Smart/series/playout sin contract tests dedicados.
+
+  - name: Account
+    prefix: TC_ACCNT
+    base_path: /api/account
+    tests_file: account/account.tests.yaml
+    risk_file: account/account.risk.yaml
+    counts: { smoke: 0, regression: 0, contract: 0, integration: 0, total: 0 }
+    coverage: { risks: 18, covered: 0, partial: 0, uncovered: 18 }
+    hot: >
+      Módulo cross-cutting de account settings (login, payments, social, CDN, billing,
+      whitelists, feature flags). 0/18 riesgos cubiertos — NO EXISTEN tests dedicados.
+      Updates afectan casi todos los módulos. P0 cluster: 001, 002, 003, 004, 005,
+      006, 011, 012, 014, 016. Crear tests de smoke para account es priorario.
+
+  - name: Thumbnail
+    prefix: TC_THB
+    base_path: /api/live-stream/:id/thumb, /api/media/:id/thumb
+    tests_file: thumbnail/thumbnail.tests.yaml
+    risk_file: thumbnail/thumbnail.risk.yaml
+    counts: { smoke: 6, regression: 0, contract: 0, integration: 0, total: 6 }
+    coverage: { risks: 12, covered: 0, partial: 2, uncovered: 10 }
+    hot: >
+      Solo tests de live-stream thumbnail (6 tests). Media thumbnails SIN TESTS.
+      10/12 riesgos uncovered. P0: state drift (005), concurrency (007), scope routing (003),
+      default selection (004), cross-account auth (011). Media thumbnails son gap crítico.
+
+  - name: Bulk Media
+    prefix: TC_BM
+    base_path: /api/bulk/media
+    tests_file: bulk_media/bulk_media.tests.yaml
+    risk_file: bulk_media/bulk_media.risk.yaml
+    counts: { smoke: 0, regression: 0, contract: 0, integration: 0, total: 0 }
+    coverage: { risks: 12, covered: 0, partial: 0, uncovered: 12 }
+    hot: >
+      Bulk update y delete de media records (parallel cursor, 30 workers). 0/12 riesgos
+      cubiertos — NO EXISTEN tests dedicados. High-risk: partial failure mixed state,
+      dotted paths corrupten objetos anidados, cross-account ids silently skipped.
+      P0 cluster: 001, 003, 004, 005, 006, 007.
+
 # Plantilla para agregar un módulo nuevo (copiar y completar):
 # - name: <Modulo>
 #   prefix: TC_XXX
 #   base_path: /api/<modulo>
 #   tests_file: <modulo>/<modulo>.tests.yaml
 #   risk_file: <modulo>/<modulo>.risk.yaml
-#   risk_register: doc/risk-register/<modulo>.md
 #   counts: { smoke: 0, regression: 0, contract: 0, integration: 0, total: 0 }
 #   coverage: { risks: 0, covered: 0, partial: 0, uncovered: 0 }
 #   hot: "1-2 líneas: qué lo hace riesgoso / qué trampa recordar / P0 abiertos"

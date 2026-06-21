@@ -34,6 +34,7 @@ Thumbs.db
 status.txt
 out/
 tmp/
+.tmp/
 
 # Logs
 logs
@@ -66,6 +67,3 @@ allure-report/
 
 # Reporters
 reporters/
-
-# Skills lock
-skills-lock.json

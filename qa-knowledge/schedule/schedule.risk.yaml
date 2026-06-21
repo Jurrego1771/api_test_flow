@@ -1,0 +1,190 @@
+# =============================================================================
+# QA Knowledge — Schedule · RIESGOS + COBERTURA
+# Vista machine-readable del risk-register cruzada contra la cobertura real.
+# Conexión: risks[].covered_by <-> schedule.tests.yaml cases[].name.
+# =============================================================================
+
+module:
+  name: Schedule
+  prefix: SCHED-RISK
+  tests_file: qa-knowledge/schedule/schedule.tests.yaml
+  scoring:
+    formula: "Impact x Likelihood x Detectability (1..5 c/u)"
+    bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }
+
+status_legend: [covered, partial, uncovered]
+
+summary:
+  total_risks: 15
+  covered: 3
+  partial: 4
+  uncovered: 8
+  note: >
+    Módulo de schedule jobs sobre live-stream (no CRUD simple). Endpoints en
+    /api/live-stream/:id/schedule-job + /api/schedule/search. Riesgo real:
+    materialización asíncrona (EventScheduleJob -> EventSchedule), concurrencia,
+    bulk timezone, EPG sync, y cleanup. Todos los tests usan ensureLiveAvailable
+    (live-stream puede no estar en algunos entornos). 8/15 riesgos uncovered.
+  p0_open:
+    - { id: SCHED-RISK-001, status: uncovered, why: "Concurrent create con overlapping windows — sin test." }
+    - { id: SCHED-RISK-003, status: uncovered, why: "fix-tz-offset bulk bypass — sin test." }
+    - { id: SCHED-RISK-004, status: uncovered, why: "EPG reconciliation insert/update/delete — sin test." }
+    - { id: SCHED-RISK-007, status: uncovered, why: "Recurrence expansion around DST/day boundaries — sin test." }
+    - { id: SCHED-RISK-008, status: uncovered, why: "Delete cleanup: EventSchedule orphan o custom files — sin test dedicated." }
+    - { id: SCHED-RISK-009, status: uncovered, why: "Fast-channel cleanup race con cleanup promises — sin test." }
+    - { id: SCHED-RISK-010, status: uncovered, why: "Cross-account schedule leak — sin test dedicated." }
+    - { id: SCHED-RISK-012, status: uncovered, why: "Search/list inconsistency (EventScheduleJob vs EventSchedule) — sin test." }
+
+risks:
+  - id: SCHED-RISK-001
+    area: Overlap validation
+    risk: "Dos requests concurrentes pasan conflict checks y crean schedule jobs overlapping."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de concurrent create con windows superpuestos."
+
+  - id: SCHED-RISK-002
+    area: Update flow
+    risk: "Update recrea o muta derived schedules mientras otro writer toca el mismo job."
+    score: 100
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_SCH_007_POST_UpdateScheduleJob_HappyPath @critical"
+      - "TC_SCH_016_POST_UpdateScheduleJob @critical"
+    gap: "Update happy path cubierto. Concurrent update (dos writers same job) sin test."
+
+  - id: SCHED-RISK-003
+    area: Bulk timezone fix
+    risk: "fix-tz-offset reescribe jobs con __dagerous_force_create__ bypassando conflict protection."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de fix-tz-offset ni de forced-create behavior."
+
+  - id: SCHED-RISK-004
+    area: EPG reconciliation
+    risk: "EPG sync inserta, actualiza o borra jobs equivocados cuando source data drift."
+    score: 100
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de EPG reconciliation ni de sync con feed drift."
+
+  - id: SCHED-RISK-005
+    area: Derived schedule materialization
+    risk: "EventScheduleJob y EventSchedule se desincronizan tras save/remove hooks."
+    score: 100
+    priority: P0
+    status: covered
+    covered_by:
+      - "TC_SCH_005_POST_CreateScheduleJob_HappyPath @critical"
+      - "TC_SCH_007_POST_UpdateScheduleJob_HappyPath @critical"
+      - "TC_SCH_013_GET_DerivedScheduleList"
+      - "TC_SCH_014_GET_DerivedScheduleDetail"
+      - "TC_LIV_044_GET_Schedule"
+    gap: null
+
+  - id: SCHED-RISK-006
+    area: Background refresh
+    risk: "Internal schedule updater envía webhook flags, actualiza files y restream fuera de transacción."
+    score: 75
+    priority: P0
+    status: partial
+    covered_by:
+      - "TC_SCH_002_GET_LiveStreamScheduleJobList_StableOnRepeat"
+      - "TC_SCH_003_GET_RestreamList_StableOnRepeat"
+      - "TC_LIV_045_GET_RestreamList"
+    gap: "Stability on repeat cubierto. Repeat-run con webhook flags y file update side-effects sin test."
+
+  - id: SCHED-RISK-007
+    area: Recurrence expansion
+    risk: "Schedules recurrentes expanden a fechas wrong cerca de day/timezone boundaries."
+    score: 80
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "type:'recurring' no tiene test dedicado. Sin boundary tests (DST, midnight wrap)."
+
+  - id: SCHED-RISK-008
+    area: Delete cleanup
+    risk: "Borrar schedule job deja EventSchedule rows huérfanas o custom files atrás."
+    score: 64
+    priority: P0
+    status: uncovered
+    covered_by:
+      - "TC_SCH_017_DELETE_ScheduleJob @critical"
+      - "TC_SCH_020_DELETE_ScheduleJob_CascadeCleansSchedule @critical"
+    gap: "TC_SCH_020 verifica cascade (derived schedule se limpia). Custom files y orphan EventSchedule sin verificación."
+
+  - id: SCHED-RISK-009
+    area: Fast channel cleanup
+    risk: "Fast-channel schedule deletion puede resolverse antes de que todas las cleanup promises terminen."
+    score: 75
+    priority: P0
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de fast-channel delete ni de race condition en cleanup ordering."
+
+  - id: SCHED-RISK-010
+    area: Auth scope
+    risk: "Schedule queries o mutations leak across accounts o events."
+    score: 60
+    priority: P0
+    status: uncovered
+    covered_by:
+      - "TC_SCH_018_GET_NotFound_ScheduleJobList"
+      - "TC_SCH_019_AUTH_NoToken @negative"
+    gap: "Basic 404 y no-token cubiertos. Cross-account negative (leer/mutar con token de otra cuenta) sin test."
+
+  - id: SCHED-RISK-011
+    area: Validation gaps
+    risk: "name, date, recurrence o recording duration inválidos slip through partial validation."
+    score: 48
+    priority: P1
+    status: covered
+    covered_by:
+      - "TC_SCH_006_POST_CreateScheduleJob_InvalidPayload @negative"
+      - "TC_CON_SCH_004_POST_invalid_type_error_schema @negative"
+    gap: null
+
+  - id: SCHED-RISK-012
+    area: Search/list consistency
+    risk: "Search y list endpoints retornan stale o misleading data porque leen different collections."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by:
+      - "TC_SCH_015_GET_ScheduleSearch"
+    gap: "TC_SCH_015 smoke basic. Consistency entre EventScheduleJob y EventSchedule collections sin test."
+
+  - id: SCHED-RISK-013
+    area: Custom attributes
+    risk: "Custom schedule attributes se guardan o remueven inconsistentemente durante create, update o EPG sync."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de custom field round-trip ni de file cleanup on failure."
+
+  - id: SCHED-RISK-014
+    area: Show linkage
+    risk: "Show/season/episode references se corrompen durante schedule changes."
+    score: 48
+    priority: P1
+    status: uncovered
+    covered_by: []
+    gap: "Sin test de show_info propagation ni de nulling behavior en derived schedules."
+
+  - id: SCHED-RISK-015
+    area: Idempotency
+    risk: "Repeated create/update/delete requests producen duplicate side effects."
+    score: 48
+    priority: P1
+    status: partial
+    covered_by:
+      - "TC_SCH_022_DELETE_ScheduleJob_Twice_Returns404 @negative"
+    gap: "Delete twice 404 cubierto. Repeated create y update idempotency sin test."

@@ -34,7 +34,6 @@
     "allure:open": "allure open allure-report",
     "allure:serve": "allure serve allure-results",
     "allure:clean": "rimraf allure-results allure-report",
-    "pipeline:diff": "node pipeline/gen-diff.js",
     "check:coverage": "node scripts/check-coverage.js"
   },
   "keywords": [],

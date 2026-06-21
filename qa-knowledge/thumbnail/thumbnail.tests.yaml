@@ -1,0 +1,132 @@
+# =============================================================================
+# QA Knowledge — Thumbnail · TESTS
+# Mapa de cobertura por capa. Conexión: cases[].name <-> thumbnail.risk.yaml risks[].id.
+# Fuente: tests/api/smoke/live/live-thumbnail.smoke.spec.js (SOLO live-stream).
+# =============================================================================
+
+module:
+  name: Thumbnail
+  prefix: TC_THB
+  base_path: /api/live-stream/:id/thumb, /api/media/:id/thumb
+  endpoints:
+    - op: "POST /api/live-stream/:id/thumb"
+      desc: "Upload thumbnail para live-stream (multipart)"
+    - op: "GET /api/live-stream/:id/thumb"
+      desc: "Lista thumbnails de live-stream"
+    - op: "POST /api/live-stream/:id/thumb/:thumb_id"
+      desc: "Marca thumbnail como default"
+    - op: "DELETE /api/live-stream/:id/thumb/:thumb_id"
+      desc: "Elimina thumbnail de live-stream"
+    - op: "POST /api/media/:media_id/thumb"
+      desc: "Upload thumbnail para media — SIN TESTS"
+    - op: "PUT /api/media/:media_id/thumb/:thumb_id"
+      desc: "Actualiza thumbnail de media — SIN TESTS"
+    - op: "DELETE /api/media/:media_id/thumb/:thumb_id"
+      desc: "Elimina thumbnail de media — SIN TESTS"
+    - op: "POST /api/media/:media_id/thumb/crop"
+      desc: "Crop thumbnail de media — SIN TESTS"
+
+quirks:
+  - id: Q1
+    desc: "Thumbnail delete tiene espera de propagación de 45s (TC_THB_004 usa setTimeout 45000ms)."
+    severity: medium
+
+tests:
+  smoke:
+    file: tests/api/smoke/live/live-thumbnail.smoke.spec.js
+    purpose: "Thumbnail upload, list, default, delete para live-stream. Auth negative."
+    cases:
+      - name: "TC_THB_001_POST_UploadThumbnail"
+        op: "POST /api/live-stream/:id/thumb"
+        desc: "Upload thumbnail válido (multipart) para live-stream, retorna 200 + status:OK."
+        risk: "TH-RISK-001"
+
+      - name: "TC_THB_002_GET_VerifyThumbnailList"
+        op: "GET /api/live-stream/:id/thumb"
+        desc: "GET lista thumbnails retorna 200 + array en data.thumbnails."
+        risk: "TH-RISK-001"
+
+      - name: "TC_THB_003_POST_SetDefaultThumbnail"
+        op: "POST /api/live-stream/:id/thumb/:thumb_id"
+        desc: "Marca thumbnail como default, GET lista verifica is_default:true."
+        risk: "TH-RISK-004"
+        quirk_ref: Q1
+
+      - name: "TC_THB_004_DELETE_RemoveThumbnail"
+        op: "DELETE /api/live-stream/:id/thumb/:thumb_id"
+        desc: "Delete thumbnail, espera 45s, verifica que ya no aparece en lista."
+        risk: "TH-RISK-006"
+        risk: "TH-RISK-012"
+        quirk_ref: Q1
+
+      - name: "TC_THB_005_POST_UploadNoToken"
+        op: "POST /api/live-stream/:id/thumb"
+        desc: "Upload sin token retorna 401 o 403."
+        risk: "TH-RISK-011"
+        tags: [negative]
+
+      - name: "TC_THB_006_DELETE_RemoveNoToken"
+        op: "DELETE /api/live-stream/:id/thumb/:thumb_id"
+        desc: "Delete sin token retorna 401 o 403."
+        risk: "TH-RISK-011"
+        tags: [negative]
+
+  regression:
+    file: null
+    purpose: "NO EXISTEN tests de regression para thumbnail."
+    cases: []
+
+  contract:
+    file: null
+    purpose: "NO EXISTEN tests de contract para thumbnail."
+    cases: []
+
+  integration:
+    file: null
+    purpose: "NO EXISTEN tests de integration para thumbnail."
+    cases: []
+
+gaps:
+  - id: TH-GAP-001
+    risk: TH-RISK-001
+    desc: "Invalid file name, expired target, provider failures — sin test negativo."
+
+  - id: TH-GAP-002
+    risk: TH-RISK-002
+    desc: "File validation (mime type, size boundaries, empty file, malformed request) — sin test."
+
+  - id: TH-GAP-003
+    risk: TH-RISK-003
+    desc: "Media thumbnails (POST /api/media/:id/thumb) — SIN TESTS. Route selection, account isolation uncovered."
+
+  - id: TH-GAP-004
+    risk: TH-RISK-004
+    desc: "One-default invariant (solo un default a la vez), revert behavior — sin test negativo."
+
+  - id: TH-GAP-005
+    risk: TH-RISK-005
+    desc: "State drift entre thumbnails array y archivo (DB/file parity, orphan checks) — sin test."
+
+  - id: TH-GAP-006
+    risk: TH-RISK-007
+    desc: "Concurrency: repeat upload, simultaneous default change — sin test."
+
+  - id: TH-GAP-007
+    risk: TH-RISK-008
+    desc: "Live-stream reload event publish (websocket) — sin test."
+
+  - id: TH-GAP-008
+    risk: TH-RISK-009
+    desc: "Media thumbnail meta-dependent generation (meta selection, size inference) — sin test."
+
+  - id: TH-GAP-009
+    risk: TH-RISK-010
+    desc: "Contract tests para upload/delete response shapes — sin test."
+
+  - id: TH-GAP-010
+    risk: TH-RISK-011
+    desc: "Cross-account authZ (foreign id handling) — solo smoke auth básico, gap completo."
+
+  - id: TH-GAP-011
+    risk: TH-RISK-012
+    desc: "Orphan file cleanup post-delete (filesystem vs DB parity) — sin test dedicado."

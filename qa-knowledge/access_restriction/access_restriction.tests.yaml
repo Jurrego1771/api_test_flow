@@ -1,0 +1,170 @@
+# =============================================================================
+# QA Knowledge — Access Restriction module
+# Mapa rápido de cobertura de tests para la API de Access Restriction (sm2).
+# Cubre /api/settings/advanced-access-restrictions.
+# =============================================================================
+
+module:
+  name: Access Restriction
+  prefix: TC_AR
+  base_path: /api/settings/advanced-access-restrictions
+  risk_file: qa-knowledge/access_restriction/access_restriction.risk.yaml
+  schema: schemas/access_restriction.schema.js
+  backend_source: sm2 route: /api/settings/advanced-access-restrictions
+  summary: >
+    Control de acceso a contenido mediante reglas geo, IP y flags
+    (closed_access, aes, drm). Base path largo. POST/DELETE requieren
+    MIDDLEWARE.AUTH (session cookie), no API token → write tests se skippean
+    en entornos CI con solo token. Cobertura: smoke list + invalid IDs,
+    regression CRUD condicional, contract list schema, integration AR→Media.
+
+endpoints:
+  - { method: GET, path: /api/settings/advanced-access-restrictions, desc: "Lista todas las AR (account-scoped)." }
+  - { method: GET, path: /api/settings/advanced-access-restrictions/:id, desc: "Detalle de una AR. Inexistente → 404." }
+  - { method: POST, path: /api/settings/advanced-access-restrictions, desc: "Crea AR. Requiere session auth (no API token). Body: name + access_rules[]. Q1" }
+  - { method: POST, path: /api/settings/advanced-access-restrictions/:id, desc: "Update AR. Requiere session auth. Q1" }
+  - { method: DELETE, path: /api/settings/advanced-access-restrictions/:id, desc: "Borra AR. Requiere session auth. Idempotente." }
+
+quirks:
+  - id: Q1
+    type: auth
+    desc: "POST/DELETE requieren MIDDLEWARE.AUTH (session cookie), no API token. Tests con skip condicional cuando !arWriteAvailable."
+  - id: Q2
+    type: geo-rule-shape
+    desc: "Geo rule: { context: 'geo', type: 'country', rules: ['US','CA'] }. access/allow_unknown/exclusive/client_validation opcionales."
+  - id: Q3
+    type: ip-rule-shape
+    desc: "IP rule: { context: 'ip', rules: ['192.168.1.0/24'] }. Formato CIDR."
+  - id: Q4
+    type: cascade
+    desc: "Borrar AR asignado a media: campo queda con ref huérfana o se limpia. TC_INT_AR_003 docume este behavior sin assert fuerte."
+
+tests:
+  smoke:
+    file: tests/api/smoke/access-restriction/access-restriction.smoke.spec.js
+    purpose: "Happy path — endpoint responde, listado y ids válidos."
+    cases:
+      - name: TC_AR_001_GET_ListAllRestrictions
+        op: "GET /api/settings/advanced-access-restrictions"
+        desc: "GET list retorna 200 + status OK + array en data."
+        risk: AR-RISK-006
+      - name: TC_AR_NEG_010_GET_NonExistentRestriction
+        op: "GET /api/settings/advanced-access-restrictions/:id"
+        desc: "ID inexistente → 404 o 500."
+      - name: TC_AR_NEG_011_GET_InvalidIdFormat
+        op: "GET /api/settings/advanced-access-restrictions/:id"
+        desc: "ID con formato inválido → 400/404/500."
+
+  regression:
+    file: tests/api/regression/access_restriction/access_restriction.regression.spec.js
+    purpose: "Validación, edge cases, CRUD write (condicional a session auth)."
+    cases:
+      - name: TC_AR_REG_LIST_001_Contains_Expected_Fields
+        op: "GET /api/settings/advanced-access-restrictions"
+        desc: "List item contiene _id y name."
+      - name: TC_AR_REG_LIST_002_Pagination_Stable
+        op: "GET /api/settings/advanced-access-restrictions"
+        desc: "Dos GET consecutivos retornan misma cantidad de items."
+      - name: TC_AR_REG_GET_003_NotFound_Returns_Error
+        op: "GET /api/settings/advanced-access-restrictions/:id"
+        desc: "ID 000000000000000000000000 → 404 o 500."
+      - name: TC_AR_REG_W001_POST_Create_MissingName @negative
+        op: "POST /api/settings/advanced-access-restrictions"
+        desc: "Create sin name → 200/400/422. Skip sin session auth."
+        risk: AR-RISK-001
+        quirk_ref: Q1
+      - name: TC_AR_REG_W002_POST_Create_GeoRule @critical
+        op: "POST /api/settings/advanced-access-restrictions"
+        desc: "Create con geo rule countries → 200 + access_rules.length > 0. Skip sin session auth."
+        risk: AR-RISK-002
+        quirk_ref: Q2
+      - name: TC_AR_REG_W003_POST_Create_IPRule
+        op: "POST /api/settings/advanced-access-restrictions"
+        desc: "Create con IP rule CIDR → 200 + encuentra ip rule en access_rules. Skip sin session auth."
+        risk: AR-RISK-003
+        quirk_ref: Q3
+      - name: TC_AR_REG_W004_POST_Create_MultipleRules
+        op: "POST /api/settings/advanced-access-restrictions"
+        desc: "Create con geo + ip rules → 200 + access_rules.length === 2. Skip sin session auth."
+        risk: AR-RISK-005
+        quirk_ref: Q1
+      - name: TC_AR_REG_W005_POST_Create_AllRestrictionsEnabled
+        op: "POST /api/settings/advanced-access-restrictions"
+        desc: "Create con closed_access+aes+drm enabled → 200 + _id definido. Skip sin session auth."
+        risk: AR-RISK-010
+        quirk_ref: Q1
+      - name: TC_AR_REG_W006_DELETE_AR @critical
+        op: "DELETE /api/settings/advanced-access-restrictions/:id"
+        desc: "Create AR → DELETE → GET 404/500. Skip sin session auth."
+        risk: AR-RISK-007
+        quirk_ref: Q1
+      - name: TC_AR_REG_W007_List_Contains_Created
+        op: "POST /api/settings/advanced-access-restrictions + GET /api/settings/advanced-access-restrictions"
+        desc: "Create AR → list contiene el _id creado. Skip sin session auth."
+        quirk_ref: Q1
+
+  contract:
+    file: tests/api/contract/access_restriction/access_restriction.contract.spec.js
+    purpose: "Schema Zod de respuestas — detecta breaking changes."
+    schema_ref: schemas/access_restriction.schema.js
+    cases:
+      - name: TC_CON_AR_003_GET_list_response_schema
+        op: "GET /api/settings/advanced-access-restrictions"
+        desc: "List response cumple listAccessRestrictionResponseSchema Zod."
+        risk: AR-RISK-006
+      - name: TC_CON_AR_001_POST_Create_response_schema
+        op: "POST /api/settings/advanced-access-restrictions"
+        desc: "Create response schema. Skippeado: requiere session auth."
+        risk: AR-RISK-006
+        quirk_ref: Q1
+      - name: TC_CON_AR_002_GET_Detail_response_schema
+        op: "GET /api/settings/advanced-access-restrictions/:id"
+        desc: "GET detail response schema. Skippeado: requiere session auth."
+        risk: AR-RISK-006
+        quirk_ref: Q1
+
+  integration:
+    file: tests/api/integration/access/access-restriction-media.integration.spec.js
+    purpose: "Flujo AR → Media: crear, asignar, verificar, limpiar."
+    cases:
+      - name: TC_INT_AR_001_Flujo_CreateAR_AssignToMedia_Verify @critical
+        op: "POST /api/media/:id + POST /api/settings/advanced-access-restrictions"
+        desc: "Crear AR → asignar a media → GET media verifica access_restrictions incluye el AR id."
+        risk: AR-RISK-004
+        quirk_ref: Q1
+      - name: TC_INT_AR_002_Flujo_RemoveAR_VerifyCleanup @critical
+        op: "POST /api/media/:id (assign) + POST /api/media/:id (clear)"
+        desc: "Asignar AR → limpiar con access_restrictions='' → GET media verifica AR id ausente."
+        risk: AR-RISK-004
+        quirk_ref: Q1
+      - name: TC_INT_AR_003_Flujo_DeleteAR_MediaFieldCleared @critical
+        op: "POST /api/media/:id + DELETE /api/settings/advanced-access-restrictions/:id"
+        desc: "Asignar AR a media → borrar AR → GET media verifica estado (puede quedar orphan ref)."
+        risk: AR-RISK-004
+        quirk_ref: Q1
+      - name: TC_INT_AR_004_Flujo_GeoRestriction_MediaAssignment
+        op: "POST /api/media/:id + POST /api/settings/advanced-access-restrictions"
+        desc: "Crear AR con geo rule → asignar a media → GET media verifica restrictions.length > 0."
+        risk: AR-RISK-004
+        quirk_ref: Q1
+      - name: TC_INT_AR_005_ReadOnly_ListAR_Always_Works
+        op: "GET /api/settings/advanced-access-restrictions"
+        desc: "GET list retorna 200 + OK + array (no requiere session auth)."
+        risk: AR-RISK-006
+
+gaps:
+  - id: AR-RISK-001
+    risk: AR-RISK-001
+    desc: "Create sin name → test TC_AR_REG_W001 existe pero skippea sin session auth. En CI corre como skipped."
+  - id: AR-RISK-002-gap
+    risk: AR-RISK-002
+    desc: "Geo countries inválidos (código inexistente) no tienen test negativo dedicado."
+  - id: AR-RISK-003-gap
+    risk: AR-RISK-003
+    desc: "CIDR malformado (999.999.0.0/999) no tiene test negativo dedicado."
+  - id: AR-RISK-008-gap
+    risk: AR-RISK-008
+    desc: "apply_to_sub_categories: true → herencia a categorías hijas sin test."
+  - id: AR-RISK-009-gap
+    risk: AR-RISK-009
+    desc: "Error body schema (400/404) sin cobertura contract dedicada."

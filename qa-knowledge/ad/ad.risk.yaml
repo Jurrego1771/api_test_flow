@@ -2,14 +2,12 @@
 # QA Knowledge — Ad · RIESGOS + COBERTURA
 # Vista machine-readable del risk-register cruzada contra la cobertura real.
 # Conexión: risks[].covered_by <-> ad.tests.yaml cases[].name (IDs estables).
-# Fuente narrativa: doc/risk-register/ad.md
 # =============================================================================
 
 module:
   name: Ad
   prefix: AD-RISK
   tests_file: qa-knowledge/ad/ad.tests.yaml
-  risk_register: doc/risk-register/ad.md
   scoring:
     formula: "Impact x Likelihood x Detectability (1..5 c/u)"
     bands: { P0: "40-125", P1: "24-39", P2: "12-23", P3: "1-11" }

@@ -1,0 +1,216 @@
+# =============================================================================
+# QA Knowledge — Schedule module
+# Mapa rápido de cobertura de tests para la API de Schedule (sm2).
+# Cubre /api/live-stream/:id/schedule-job y /api/schedule/search.
+# =============================================================================
+
+module:
+  name: Schedule
+  prefix: TC_SCH
+  base_path: /api/live-stream/:id/schedule-job
+  risk_file: qa-knowledge/schedule/schedule.risk.yaml
+  schema: schemas/schedule.schema.js
+  backend_source: sm2 route: /api/live-stream/{id}/schedule-job, /api/schedule/search
+  summary: >
+    Schedule jobs sobre live-stream (materialización EventScheduleJob -> EventSchedule).
+    Endpoints: POST/GET/DELETE /api/live-stream/:id/schedule-job/:job_id,
+    GET /api/live-stream/:id/schedule, GET /api/schedule/search.
+    No es CRUD simple: materialización asíncrona, recurrencia, bulk timezone,
+    EPG sync, concurrent updates. Todos los tests usan ensureLiveAvailable.
+    type acepta 'onetime' | 'recurring' (NO 'once' ni 'recurrent').
+
+endpoints:
+  - { method: POST, path: /api/live-stream/:id/schedule-job, desc: "Crea schedule job (type: onetime|recurring). Requiere form:true." }
+  - { method: GET, path: /api/live-stream/:id/schedule-job, desc: "Lista schedule jobs de un stream." }
+  - { method: GET, path: /api/live-stream/:id/schedule-job/:job_id, desc: "Detalle de schedule job." }
+  - { method: POST, path: /api/live-stream/:id/schedule-job/:job_id, desc: "Update schedule job. Requiere form:true." }
+  - { method: DELETE, path: /api/live-stream/:id/schedule-job/:job_id, desc: "Borra schedule job (cascade a EventSchedule derivados)." }
+  - { method: GET, path: /api/live-stream/:id/schedule, desc: "Lista EventSchedule derivados (materialización async)." }
+  - { method: GET, path: /api/live-stream/:id/schedule/:schedule_id, desc: "Detalle de EventSchedule derivado." }
+  - { method: GET, path: /api/schedule/search, desc: "Búsqueda de schedule jobs (EventScheduleJob con is_recording/for_recording)." }
+  - { method: POST, path: /api/live-stream/schedule-job/fix-tz-offset, desc: "Bulk timezone fix con __dagerous_force_create__. SIN cobertura." }
+  - { method: POST, path: /api/live-stream/epg/sync, desc: "EPG sync. SIN cobertura." }
+
+quirks:
+  - id: Q1
+    type: type-enum
+    desc: "type acepta 'onetime' y 'recurring'. NO 'once' ni 'recurrent'."
+  - id: Q2
+    type: async-materialization
+    desc: "EventSchedule derivados tardan en materializarse (async). Retry con sleep(500) recomendado tras create."
+  - id: Q3
+    type: tz-offset
+    desc: "tz_offset es offset en horas (integer), NO en minutos."
+  - id: Q4
+    type: hours-number
+    desc: "Hours/minutes enviados como Number, no como zero-padded string."
+  - id: Q5
+    type: delete-twice
+    desc: "DELETE twice: primero retorna [200,204], segundo retorna 404 + ERROR. TC_SCH_022 cubre este behavior."
+
+tests:
+  smoke:
+    file: tests/api/smoke/schedule/schedule.smoke.spec.js
+    purpose: "Happy path — create, list, detail, update, delete, search."
+    cases:
+      - name: TC_SCH_010_POST_CreateScheduleJob @critical
+        op: "POST /api/live-stream/:id/schedule-job"
+        desc: "Create schedule job onetime → 200 + job._id/name."
+        risk: SCHED-RISK-005
+        quirk_ref: Q1
+      - name: TC_SCH_011_GET_ScheduleJobList @critical
+        op: "GET /api/live-stream/:id/schedule-job"
+        desc: "GET list → 200 + array con al menos 1 item (el creado)."
+        risk: SCHED-RISK-005
+      - name: TC_SCH_012_GET_ScheduleJobDetail @critical
+        op: "GET /api/live-stream/:id/schedule-job/:job_id"
+        desc: "GET detail → 200 + job._id coincide."
+        risk: SCHED-RISK-005
+      - name: TC_SCH_013_GET_DerivedScheduleList
+        op: "GET /api/live-stream/:id/schedule"
+        desc: "GET derived (EventSchedule) → 200 + array."
+        risk: SCHED-RISK-005
+        quirk_ref: Q2
+      - name: TC_SCH_014_GET_DerivedScheduleDetail
+        op: "GET /api/live-stream/:id/schedule/:schedule_id"
+        desc: "GET derived detail → 200. Skip si no hay schedules materializados."
+        risk: SCHED-RISK-005
+        quirk_ref: Q2
+      - name: TC_SCH_015_GET_ScheduleSearch
+        op: "GET /api/schedule/search"
+        desc: "GET search → 200 + OK + array."
+        risk: SCHED-RISK-012
+      - name: TC_SCH_016_POST_UpdateScheduleJob @critical
+        op: "POST /api/live-stream/:id/schedule-job/:job_id"
+        desc: "Update name/date → 200 + valores actualizados."
+        risk: SCHED-RISK-002
+        quirk_ref: Q1
+      - name: TC_SCH_017_DELETE_ScheduleJob @critical
+        op: "DELETE /api/live-stream/:id/schedule-job/:job_id"
+        desc: "Create → DELETE → job no aparece en list. Q5"
+        risk: SCHED-RISK-008
+        quirk_ref: Q5
+      - name: TC_SCH_018_GET_NotFound_ScheduleJobList
+        op: "GET /api/live-stream/:id/schedule-job (id inexistente)"
+        desc: "Stream id 000... → 200 o 404 con ERROR."
+        risk: SCHED-RISK-010
+      - name: TC_SCH_019_AUTH_NoToken @negative
+        op: "GET /api/live-stream/:id/schedule-job (sin token)"
+        desc: "Sin token → 401 o 403."
+        risk: SCHED-RISK-010
+
+  regression:
+    file: tests/api/regression/schedule/schedule-advanced.regression.spec.js
+    purpose: "Validación, concurrent safety, cascade delete, idempotency."
+    cases:
+      - name: TC_SCH_005_POST_CreateScheduleJob_HappyPath @critical
+        op: "POST /api/live-stream/:id/schedule-job"
+        desc: "Create onetime → 200 + _id + aparece en list tras retry."
+        risk: SCHED-RISK-005
+        quirk_ref: Q2
+      - name: TC_SCH_006_POST_CreateScheduleJob_InvalidPayload @negative
+        op: "POST /api/live-stream/:id/schedule-job"
+        desc: "type:'once' → 400 INVALID_TYPE; name:'' → 400 INVALID_NAME; date_end < date_start → 400 INVALID_DATE_ERROR."
+        risk: SCHED-RISK-011
+        quirk_ref: Q1
+      - name: TC_SCH_007_POST_UpdateScheduleJob_HappyPath @critical
+        op: "POST /api/live-stream/:id/schedule-job/:job_id"
+        desc: "Update persiste cambios y job aparece con name actualizado en list."
+        risk: SCHED-RISK-002
+        quirk_ref: Q1
+      - name: TC_SCH_001_GET_LiveStreamScheduleJobList
+        op: "GET /api/live-stream/:id/schedule-job"
+        desc: "GET list → 200 + array."
+      - name: TC_SCH_002_GET_LiveStreamScheduleJobList_StableOnRepeat
+        op: "GET /api/live-stream/:id/schedule-job (x2)"
+        desc: "Dos GET consecutivos → misma cantidad de items."
+        risk: SCHED-RISK-006
+      - name: TC_SCH_003_GET_RestreamList_StableOnRepeat
+        op: "GET /api/live-stream/:id/restream (x2)"
+        desc: "Dos GET restream → misma cantidad de items."
+        risk: SCHED-RISK-006
+      - name: TC_SCH_004_GET_ScheduleJobList_NotFound
+        op: "GET /api/live-stream/:id/schedule-job (stream inexistente)"
+        desc: "Stream id 000... → 200 o 404 + ERROR."
+        risk: SCHED-RISK-010
+      - name: TC_SCH_020_DELETE_ScheduleJob_CascadeCleansSchedule @critical
+        op: "POST /api/live-stream/:id/schedule-job + DELETE /api/live-stream/:id/schedule-job/:job_id"
+        desc: "Create job → delete → GET /schedule (derived) length === 0 tras retry."
+        risk: SCHED-RISK-008
+        quirk_ref: Q2
+      - name: TC_SCH_021_GET_DeletedScheduleJob_NotFound @negative
+        op: "GET /api/live-stream/:id/schedule-job/:job_id (post-delete)"
+        desc: "Delete → GET detail → 404 + ERROR."
+        risk: SCHED-RISK-015
+      - name: TC_SCH_022_DELETE_ScheduleJob_Twice_Returns404 @negative
+        op: "DELETE /api/live-stream/:id/schedule-job/:job_id (x2)"
+        desc: "Primero delete → [200,204]; segundo → 404 + ERROR."
+        risk: SCHED-RISK-015
+        quirk_ref: Q5
+      - name: TC_SCH_023_GET_OrphanSchedule_NotFound @negative
+        op: "DELETE job + GET /api/live-stream/:id/schedule/:schedule_id"
+        desc: "Post-delete, derived schedule → 200 con null/empty o 404."
+        risk: SCHED-RISK-008
+        quirk_ref: Q2
+      - name: TC_SCH_024_Schedule_Count_Stable_After_Cascade_Delete
+        op: "Create x2 → DELETE uno → GET /schedule count stable"
+        desc: "Delete job → schedule count baja y es estable en reads repetidos."
+        risk: SCHED-RISK-008
+
+  contract:
+    file: tests/api/contract/schedule/schedule.contract.spec.js
+    purpose: "Schema Zod — detecta breaking changes en respuestas."
+    schema_ref: schemas/schedule.schema.js
+    cases:
+      - name: TC_CON_SCH_001_POST_schedule-job_create_response_schema
+        op: "POST /api/live-stream/:id/schedule-job"
+        desc: "Create response cumple createScheduleResponseSchema Zod."
+      - name: TC_CON_SCH_002_GET_schedule-job_list_response_schema
+        op: "GET /api/live-stream/:id/schedule-job"
+        desc: "List response cumple wrapper schema (data: array of scheduleJobSchema)."
+      - name: TC_CON_SCH_003_GET_derived_schedule_list_response_schema
+        op: "GET /api/live-stream/:id/schedule"
+        desc: "Derived list response cumple getScheduleResponseSchema Zod."
+        risk: SCHED-RISK-005
+        quirk_ref: Q2
+      - name: TC_CON_SCH_004_POST_invalid_type_error_schema @negative
+        op: "POST /api/live-stream/:id/schedule-job (type:'once')"
+        desc: "Error response para type inválido cumple errorResponseSchema Zod."
+        risk: SCHED-RISK-011
+        quirk_ref: Q1
+
+  integration: []
+    # Sin capa integration dedicada para schedule. live-advanced.regression.spec.js
+    # cubre TC_LIV_044_GET_Schedule y TC_LIV_045_GET_RestreamList.
+
+gaps:
+  - id: SCHED-RISK-001
+    risk: SCHED-RISK-001
+    desc: "Concurrent create con overlapping date windows — sin test. P0."
+  - id: SCHED-RISK-003
+    risk: SCHED-RISK-003
+    desc: "fix-tz-offset bulk bypass — sin test. P0."
+  - id: SCHED-RISK-004
+    risk: SCHED-RISK-004
+    desc: "EPG reconciliation (insert/update/delete) — sin test. P0."
+  - id: SCHED-RISK-007
+    risk: SCHED-RISK-007
+    desc: "Recurrence expansion con DST/day boundaries — sin test. type:'recurring' no tiene cobertura. P0."
+  - id: SCHED-RISK-009
+    risk: SCHED-RISK-009
+    desc: "Fast-channel cleanup race — sin test. P0."
+  - id: SCHED-RISK-010
+    risk: SCHED-RISK-010
+    desc: "Cross-account negative (leer/mutar con token de otra cuenta) — sin test. P0."
+  - id: SCHED-RISK-012
+    risk: SCHED-RISK-012
+    desc: "Consistency entre EventScheduleJob (list/search) y EventSchedule (derived) — sin test. P1."
+  - id: SCHED-RISK-013
+    risk: SCHED-RISK-013
+    desc: "Custom attributes round-trip y file cleanup — sin test. P1."
+  - id: SCHED-RISK-014
+    risk: SCHED-RISK-014
+    desc: "show_info propagation durante schedule changes — sin test. P1."
+  - id: SCHED-RISK-015
+    risk: SCHED-RISK-015
+    desc: "Repeated create/update idempotency — sin test. P1."
