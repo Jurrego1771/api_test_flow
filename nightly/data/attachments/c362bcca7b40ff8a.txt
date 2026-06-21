@@ -1,0 +1,1 @@
+ResourceCleaner: register('customer') con id inválido (undefined) — se ignora
