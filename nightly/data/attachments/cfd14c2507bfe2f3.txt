@@ -1,1 +1,0 @@
-TC_AD_REG_005: types caused DB_ERROR (environment issue): ad-insertion
