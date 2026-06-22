@@ -1,0 +1,3 @@
+Cleaning up 2 resources...
+Cleaned category: 6a39250776646b1042feb5a1
+Cleaned category: 6a392507f9ea86106414fc34
