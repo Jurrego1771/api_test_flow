@@ -1,3 +1,0 @@
-Cleaning up 2 resources...
-Cleaned ad: 6a3f884023f81a20b38aa26f
-Cleaned category: 6a3f883f23f81a20b38aa26c
