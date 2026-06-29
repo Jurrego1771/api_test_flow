@@ -1,6 +1,0 @@
-Cleaning up 5 resources...
-Cleaned ad: 6a40e1eb36d0e8eb25c41ab9
-Cleaned ad: 6a40e1eb36d0e8eb25c41aab
-Cleaned ad: 6a40e1eb36d0e8eb25c41a9c
-Cleaned ad: 6a40e1eb36d0e8eb25c41a8f
-Cleaned ad: 6a40e1eb36d0e8eb25c41a79

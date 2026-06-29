@@ -1,3 +1,0 @@
-Cleaning up 2 resources...
-Cleaned playlist: 6a40e2500a0d15763cfc7344
-Cleaned media: 6a40e2500a0d15763cfc730f

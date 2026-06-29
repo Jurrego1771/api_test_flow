@@ -1,3 +1,0 @@
-Cleaning up 2 resources...
-Cleaned epg-origin: 6a40e2040a0d15763cfc697a
-Cleaned epg-origin: 6a40e2040a0d15763cfc6978
