@@ -1,0 +1,38 @@
+name: emulate-sdk-release
+
+# Emula lo que hará el workflow del SDK: tras publicar a Maven, dispara un repository_dispatch
+# hacia el repo de QA (AQE) avisando el release. Disparable a mano (workflow_dispatch) para probar
+# la integración end-to-end sin esperar un release real.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión publicada en Maven"
+        required: true
+        default: "10.0.8-alpha08"
+      changelog_url:
+        description: "URL del CHANGELOG.md de ese build (Opción A)"
+        required: false
+        default: "https://github.com/mediastream/MediastreamPlatformSDKAndroid/blob/10.0.8/CHANGELOG.md"
+
+jobs:
+  notify-aqe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify AQE (repository_dispatch)
+        run: |
+          curl -sS -o /tmp/resp -w "HTTP %{http_code}\n" -X POST \
+            -H "Authorization: Bearer ${{ secrets.AQE_DISPATCH_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/Jurrego1771/AQE-SDK-A/dispatches \
+            -d @- <<JSON
+          {
+            "event_type": "sdk-release",
+            "client_payload": {
+              "version": "${{ github.event.inputs.version }}",
+              "changelog_url": "${{ github.event.inputs.changelog_url }}"
+            }
+          }
+          JSON
+          echo "respuesta:"; cat /tmp/resp 2>/dev/null || true
